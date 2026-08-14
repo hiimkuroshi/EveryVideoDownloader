@@ -1,10 +1,12 @@
 {
-  "name": "ytdlp-ui",
+  "name": "every-video-downloader",
   "version": "1.0.0",
+  "description": "Professional Desktop Web UI & Workstation powered by yt-dlp",
   "private": true,
+  "main": "server.js",
   "scripts": {
-    "build": "npx -y tailwindcss@latest -i src/input.css -o public/dist/output.css --minify",
-    "dev": "npm run build && echo 'Build complete. Open public/index.html in a browser.'"
+    "start": "node server.js",
+    "setup": "node setup.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

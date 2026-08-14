@@ -1,5 +1,5 @@
 @echo off
-title yt-dlp Studio Pro Workstation
+title EveryVideoDownloader — Workstation (Powered by yt-dlp)
 chcp 65001 >nul
 
 :: Chuyen den dung thu muc chua file bat nay
@@ -14,7 +14,7 @@ if %errorlevel% neq 0 (
     echo =======================================================================
     echo  [!] CANH BAO: Khong tim thay Node.js tren may tinh cua ban!
     echo =======================================================================
-    echo  yt-dlp Studio Pro can Node.js de chay giao dien web.
+    echo  EveryVideoDownloader can Node.js de chay giao dien web.
     echo  Dang mo trang tai Node.js (https://nodejs.org)...
     echo.
     start https://nodejs.org

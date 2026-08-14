@@ -1,4 +1,4 @@
-# 📑 TỔNG QUAN & TÓM TẮT DỰ ÁN: YT-DLP STUDIO PRO
+# 📑 TỔNG QUAN & TÓM TẮT DỰ ÁN: EVERYVIDEODOWNLOADER (POWERED BY YT-DLP)
 
 > **Quy ước quản lý phiên làm việc:**
 > - Khi người dùng gửi **`kết thúc`**: Hệ thống sẽ tự động dừng phiên làm việc hiện tại, tổng kết nội dung và cập nhật/bổ sung vào tài liệu này.
@@ -7,7 +7,7 @@
 ---
 
 ## 1. 🎯 Mục Tiêu Dự Án
-Xây dựng ứng dụng Web UI chuyên nghiệp (**yt-dlp Studio Pro**) trọn gói trong **duy nhất 1 thư mục độc lập** (`D:\yt-dlp\`), hỗ trợ khởi động 1-click, **tự động kiểm tra và tải về tất cả các công cụ còn thiếu (Auto-Diagnostic & Setup)**, tối ưu không gian hiển thị và giảm thiểu tối đa việc cuộn trang.
+Xây dựng ứng dụng Web UI chuyên nghiệp (**EveryVideoDownloader**) hoạt động trên nền tảng của **yt-dlp** trọn gói trong **duy nhất 1 thư mục độc lập** (`D:\yt-dlp\`), hỗ trợ khởi động 1-click, **tự động kiểm tra và tải về tất cả các công cụ còn thiếu (Auto-Diagnostic & Setup)**, tối ưu không gian hiển thị và giảm thiểu tối đa việc cuộn trang.
 
 ---
 
@@ -16,6 +16,7 @@ Xây dựng ứng dụng Web UI chuyên nghiệp (**yt-dlp Studio Pro**) trọn 
 ### A. Frontend (Giao Diện Người Dùng)
 - **HTML5 & Vanilla CSS**: 
   - Thiết kế theo phong cách Desktop Studio 2 cột (Workstation Grid).
+  - Thương hiệu nhận diện: **EveryVideoDownloader (POWERED BY YT-DLP)**.
   - Hỗ trợ Dark/Light mode, hiệu ứng làm mờ kính (Glassmorphism), bảng màu tương phản cao, cỡ chữ to rõ ràng (`16.5px`).
 - **Vanilla JavaScript (ES6+)**:
   - Giao tiếp thời gian thực với backend qua **Server-Sent Events (SSE)** để cập nhật % tiến trình tải và log terminal.
@@ -45,7 +46,7 @@ Xây dựng ứng dụng Web UI chuyên nghiệp (**yt-dlp Studio Pro**) trọn 
 ## 3. 📂 Cấu Trúc Thư Mục Trọn Gói (Unified 1-Folder Structure)
 
 ```text
-D:\yt-dlp\
+EveryVideoDownloader/
 ├── yt-dlp.exe                    # File thực thi yt-dlp chính
 ├── setup.js                      # 🔍 Trình quét chẩn đoán & tự động tải công cụ còn thiếu
 ├── server.js                     # Express Backend Server (Port 3000, relative paths)
@@ -56,6 +57,7 @@ D:\yt-dlp\
 │   ├── style.css                 # Hệ thống giao diện Dark/Light theme & CSS Grid
 │   └── script.js                 # Logic tương tác client & SSE stream
 ├── Download\                     # Thư mục lưu trữ video / audio / thumbnail tải về
+├── README.md                     # Tài liệu GitHub & ghi nhận chạy trên nền tảng yt-dlp
 ├── PROJECT_SUMMARY.md            # Tài liệu tổng quan & tóm tắt dự án (file này)
 └── Chay_Studio.bat               # 🚀 Script 1-click khởi động chẩn đoán & mở web
 ```
@@ -64,24 +66,14 @@ D:\yt-dlp\
 
 ## 4. ✨ Các Tính Năng Đã Hoàn Thiện
 
-1. **Màn Hình Tự Động Quét & Tải Tool (`setup.js` + `Chay_Studio.bat`)**:
-   - Khi chạy lần đầu trên máy mới: tự động kiểm tra `Node.js`, `npm install`, tự tải `yt-dlp.exe` mới nhất, kiểm tra/cài `FFmpeg`, tạo thư mục `Download` rồi mới tự động vào UI.
-2. **Khởi Động 1-Click (`Chay_Studio.bat`)**: Nhấp đúp là tự chẩn đoán, chạy server và mở trình duyệt web `http://localhost:3000`.
-3. **Bảng Format Explorer Đầy Đủ & Hỗ Trợ Sắp Xếp (Sortable Table)**:
-   - Hiển thị đầy đủ tất cả các định dạng video/audio (AV1, HEVC, AVC, audio tracks...).
-   - Bấm vào tiêu đề cột để sắp xếp Tăng/Giảm dần.
-4. **Hàng Chờ Tải Xuống (Download Queue) & Chọn Nhiều Định Dạng**:
-   - Checkbox từng dòng + Chọn tất cả.
-   - Thêm các định dạng vào Hàng Chờ và tải tuần tự tự động.
-5. **Thanh Tiến Trình Lớn Kèm % & Thông Số Chi Tiết (Loading Metrics)**:
-   - Hiển thị % số lớn, tốc độ `MiB/s`, thời gian còn lại `ETA`, dung lượng `MB/Total MB`.
-6. **Nút Tạm Dừng / Tiếp Tục Tải (Pause & Resume)**:
-   - Dừng ngay tiến trình đang tải và bấm tiếp tục tải từ điểm gián đoạn (`.part` file).
-7. **Nút Duyệt Thư Mục Tự Động (Native Windows Folder Picker)**:
-   - Mở hộp thoại chọn folder của Windows trực quan.
-8. **Nhận Diện Nền Tảng Tự Động & Logo SVG Chuẩn Xác**:
-   - Bilibili (Logo linh vật TV 2 râu đặc trưng), YouTube, TikTok, Facebook, Twitter, Instagram.
-9. **Dịch Tiêu Đề Tự Động Sang Tiếng Việt**:
-   - Tích hợp Google Translate API miễn phí.
-10. **Tải Thumbnail HD Đơn Lẻ**:
-    - Vượt lỗi 403 Forbidden và khắc phục lỗi lặp tải của YouTube Radio/Playlist link.
+1. **Đổi Tên Thương Hiệu Thành EveryVideoDownloader**: Toàn bộ UI, Backend, Batch script, Package.json và README đã được đồng bộ với tên mới và nêu rõ chạy trên nền tảng yt-dlp.
+2. **Màn Hình Tự Động Quét & Tải Tool (`setup.js` + `Chay_Studio.bat`)**: Tự động kiểm tra `Node.js`, `npm install`, tự tải `yt-dlp.exe` mới nhất, kiểm tra/cài `FFmpeg`, tạo thư mục `Download` rồi mới tự động vào UI.
+3. **Khởi Động 1-Click (`Chay_Studio.bat`)**: Nhấp đúp là tự chẩn đoán, chạy server và mở trình duyệt web `http://localhost:3000`.
+4. **Bảng Format Explorer Đầy Đủ & Hỗ Trợ Sắp Xếp (Sortable Table)**: Liệt kê toàn bộ định dạng video/audio (AV1, HEVC, AVC, audio tracks...), click để sắp xếp Tăng/Giảm.
+5. **Hàng Chờ Tải Xuống (Download Queue) & Chọn Nhiều Định Dạng**: Checkbox từng dòng + Chọn tất cả, thêm vào Hàng Chờ và tải tuần tự tự động.
+6. **Thanh Tiến Trình Lớn Kèm % & Thông Số Chi Tiết (Loading Metrics)**: Hiển thị % số lớn, tốc độ `MiB/s`, thời gian còn lại `ETA`, dung lượng `MB/Total MB`.
+7. **Nút Tạm Dừng / Tiếp Tục Tải (Pause & Resume)**: Dừng an toàn và tiếp tục tải từ điểm gián đoạn (`.part` file).
+8. **Nút Duyệt Thư Mục Tự Động (Native Windows Folder Picker)**: Mở hộp thoại chọn folder của Windows trực quan.
+9. **Nhận Diện Nền Tảng Tự Động & Logo SVG Chuẩn Xác**: Bilibili, YouTube, TikTok, Facebook, Twitter, Instagram.
+10. **Dịch Tiêu Đề Tự Động Sang Tiếng Việt**: Tích hợp Google Translate API miễn phí.
+11. **Tải Thumbnail HD Đơn Lẻ**: Vượt lỗi 403 Forbidden và khắc phục lỗi lặp tải của YouTube Radio/Playlist link.

@@ -1,5 +1,5 @@
 // =============================================================================
-// yt-dlp Studio Pro — Unified Standalone Server
+// EveryVideoDownloader — Unified Standalone Server (Powered by yt-dlp)
 // =============================================================================
 
 const express = require('express');
@@ -438,5 +438,5 @@ app.get('/api/download', (req, res) => {
 // Start Server
 // =============================================================================
 app.listen(PORT, () => {
-  console.log(`yt-dlp Studio server running at http://localhost:${PORT}`);
+  console.log(`EveryVideoDownloader server running at http://localhost:${PORT}`);
 });

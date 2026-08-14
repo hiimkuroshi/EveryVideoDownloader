@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════
-   yt-dlp Studio Pro — Workstation Client Script (V3)
+   EveryVideoDownloader — Workstation Client Script
+   Powered by yt-dlp
    ═══════════════════════════════════════════════════════ */
 
 // ── Theme Management ──────────────────────────────────

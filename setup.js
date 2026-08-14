@@ -1,5 +1,5 @@
 // =============================================================================
-// yt-dlp Studio Pro — Auto-Diagnostic & Dependency Setup
+// EveryVideoDownloader — Auto-Diagnostic & Setup (Powered by yt-dlp)
 // =============================================================================
 
 const fs = require('fs');
@@ -75,7 +75,8 @@ function checkFfmpegSystem() {
 
 async function runSetup() {
   console.log(`\n${C.bright}${C.magenta}======================================================================${C.reset}`);
-  console.log(`${C.bright}${C.cyan}       🎬 YT-DLP STUDIO PRO — KIỂM TRA HỆ THỐNG & TỰ ĐỘNG CÀI ĐẶT${C.reset}`);
+  console.log(`${C.bright}${C.cyan}  🎬 EVERYVIDEODOWNLOADER — KIỂM TRA HỆ THỐNG & TỰ ĐỘNG CÀI ĐẶT${C.reset}`);
+  console.log(`${C.dim}                    (Powered by yt-dlp Core Engine)${C.reset}`);
   console.log(`${C.bright}${C.magenta}======================================================================${C.reset}\n`);
 
   let allReady = true;
