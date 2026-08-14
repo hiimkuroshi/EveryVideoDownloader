@@ -15,7 +15,8 @@ Download/*
 *.png
 *.webp
 
-# Temporary files & scratch
+# Temporary files & internal docs
+PROJECT_SUMMARY.md
 scratch/
 .system_generated/
 *.log
