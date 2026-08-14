@@ -3,27 +3,38 @@ title yt-dlp Studio Pro Workstation
 chcp 65001 >nul
 cls
 
-echo =======================================================================
-echo              yt-dlp Studio Pro — Trạm Tải Đa Phương Tiện
-echo =======================================================================
-echo.
-
 set PATH=%USERPROFILE%\.deno\bin;%PATH%
 
 where node >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [ERROR] Khong tim thay Node.js tren may tinh!
-    echo Vui long cai dat Node.js tu https://nodejs.org
+    echo =======================================================================
+    echo  [!] CANH BAO: Khong tim thay Node.js tren may tinh cua ban!
+    echo =======================================================================
+    echo  yt-dlp Studio Pro can Node.js de chay giao dien web.
+    echo  Dang mo trang tai Node.js (https://nodejs.org)...
+    echo.
+    start https://nodejs.org
     pause
     exit /b 1
 )
 
-echo [1/2] Dang khoi dong Web Server tren cong 3000...
+:: Neu chua co node_modules, tu dong cai dat npm
+if not exist node_modules (
+    echo [Khoi tao] Dang cai dat thu vien ban dau (npm install)...
+    call npm install
+)
+
+:: Chay trinh kiem tra he thong & tu dong tai cac cong cu thieu (yt-dlp, ffmpeg, download dir)
+node setup.js
+
+:: Khoi dong Web Server tren cong 3000
+echo Dang khoi dong Web Server tren cong 3000...
 start "" cmd /c "node server.js"
 
 timeout /t 2 /nobreak >nul
 
-echo [2/2] Dang mo giao dien web tren trinh duyet...
+:: Tu dong mo trinh duyet vao giao dien Studio
+echo Dang mo giao dien Studio tren trinh duyet...
 start http://localhost:3000
 
 echo.
