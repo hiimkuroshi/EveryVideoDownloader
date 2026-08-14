@@ -7,7 +7,7 @@
 ---
 
 ## 1. 🎯 Mục Tiêu Dự Án
-Xây dựng ứng dụng Web UI chuyên nghiệp (**yt-dlp Studio Pro**) trọn gói trong **duy nhất 1 thư mục độc lập** (`D:\yt-dlp\`), mang lại trải nghiệm tương đương các phần mềm tải đa phương tiện cao cấp với bố cục dạng **Desktop Studio Workstation**, hỗ trợ khởi động 1-click, tối ưu không gian hiển thị và giảm thiểu tối đa việc cuộn trang.
+Xây dựng ứng dụng Web UI chuyên nghiệp (**yt-dlp Studio Pro**) trọn gói trong **duy nhất 1 thư mục độc lập** (`D:\yt-dlp\`), hỗ trợ khởi động 1-click, **tự động kiểm tra và tải về tất cả các công cụ còn thiếu (Auto-Diagnostic & Setup)**, tối ưu không gian hiển thị và giảm thiểu tối đa việc cuộn trang.
 
 ---
 
@@ -25,31 +25,29 @@ Xây dựng ứng dụng Web UI chuyên nghiệp (**yt-dlp Studio Pro**) trọn 
   - Tự động nhận diện nền tảng tải video (Bilibili, YouTube, TikTok, Facebook, Twitter, Instagram).
   - Tự động gọi API dịch tiêu đề video sang Tiếng Việt.
 
-### B. Backend (Máy Chủ Dịch Vụ)
+### B. Backend & Auto-Diagnostic (Máy Chủ Dịch Vụ)
 - **Node.js & Express.js** (`D:\yt-dlp\server.js`):
   - Đường dẫn động độc lập (relative paths), không bị phụ thuộc cứng vào cấu trúc máy.
+  - `GET /api/config`: Trả về cấu hình đường dẫn động cho client.
   - `GET /api/info`: Chạy `yt-dlp -J` để trích xuất toàn bộ metadata JSON.
   - `GET /api/download`: Sử dụng `spawn` chạy `yt-dlp` và stream stdout/stderr trực tiếp về client qua SSE, hỗ trợ dừng/tạm dừng.
   - `GET /api/cancel-download`: Hủy/tạm dừng tiến trình tải đang diễn ra.
   - `GET /api/browse-folder`: Mở hộp thoại chọn thư mục Windows FolderBrowserDialog trực quan.
   - `GET /api/translate`: Proxy dịch tiêu đề video tự động sang Tiếng Việt qua Google Translate miễn phí.
   - `GET /api/proxy-image`: Proxy ảnh thumbnail kèm `Referer` và `User-Agent` chuẩn để vượt qua cơ chế chống hotlink (HTTP 403 Forbidden) của Bilibili/Douyin.
-  - `GET /api/download-thumbnail`: Tải ảnh bìa HD đơn lẻ (luôn kèm `--no-playlist`) trực tiếp vào thư mục `D:\yt-dlp\Download`.
-
-### C. Core Engine
-- **`yt-dlp.exe`** (Python compiled): Nằm trực tiếp tại gốc `D:\yt-dlp\yt-dlp.exe`.
-- **Deno Runtime** (`~/.deno/bin/deno.exe`): Hỗ trợ yt-dlp giải mã các thuật toán JS trích xuất mới nhất của YouTube (chống lỗi Bot / HTTP 429).
-- **FFmpeg**: Ghép nối luồng video độ nét cao và âm thanh chất lượng tốt nhất, nhúng phụ đề và ảnh bìa.
+  - `GET /api/download-thumbnail`: Tải ảnh bìa HD đơn lẻ (luôn kèm `--no-playlist`) trực tiếp vào thư mục `Download`.
+- **Trình Tự Động Kiểm Tra & Cài Đặt** (`D:\yt-dlp\setup.js`):
+  - Tự động quét và phát hiện: `yt-dlp.exe`, `ffmpeg.exe`, thư viện `node_modules`, thư mục `Download/`.
+  - Tự động tải về từ GitHub nếu thiếu bất kỳ công cụ nào trước khi mở giao diện chính.
 
 ---
 
 ## 3. 📂 Cấu Trúc Thư Mục Trọn Gói (Unified 1-Folder Structure)
 
-Toàn bộ ứng dụng đã được đóng gói tập trung vào **duy nhất 1 thư mục `D:\yt-dlp\`**:
-
 ```text
 D:\yt-dlp\
 ├── yt-dlp.exe                    # File thực thi yt-dlp chính
+├── setup.js                      # 🔍 Trình quét chẩn đoán & tự động tải công cụ còn thiếu
 ├── server.js                     # Express Backend Server (Port 3000, relative paths)
 ├── package.json                  # Cấu hình dự án Node.js
 ├── node_modules\                 # Thư viện phụ thuộc Node.js
@@ -59,15 +57,16 @@ D:\yt-dlp\
 │   └── script.js                 # Logic tương tác client & SSE stream
 ├── Download\                     # Thư mục lưu trữ video / audio / thumbnail tải về
 ├── PROJECT_SUMMARY.md            # Tài liệu tổng quan & tóm tắt dự án (file này)
-└── Chay_Studio.bat               # 🚀 Script 1-click khởi động server & tự mở trình duyệt
+└── Chay_Studio.bat               # 🚀 Script 1-click khởi động chẩn đoán & mở web
 ```
 
 ---
 
 ## 4. ✨ Các Tính Năng Đã Hoàn Thiện
 
-1. **Đóng Gói 1 Thư Mục Độc Lập**: Toàn bộ source code, web UI, backend, binary `yt-dlp.exe` và thư mục tải về đều nằm chung trong `D:\yt-dlp\`.
-2. **Khởi Động 1-Click (`Chay_Studio.bat`)**: Chỉ cần nhấp đúp vào file `.bat`, hệ thống tự chạy server và mở trình duyệt web `http://localhost:3000`.
+1. **Màn Hình Tự Động Quét & Tải Tool (`setup.js` + `Chay_Studio.bat`)**:
+   - Khi chạy lần đầu trên máy mới: tự động kiểm tra `Node.js`, `npm install`, tự tải `yt-dlp.exe` mới nhất, kiểm tra/cài `FFmpeg`, tạo thư mục `Download` rồi mới tự động vào UI.
+2. **Khởi Động 1-Click (`Chay_Studio.bat`)**: Nhấp đúp là tự chẩn đoán, chạy server và mở trình duyệt web `http://localhost:3000`.
 3. **Bảng Format Explorer Đầy Đủ & Hỗ Trợ Sắp Xếp (Sortable Table)**:
    - Hiển thị đầy đủ tất cả các định dạng video/audio (AV1, HEVC, AVC, audio tracks...).
    - Bấm vào tiêu đề cột để sắp xếp Tăng/Giảm dần.
@@ -86,18 +85,3 @@ D:\yt-dlp\
    - Tích hợp Google Translate API miễn phí.
 10. **Tải Thumbnail HD Đơn Lẻ**:
     - Vượt lỗi 403 Forbidden và khắc phục lỗi lặp tải của YouTube Radio/Playlist link.
-
----
-
-## 5. 🚀 Hướng Dẫn Vận Hành Hệ Thống
-
-1. **Cách 1: Khởi động 1-Click (Khuyên dùng)**:
-   - Mở thư mục `D:\yt-dlp\`
-   - Nhấp đúp vào file **`Chay_Studio.bat`** (hoặc `Run_Studio.bat`).
-   - Trình duyệt sẽ tự động mở lên tại **`http://localhost:3000`**.
-
-2. **Cách 2: Khởi động qua Terminal**:
-   ```bash
-   cd D:\yt-dlp
-   cmd /c "set PATH=%USERPROFILE%\.deno\bin;%PATH% && node server.js"
-   ```

@@ -1,6 +1,10 @@
 @echo off
 title yt-dlp Studio Pro Workstation
 chcp 65001 >nul
+
+:: Chuyen den dung thu muc chua file bat nay
+cd /d "%~dp0"
+
 cls
 
 set PATH=%USERPROFILE%\.deno\bin;%PATH%
@@ -25,22 +29,19 @@ if not exist node_modules (
 )
 
 :: Chay trinh kiem tra he thong & tu dong tai cac cong cu thieu (yt-dlp, ffmpeg, download dir)
-node setup.js
+call node setup.js
 
-:: Khoi dong Web Server tren cong 3000
-echo Dang khoi dong Web Server tren cong 3000...
-start "" cmd /c "node server.js"
+:: Tu dong mo trinh duyet sau 1.5 giay
+start "" cmd /c "timeout /t 2 /nobreak >nul && start http://localhost:3000"
 
-timeout /t 2 /nobreak >nul
-
-:: Tu dong mo trinh duyet vao giao dien Studio
-echo Dang mo giao dien Studio tren trinh duyet...
-start http://localhost:3000
-
-echo.
 echo =======================================================================
-echo  Studio dang chay tai: http://localhost:3000
-echo  Cua so nay co the dong lai bat ky luc nao.
+echo  🌐 DANG CHAY SERVER TAI: http://localhost:3000
+echo  (Trinh duyet se tu dong mo len trong giay lat)
+echo  De tat server, ban chi can dong cua so nay lai.
 echo =======================================================================
 echo.
-exit
+
+:: Chay Node Server truc tiep trong cua so nay de hien thi log thoi gian thuc
+node server.js
+
+pause
