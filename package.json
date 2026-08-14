@@ -1,0 +1,13 @@
+{
+  "name": "ytdlp-ui",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npx -y tailwindcss@latest -i src/input.css -o public/dist/output.css --minify",
+    "dev": "npm run build && echo 'Build complete. Open public/index.html in a browser.'"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}

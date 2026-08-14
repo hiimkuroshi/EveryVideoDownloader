@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Downloaded files & media (bỏ qua các file video/ảnh tải về)
+Download/*
+!Download/.gitkeep
+*.mp4
+*.mkv
+*.webm
+*.m4a
+*.mp3
+*.part
+*.ytdl
+*.jpg
+*.png
+*.webp
+
+# Temporary files & scratch
+scratch/
+.system_generated/
+*.log
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

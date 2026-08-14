@@ -1,0 +1,14 @@
+[
+  {
+    "flag": "--convert-thumbnails",
+    "description": "Convert the thumbnails to another format (currently supported: jpg, png, webp)."
+  },
+  {
+    "flag": "--sponsorblock-mark",
+    "description": "SponsorBlock categories to create chapters for, separated by commas."
+  },
+  {
+    "flag": "--extractor-retries",
+    "description": "Number of retries for known extractor errors (default is 3), or \"infinite\"."
+  }
+]
