@@ -22,6 +22,17 @@ themeToggle.addEventListener('click', () => {
     localStorage.setItem('theme', next);
 });
 
+// Fetch dynamic server configuration on load
+fetch('/api/config')
+  .then(r => r.json())
+  .then(cfg => {
+    if (cfg.downloadFolder) {
+      if ($('quickDownloadFolder')) $('quickDownloadFolder').value = cfg.downloadFolder;
+      if ($('downloadFolder')) $('downloadFolder').value = cfg.downloadFolder;
+    }
+  })
+  .catch(() => {});
+
 // ── Tab Navigation ───────────────────────────────────
 const tabBtns   = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('.tab-panel');

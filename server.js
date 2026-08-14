@@ -21,6 +21,11 @@ if (!fs.existsSync(DOWNLOADS_DIR)) {
   fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
 }
 
+// Check if local ffmpeg exists in root folder or bin
+const LOCAL_FFMPEG = fs.existsSync(path.join(__dirname, 'ffmpeg.exe'))
+  ? __dirname
+  : (fs.existsSync(path.join(__dirname, 'bin', 'ffmpeg.exe')) ? path.join(__dirname, 'bin') : null);
+
 // Active download child processes store for cancel/pause support
 const activeDownloads = new Map();
 
@@ -28,6 +33,16 @@ const activeDownloads = new Map();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// =============================================================================
+// GET /api/config — Get dynamic server configuration & paths
+// =============================================================================
+app.get('/api/config', (req, res) => {
+  res.json({
+    downloadFolder: DOWNLOADS_DIR,
+    hasLocalFfmpeg: !!LOCAL_FFMPEG,
+  });
+});
 
 // =============================================================================
 // GET /api/translate — Google Translate Free API proxy
@@ -197,6 +212,13 @@ app.get('/api/info', (req, res) => {
     args.push('--cookies-from-browser', browser);
   }
 
+  if (LOCAL_FFMPEG) {
+    args.push('--ffmpeg-location', LOCAL_FFMPEG);
+  }
+
+  // Use Node.js runtime as portable JS engine for yt-dlp
+  args.push('--js-runtimes', 'node');
+
   args.push(url);
 
   execFile(YTDLP_PATH, args, { maxBuffer: 35 * 1024 * 1024 }, (error, stdout, stderr) => {
@@ -363,8 +385,13 @@ app.get('/api/download', (req, res) => {
   }
 
   // Intervals
-  if (sleep_interval) args.push('--sleep-interval', sleep_interval);
-  if (max_sleep_interval) args.push('--max-sleep-interval', max_sleep_interval);
+  // Local FFmpeg location if present
+  if (LOCAL_FFMPEG) {
+    args.push('--ffmpeg-location', LOCAL_FFMPEG);
+  }
+
+  // Use Node.js runtime as portable JS engine for yt-dlp
+  args.push('--js-runtimes', 'node');
 
   // Target URL
   args.push(url);
