@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   EveryVideoDownloader — Workstation Client Script
+   EveryVideoDownloader — Workstation Client Script (V5)
    Powered by yt-dlp
    ═══════════════════════════════════════════════════════ */
 
@@ -102,7 +102,6 @@ const PLATFORMS = {
     bilibili: {
         name: 'Bilibili',
         class: 'platform-bilibili',
-        // Official Bilibili TV mascot with antennas and smiling face
         icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.8 4.2h.9c1.5 0 2.7 1.2 2.7 2.7v10.2c0 1.5-1.2 2.7-2.7 2.7H4.3c-1.5 0-2.7-1.2-2.7-2.7V6.9c0-1.5 1.2-2.7 2.7-2.7h.9L3.8 2.8c-.3-.3-.3-.8 0-1.1.3-.3.8-.3 1.1 0l2.5 2.5h9.2l2.5-2.5c.3-.3.8-.3 1.1 0 .3.3.3.8 0 1.1L18.8 4.2zM4.3 6.2c-.4 0-.7.3-.7.7v10.2c0 .4.3.7.7.7h15.4c.4 0 .7-.3.7-.7V6.9c0-.4-.3-.7-.7-.7H4.3zm3.7 3.8c.7 0 1.3.6 1.3 1.3s-.6 1.3-1.3 1.3-1.3-.6-1.3-1.3.6-1.3 1.3-1.3zm8 0c.7 0 1.3.6 1.3 1.3s-.6 1.3-1.3 1.3-1.3-.6-1.3-1.3.6-1.3 1.3-1.3z"/></svg>`
     },
     youtube: {
@@ -175,7 +174,7 @@ function updatePlatformBadges(platform) {
 
 // ── State Variables ──────────────────────────────────
 let currentUrl = '';
-let currentBrowser = 'chrome';
+let currentBrowser = 'none';
 let currentVideoData = null;
 let currentThumbnailUrl = '';
 let parsedFormats = [];
@@ -186,9 +185,9 @@ let selectedFormatValue = 'bv*+ba/b';
 let selectedRawFormat = null;
 let currentViewMode = 'table';
 
-// Sorting State
-let currentSortField = 'id';
-let currentSortOrder = 'desc';
+// 3-State Sorting State: 'none' (Default) -> 'desc' -> 'asc' -> 'none'
+let currentSortField = null;
+let currentSortState = 'none';
 
 // Multi-select & Download Queue State
 let selectedFormatSet = new Set();
@@ -200,28 +199,77 @@ let activeDownloadId = null;
 let activeEventSource = null;
 let isDownloadPaused = false;
 
-// ── Directory Picker Handlers ─────────────────────────
+// ── Open Storage Folder in Windows Explorer (Instant <10ms) ───
+function openStorageFolder(customPath = null) {
+    const targetFolder = customPath || val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
+    showToast(`📂 Đang mở thư mục lưu trữ:\n${targetFolder}`, 'info');
+    fetch(`/api/open-folder?path=${encodeURIComponent(targetFolder)}`).catch(() => {});
+}
+
+$('openStorageFolderBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openStorageFolder();
+});
+
+$('openFolderBtnSettings')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openStorageFolder();
+});
+
+$('openFolderBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openStorageFolder();
+});
+
+// ── Directory Picker Handlers (Windows STA Native) ───
 async function triggerFolderBrowser(targetInputId) {
     try {
-        const currentPath = val(targetInputId) || 'D:\\yt-dlp\\Download';
+        showToast('📂 Đang mở hộp thoại chọn thư mục Windows...', 'info');
+        const currentPath = val(targetInputId) || val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
         const res = await fetch(`/api/browse-folder?current=${encodeURIComponent(currentPath)}`);
         const data = await res.json();
         if (data.success && data.path) {
             $(targetInputId).value = data.path;
             if (targetInputId === 'quickDownloadFolder') {
-                $('downloadFolder').value = data.path;
+                if ($('downloadFolder')) $('downloadFolder').value = data.path;
             } else {
-                $('quickDownloadFolder').value = data.path;
+                if ($('quickDownloadFolder')) $('quickDownloadFolder').value = data.path;
             }
-            showToast(`Đã chọn thư mục: ${data.path}`, 'success');
+            showToast(`✅ Đã chọn thư mục: ${data.path}`, 'success');
+        } else {
+            showToast('Đã hủy chọn thư mục.', 'info');
         }
     } catch (err) {
         showToast('Không thể mở hộp thoại chọn thư mục Windows', 'error');
     }
 }
 
-$('browseFolderBtn')?.addEventListener('click', () => triggerFolderBrowser('quickDownloadFolder'));
-$('browseFolderBtnSettings')?.addEventListener('click', () => triggerFolderBrowser('downloadFolder'));
+$('browseFolderBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    triggerFolderBrowser('quickDownloadFolder');
+});
+
+$('browseFolderBtnSettings')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    triggerFolderBrowser('downloadFolder');
+});
+
+// ── Update Download Button Enabled / Disabled State ──
+function updateDownloadButtonState() {
+    const hasUrl = !!currentUrl;
+    const hasSelectedRow = !!selectedRawFormat;
+    const hasCheckedOptions = selectedFormatSet.size > 0;
+    const hasPresetOrCustom = (currentViewMode === 'cards' && !!selectedFormatValue) || 
+                              (!($('customFormatInput')?.classList.contains('hidden')) && !!$('customFormatInput')?.value.trim());
+
+    // Download button is enabled ONLY when URL is present AND at least 1 option is chosen
+    const canDownload = hasUrl && (hasSelectedRow || hasCheckedOptions || hasPresetOrCustom);
+
+    const dlBtn = $('downloadBtn');
+    if (dlBtn && !activeEventSource) {
+        dlBtn.disabled = !canDownload;
+    }
+}
 
 // ── Check Info & Fetch Formats ───────────────────────
 $('checkBtn').addEventListener('click', async () => {
@@ -240,6 +288,8 @@ $('checkBtn').addEventListener('click', async () => {
     const emptyCard = $('emptyHeroCard');
 
     $('statusArea').classList.add('hidden');
+    $('downloadSuccessAlert')?.classList.add('hidden');
+    $('openFolderBtn')?.classList.add('hidden');
     checkBtn.disabled = true;
     loadingInfo.classList.remove('hidden');
 
@@ -262,9 +312,13 @@ $('checkBtn').addEventListener('click', async () => {
         processAndRenderFormats(data.formats || []);
         translateVideoTitle(data.title);
 
-        showToast(`Đã tìm thấy ${data.formats?.length || 0} tùy chọn formats!`, 'success');
+        // Enable download buttons once options/formats are successfully loaded
+        updateDownloadButtonState();
+
+        showToast(`🎉 Phân tích thành công! Đã tìm thấy ${data.formats?.length || 0} formats.`, 'success');
     } catch (err) {
         showToast(err.message, 'error');
+        updateDownloadButtonState();
     } finally {
         checkBtn.disabled = false;
         loadingInfo.classList.add('hidden');
@@ -332,37 +386,50 @@ async function translateVideoTitle(rawTitle) {
     }
 }
 
-// ── Single Thumbnail Download Action (Fix Radio/Playlist Loop) ──
-$('dlThumbBtn').addEventListener('click', async (e) => {
+// ── Single Thumbnail Download Action ─────────────────
+$('dlThumbBtn')?.addEventListener('click', async (e) => {
     e.stopPropagation();
-    if (!currentUrl) {
+    if (!currentUrl && !currentThumbnailUrl) {
         showToast('Chưa có thông tin video để tải ảnh thumbnail', 'error');
         return;
     }
 
-    showToast('Đang tải ảnh thumbnail HD của video...', 'info');
+    const btn = $('dlThumbBtn');
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span style="display:inline-block; animation:spin 0.6s linear infinite;">⏳</span> <span>Đang lưu...</span>`;
+
+    const targetFolder = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
+    showToast('⏳ Đang tải ảnh thumbnail HD của video...', 'info');
 
     try {
         const qp = new URLSearchParams({
             url: currentUrl,
+            thumbUrl: currentThumbnailUrl || '',
+            title: currentVideoData?.title || 'video',
             browser: currentBrowser,
-            output: val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download'
+            output: targetFolder
         });
 
         const res = await fetch(`/api/download-thumbnail?${qp}`);
         const data = await res.json();
 
         if (res.ok && data.success) {
-            showToast('🎉 Đã tải ảnh thumbnail HD vào thư mục Download!', 'success');
+            showToast(`🎉 Đã tải ảnh thumbnail HD thành công!\nĐã lưu vào: ${targetFolder}`, 'success');
         } else {
+            showToast(`⚠️ Không thể tải trực tiếp: ${data.error || 'Lỗi'}`, 'error');
             if (currentThumbnailUrl) {
                 window.open(`/api/proxy-image?url=${encodeURIComponent(currentThumbnailUrl)}`, '_blank');
             }
         }
     } catch (err) {
+        showToast('Lỗi khi kết nối tải thumbnail', 'error');
         if (currentThumbnailUrl) {
             window.open(`/api/proxy-image?url=${encodeURIComponent(currentThumbnailUrl)}`, '_blank');
         }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
     }
 });
 
@@ -401,6 +468,13 @@ function processAndRenderFormats(formats) {
     parsedFormats = [];
     audioOnlyFormats = [];
     selectedFormatSet.clear();
+    currentSortField = null;
+    currentSortState = 'none';
+
+    document.querySelectorAll('th.th-sortable').forEach(t => {
+        t.classList.remove('sorted-asc', 'sorted-desc');
+        t.querySelector('.sort-icon').textContent = '↕';
+    });
 
     formats.forEach((f, idx) => {
         const isAudioOnly = f.resolution === 'audio only' || f.vcodec === 'none' || (f.audio_ext !== 'none' && f.video_ext === 'none');
@@ -431,7 +505,7 @@ function processAndRenderFormats(formats) {
 
         const item = {
             raw: f,
-            index: idx,
+            rawIndex: idx,
             id: f.format_id,
             idNum: parseInt(f.format_id, 10) || idx,
             ext: (f.ext || 'mp4').toLowerCase(),
@@ -464,10 +538,18 @@ function processAndRenderFormats(formats) {
     $('countCombo').textContent = parsedFormats.filter(f => f.type === 'combo').length;
 
     populateAudioMergeDropdown();
-    sortAndRenderFormatTable();
+    renderFormatTable();
     renderPresetCards();
+    updateMultiSelectBar();
 
-    setFinalFormat('bv*+ba/b', null);
+    // Reset selection so user must explicitly choose an option
+    selectedRawFormat = null;
+    selectedFormatSet.clear();
+    selectedFormatValue = null;
+    $('formatPreviewCode').textContent = '(Chưa chọn định dạng - Vui lòng chọn 1 dòng)';
+    if ($('customFormatInput')) $('customFormatInput').value = '';
+
+    updateDownloadButtonState();
 }
 
 // ── Populate Audio Select for Smart Merge ────────────
@@ -484,15 +566,23 @@ function populateAudioMergeDropdown() {
     });
 }
 
-// ── Sorting Logic ────────────────────────────────────
+// ── 3-State Sorting Logic: Desc -> Asc -> Default ────
 document.querySelectorAll('th.th-sortable').forEach(th => {
     th.addEventListener('click', () => {
         const field = th.dataset.sort;
+
         if (currentSortField === field) {
-            currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            if (currentSortState === 'desc') {
+                currentSortState = 'asc';
+            } else if (currentSortState === 'asc') {
+                currentSortState = 'none';
+                currentSortField = null;
+            } else {
+                currentSortState = 'desc';
+            }
         } else {
             currentSortField = field;
-            currentSortOrder = 'desc';
+            currentSortState = 'desc';
         }
 
         document.querySelectorAll('th.th-sortable').forEach(t => {
@@ -500,39 +590,48 @@ document.querySelectorAll('th.th-sortable').forEach(th => {
             t.querySelector('.sort-icon').textContent = '↕';
         });
 
-        th.classList.add(currentSortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
-        th.querySelector('.sort-icon').textContent = currentSortOrder === 'asc' ? '▲' : '▼';
+        if (currentSortState === 'desc') {
+            th.classList.add('sorted-desc');
+            th.querySelector('.sort-icon').textContent = '▼';
+        } else if (currentSortState === 'asc') {
+            th.classList.add('sorted-asc');
+            th.querySelector('.sort-icon').textContent = '▲';
+        }
 
         sortAndRenderFormatTable();
     });
 });
 
 function sortAndRenderFormatTable() {
-    parsedFormats.sort((a, b) => {
-        let valA = a[currentSortField];
-        let valB = b[currentSortField];
+    if (currentSortState === 'none' || !currentSortField) {
+        parsedFormats.sort((a, b) => a.rawIndex - b.rawIndex);
+    } else {
+        parsedFormats.sort((a, b) => {
+            let valA = a[currentSortField];
+            let valB = b[currentSortField];
 
-        if (currentSortField === 'id') {
-            valA = a.idNum;
-            valB = b.idNum;
-        } else if (currentSortField === 'resolution') {
-            valA = a.height;
-            valB = b.height;
-        } else if (currentSortField === 'fps') {
-            valA = a.fpsNum;
-            valB = b.fpsNum;
-        } else if (currentSortField === 'bitrate') {
-            valA = a.tbrNum;
-            valB = b.tbrNum;
-        } else if (currentSortField === 'size') {
-            valA = a.rawBytes;
-            valB = b.rawBytes;
-        }
+            if (currentSortField === 'id') {
+                valA = a.idNum;
+                valB = b.idNum;
+            } else if (currentSortField === 'resolution') {
+                valA = a.height;
+                valB = b.height;
+            } else if (currentSortField === 'fps') {
+                valA = a.fpsNum;
+                valB = b.fpsNum;
+            } else if (currentSortField === 'bitrate') {
+                valA = a.tbrNum;
+                valB = b.tbrNum;
+            } else if (currentSortField === 'size') {
+                valA = a.rawBytes;
+                valB = b.rawBytes;
+            }
 
-        if (valA < valB) return currentSortOrder === 'asc' ? -1 : 1;
-        if (valA > valB) return currentSortOrder === 'asc' ? 1 : -1;
-        return 0;
-    });
+            if (valA < valB) return currentSortState === 'asc' ? -1 : 1;
+            if (valA > valB) return currentSortState === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
 
     renderFormatTable();
 }
@@ -608,10 +707,31 @@ function renderFormatTable() {
             e.stopPropagation();
             if (chk.checked) {
                 selectedFormatSet.add(item.id);
+                if (selectedFormatSet.size === 1) {
+                    selectFormatFromTable(item);
+                } else {
+                    selectedRawFormat = null;
+                    tr.classList.add('selected');
+                    setFinalFormat(item.id, `Đã chọn ${selectedFormatSet.size} định dạng`);
+                    updateMultiSelectBar();
+                    updateDownloadButtonState();
+                }
             } else {
                 selectedFormatSet.delete(item.id);
+                tr.classList.remove('selected');
+                if (selectedFormatSet.size === 0) {
+                    selectedRawFormat = null;
+                    selectedFormatValue = null;
+                    $('formatPreviewCode').textContent = '(Chưa chọn định dạng - Vui lòng chọn 1 dòng)';
+                    if ($('customFormatInput')) $('customFormatInput').value = '';
+                } else {
+                    const remainingId = Array.from(selectedFormatSet)[0];
+                    const remainingItem = parsedFormats.find(f => f.id === remainingId);
+                    if (remainingItem) selectFormatFromTable(remainingItem);
+                }
+                updateMultiSelectBar();
+                updateDownloadButtonState();
             }
-            updateMultiSelectBar();
         });
 
         // Row select click handler
@@ -623,9 +743,10 @@ function renderFormatTable() {
     });
 
     updateMultiSelectBar();
+    updateDownloadButtonState();
 }
 
-// ── Multi-select Helpers ─────────────────────────────
+// ── Multi-select Helpers (Fixed Toolbar) ─────────────
 $('selectAllCheckbox')?.addEventListener('change', (e) => {
     const checkedState = e.target.checked;
     document.querySelectorAll('.row-checkbox').forEach(chk => {
@@ -636,77 +757,51 @@ $('selectAllCheckbox')?.addEventListener('change', (e) => {
             selectedFormatSet.delete(chk.value);
         }
     });
+    document.querySelectorAll('.format-row').forEach(r => {
+        r.classList.toggle('selected', checkedState);
+    });
+    if (checkedState && parsedFormats.length > 0) {
+        selectedRawFormat = parsedFormats[0];
+        setFinalFormat(parsedFormats[0].id, `Đã chọn tất cả (${parsedFormats.length} định dạng)`);
+    } else {
+        selectedRawFormat = null;
+        selectedFormatValue = null;
+        $('formatPreviewCode').textContent = '(Chưa chọn định dạng - Vui lòng chọn 1 dòng)';
+        if ($('customFormatInput')) $('customFormatInput').value = '';
+    }
     updateMultiSelectBar();
+    updateDownloadButtonState();
 });
 
 function updateMultiSelectBar() {
-    const bar = $('multiSelectBar');
     const countText = $('selectedCountText');
-    if (selectedFormatSet.size > 0) {
-        bar.classList.remove('hidden');
-        countText.textContent = selectedFormatSet.size;
-    } else {
-        bar.classList.add('hidden');
-    }
+    const addBtn = $('addSelectedToQueueBtn');
+    if (countText) countText.textContent = selectedFormatSet.size;
+    if (addBtn) addBtn.disabled = selectedFormatSet.size === 0;
 }
 
 // ── Select Format from Table ─────────────────────────
 function selectFormatFromTable(item) {
     selectedRawFormat = item;
+    selectedFormatSet.clear();
+    selectedFormatSet.add(item.id);
 
-    document.querySelectorAll('.format-row').forEach(r => r.classList.remove('selected'));
-    const targetRow = document.querySelector(`.format-row[data-id="${item.id}"]`);
-    if (targetRow) {
-        targetRow.classList.add('selected');
-    }
+    // Highlight selected row & sync checkbox
+    document.querySelectorAll('.format-row').forEach(r => {
+        const isCurrent = (r.dataset.id === item.id);
+        r.classList.toggle('selected', isCurrent);
+        const chk = r.querySelector('.row-checkbox');
+        if (chk) chk.checked = isCurrent;
+    });
 
     document.querySelectorAll('.format-card').forEach(c => c.classList.remove('selected'));
 
-    const mergeBox = $('audioMergeHelperBox');
+    // Directly set format to exact ID selected by user (e.g. "30080")
+    setFinalFormat(item.id, `${item.resolution} (ID ${item.id})`);
 
-    if (item.type === 'video') {
-        mergeBox.classList.remove('hidden');
-        updateVideoFormatString();
-    } else if (item.type === 'audio') {
-        mergeBox.classList.add('hidden');
-        setFinalFormat(item.id, `Audio: ID ${item.id} (${item.size})`);
-    } else {
-        mergeBox.classList.add('hidden');
-        setFinalFormat(item.id, `Combo: ID ${item.id} (${item.resolution})`);
-    }
+    updateMultiSelectBar();
+    updateDownloadButtonState();
 }
-
-// ── Handle Video Merge String ────────────────────────
-function updateVideoFormatString() {
-    if (!selectedRawFormat || selectedRawFormat.type !== 'video') return;
-
-    const mergeEnabled = checked('enableAudioMerge');
-    const selectedAudio = val('selectedAudioTrack');
-
-    let fmt = selectedRawFormat.id;
-    let label = `Video: ${selectedRawFormat.resolution} (ID ${selectedRawFormat.id})`;
-
-    if (mergeEnabled) {
-        if (selectedAudio && selectedAudio !== 'bestaudio/best') {
-            fmt = `${selectedRawFormat.id}+${selectedAudio}`;
-            label += ` + Audio ID ${selectedAudio}`;
-        } else {
-            fmt = `${selectedRawFormat.id}+bestaudio/best`;
-            label += ` + Best Audio`;
-        }
-    }
-
-    setFinalFormat(fmt, label);
-}
-
-$('enableAudioMerge')?.addEventListener('change', () => {
-    $('audioMergeSelectRow').style.display = checked('enableAudioMerge') ? 'flex' : 'none';
-    updateVideoFormatString();
-});
-
-$('selectedAudioTrack')?.addEventListener('change', () => {
-    updateVideoFormatString();
-});
 
 // ── Render Quick Preset Cards ─────────────────────────
 function renderPresetCards() {
@@ -754,6 +849,7 @@ function renderPresetCards() {
             document.querySelectorAll('.format-row').forEach(r => r.classList.remove('selected'));
             $('audioMergeHelperBox').classList.add('hidden');
             setFinalFormat(p.value, p.title);
+            updateDownloadButtonState();
         });
 
         list.appendChild(card);
@@ -820,6 +916,7 @@ $('editFormatManualBtn').addEventListener('click', () => {
 $('customFormatInput').addEventListener('input', (e) => {
     selectedFormatValue = e.target.value.trim();
     $('formatPreviewCode').textContent = `-f "${selectedFormatValue}"`;
+    updateDownloadButtonState();
 });
 
 // ── Sync Quick Options & Advanced Tab Options ────────
@@ -841,7 +938,7 @@ $('toggleLogsBtn')?.addEventListener('click', () => {
     $('logsContainer')?.classList.toggle('hidden');
 });
 
-// ── Download Execution & SSE Progress with Pause/Cancel ──
+// ── Download Execution & SSE Progress with Pause/Resume/Cancel ──
 $('downloadBtn').addEventListener('click', () => {
     startDirectDownload();
 });
@@ -853,11 +950,53 @@ function startDirectDownload(customParams = null) {
         return;
     }
 
-    let finalFormat = selectedFormatValue;
+    // Read active browser selection
+    const activeBrowser = val('browser') || currentBrowser || 'none';
+
+    // If user selected multiple formats via checkboxes, add to queue and download all
+    if (selectedFormatSet.size > 1 && !customParams) {
+        let addedCount = 0;
+        selectedFormatSet.forEach(fmtId => {
+            const item = parsedFormats.find(f => f.id === fmtId);
+            if (item) {
+                addSingleItemToQueue({
+                    url: currentUrl,
+                    title: currentVideoData?.title || 'Video',
+                    format: item.id,
+                    formatLabel: `${item.resolution} (ID ${item.id})`,
+                    ext: item.ext,
+                    size: item.size
+                });
+                addedCount++;
+            }
+        });
+        selectedFormatSet.clear();
+        document.querySelectorAll('.row-checkbox').forEach(chk => { chk.checked = false; });
+        if ($('selectAllCheckbox')) $('selectAllCheckbox').checked = false;
+        updateMultiSelectBar();
+        showToast(`Đã thêm ${addedCount} định dạng đã chọn vào Hàng Chờ và bắt đầu tải...`, 'success');
+        processNextQueueItem();
+        return;
+    }
+
+    // Determine finalFormat with strict priority: Custom Input -> Selected Raw Format -> Single Checkbox -> Selected Preset
+    let finalFormat = null;
     if (!$('customFormatInput').classList.contains('hidden') && $('customFormatInput').value.trim()) {
         finalFormat = $('customFormatInput').value.trim();
+    } else if (selectedRawFormat) {
+        finalFormat = selectedRawFormat.id;
+    } else if (selectedFormatSet.size === 1) {
+        finalFormat = Array.from(selectedFormatSet)[0];
+    } else if (selectedFormatValue) {
+        finalFormat = selectedFormatValue;
     }
-    if (!finalFormat) finalFormat = 'bv*+ba/b';
+
+    if (!finalFormat) {
+        showToast('Vui lòng chọn ít nhất một định dạng (option) để tải xuống!', 'warning');
+        return;
+    }
+
+    const currentSaveDir = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
 
     const params = {
         url: currentUrl,
@@ -873,12 +1012,12 @@ function startDirectDownload(customParams = null) {
     };
 
     const optionals = {
-        browser:              currentBrowser !== 'none' ? currentBrowser : '',
+        browser:              activeBrowser !== 'none' ? activeBrowser : '',
         rate_limit:           val('rateLimit'),
         username:             val('username'),
         password:             val('password'),
         output_template:      val('outputTemplate'),
-        output:               val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download',
+        output:               currentSaveDir,
         user_agent:           val('userAgent'),
         proxy:                val('proxy'),
         convert_thumbnails:   val('convertThumbnails') !== 'none' ? val('convertThumbnails') : '',
@@ -909,20 +1048,27 @@ function startDirectDownload(customParams = null) {
     const statusText = $('statusText');
     const badge = $('statusBadge');
     const percentCounter = $('progressPercentCounter');
-    const pauseBtn = $('pauseCancelBtn');
-    const pauseBtnText = $('pauseCancelBtnText');
+    const pauseResumeBtn = $('pauseResumeBtn');
+    const pauseResumeBtnText = $('pauseResumeBtnText');
+    const cancelBtn = $('cancelBtn');
+    const openFolderBtn = $('openFolderBtn');
+    const successBox = $('downloadSuccessAlert');
 
     dlBtn.disabled = true;
     dlBtn.innerHTML = `<div class="btn-spinner"></div> <span>Đang tải...</span>`;
     statusArea.classList.remove('hidden');
+    if (successBox) successBox.classList.add('hidden');
+    if (openFolderBtn) openFolderBtn.classList.add('hidden');
     logs.innerHTML = '';
     bar.style.width = '0%';
     percentCounter.textContent = '0.0%';
     statusText.textContent = 'Đang kết nối máy chủ...';
     badge.textContent = 'Downloading';
     badge.className = 'status-badge active';
-    pauseBtnText.textContent = 'Hủy / Tạm Dừng';
-    pauseBtn.classList.remove('hidden');
+    
+    pauseResumeBtn.disabled = false;
+    pauseResumeBtnText.textContent = 'Tạm Dừng';
+    cancelBtn.disabled = false;
     isDownloadPaused = false;
 
     if (activeEventSource) {
@@ -944,16 +1090,30 @@ function startDirectDownload(customParams = null) {
             activeEventSource = null;
             dlBtn.disabled = false;
             dlBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span id="downloadBtnText">Bắt Đầu Tải Xuống</span>`;
+            
             if (data.code === 0) {
-                statusText.textContent = '🎉 Tải xuống hoàn tất!';
+                statusText.textContent = '🎉 Tải xuống hoàn tất 100%!';
                 badge.textContent = 'Complete';
                 badge.className = 'status-badge success';
                 bar.style.width = '100%';
                 percentCounter.textContent = '100%';
-                showToast('Tải video hoàn tất thành công!', 'success');
+                
+                // Show Prominent Success Alert Box
+                if (successBox) successBox.classList.remove('hidden');
+                const savePathEl = $('successSavePathText');
+                if (savePathEl) savePathEl.textContent = `File đã lưu an toàn tại: ${currentSaveDir}`;
+
+                // Show Open Folder Button
+                if (openFolderBtn) openFolderBtn.classList.remove('hidden');
+                
+                // Disable Pause and Cancel buttons on successful completion
+                pauseResumeBtn.disabled = true;
+                cancelBtn.disabled = true;
+
+                showToast(`🎉 Tải video hoàn tất 100%!\nĐã lưu vào: ${currentSaveDir}`, 'success');
             } else {
                 if (!isDownloadPaused) {
-                    statusText.textContent = `Thoát với mã: ${data.code}`;
+                    statusText.textContent = `Thoát với mã lỗi: ${data.code}`;
                     badge.textContent = 'Error';
                     badge.className = 'status-badge error';
                     showToast(`Tải xuống gián đoạn (Exit code ${data.code}).`, 'error');
@@ -1014,9 +1174,10 @@ function startDirectDownload(customParams = null) {
     };
 }
 
-// ── Pause / Cancel Download Handler ──────────────────
-$('pauseCancelBtn')?.addEventListener('click', async () => {
-    if (activeDownloadId && activeEventSource) {
+// ── Separate Pause / Resume Button Handler ────────────
+$('pauseResumeBtn')?.addEventListener('click', async () => {
+    if (!isDownloadPaused && activeDownloadId && activeEventSource) {
+        // Perform Pause
         isDownloadPaused = true;
         activeEventSource.close();
         activeEventSource = null;
@@ -1028,34 +1189,60 @@ $('pauseCancelBtn')?.addEventListener('click', async () => {
         $('statusBadge').textContent = 'Paused';
         $('statusBadge').className = 'status-badge';
         $('statusText').textContent = '⏸️ Đã tạm dừng tiến trình tải.';
-        $('pauseCancelBtnText').textContent = '▶️ Tiếp Tục Tải';
+        $('pauseResumeBtnText').textContent = 'Tiếp Tục';
         $('downloadBtn').disabled = false;
         $('downloadBtn').innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span id="downloadBtnText">Bắt Đầu Tải Xuống</span>`;
-        showToast('Đã dừng tiến trình tải. Bấm "Tiếp Tục Tải" để tải tiếp.', 'info');
+        showToast('⏸️ Đã tạm dừng tải. Bấm "Tiếp Tục" để resume.', 'info');
     } else if (isDownloadPaused) {
+        // Perform Resume
         isDownloadPaused = false;
+        $('pauseResumeBtnText').textContent = 'Tạm Dừng';
+        showToast('▶️ Đang tiếp tục tải xuống...', 'info');
         startDirectDownload();
     }
 });
 
-// ── Download Queue Operations ────────────────────────
-$('addToQueueBtn')?.addEventListener('click', () => {
-    if (!currentUrl) {
-        showToast('Chưa có thông tin video để thêm vào hàng chờ', 'error');
-        return;
+// ── Separate Cancel Button Handler (With State Reset) ─
+$('cancelBtn')?.addEventListener('click', async () => {
+    if (activeDownloadId) {
+        try {
+            await fetch(`/api/cancel-download?downloadId=${encodeURIComponent(activeDownloadId)}`);
+        } catch (e) {}
     }
 
-    addSingleItemToQueue({
-        url: currentUrl,
-        title: currentVideoData?.title || 'Video',
-        format: selectedFormatValue,
-        formatLabel: selectedRawFormat ? `${selectedRawFormat.resolution} (${selectedRawFormat.id})` : selectedFormatValue,
-        ext: selectedRawFormat ? selectedRawFormat.ext : 'mkv',
-        size: selectedRawFormat ? selectedRawFormat.size : '-'
-    });
+    if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+    }
 
-    showToast('Đã thêm 1 mục vào Hàng Chờ tải xuống!', 'success');
+    isDownloadPaused = false;
+    
+    // Disable Cancel & Pause buttons
+    $('pauseResumeBtn').disabled = true;
+    $('cancelBtn').disabled = true;
+    
+    // Reset all loading metrics to initial clean state
+    $('progressBar').style.width = '0%';
+    $('progressPercentCounter').textContent = '0.0%';
+    $('metricSpeed').textContent = '⚡ Tốc độ: --';
+    $('metricEta').textContent = '⏱️ Còn lại: --';
+    $('metricSize').textContent = '📦 Dung lượng: --';
+    $('statusBadge').textContent = 'Đã hủy';
+    $('statusBadge').className = 'status-badge error';
+    $('statusText').textContent = 'Đã hủy tiến trình tải. Sẵn sàng tải mới.';
+    $('pauseResumeBtnText').textContent = 'Tạm Dừng';
+    $('downloadSuccessAlert')?.classList.add('hidden');
+    $('openFolderBtn')?.classList.add('hidden');
+
+    // Re-enable download trigger button
+    $('downloadBtn').disabled = false;
+    $('downloadBtn').innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span id="downloadBtnText">Bắt Đầu Tải Xuống</span>`;
+    updateDownloadButtonState();
+
+    showToast('❌ Đã hủy bỏ tiến trình tải xuống.', 'error');
 });
+
+// ── Download Queue Operations ────────────────────────
 
 $('addSelectedToQueueBtn')?.addEventListener('click', () => {
     if (selectedFormatSet.size === 0) return;
@@ -1067,7 +1254,7 @@ $('addSelectedToQueueBtn')?.addEventListener('click', () => {
             addSingleItemToQueue({
                 url: currentUrl,
                 title: currentVideoData?.title || 'Video',
-                format: item.type === 'video' ? `${item.id}+bestaudio/best` : item.id,
+                format: item.id,
                 formatLabel: `${item.resolution} (ID ${item.id})`,
                 ext: item.ext,
                 size: item.size
@@ -1223,19 +1410,24 @@ function appendLog(text) {
     logs.scrollTop = logs.scrollHeight;
 }
 
-// ── Toast Notification Helper ─────────────────────────
+// ── Toast Notification Helper (Glassmorphic Top-Z) ────
 function showToast(message, type = 'info') {
-    const existing = document.querySelector('.toast');
-    if (existing) existing.remove();
+    const existing = document.querySelectorAll('.toast');
+    existing.forEach(t => t.remove());
 
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    toast.textContent = message;
+    
+    let icon = 'ℹ️';
+    if (type === 'success') icon = '🎉';
+    if (type === 'error') icon = '❌';
+
+    toast.innerHTML = `<span style="font-size:1.2rem; line-height:1;">${icon}</span> <div style="flex:1; white-space:pre-line;">${message}</div>`;
     document.body.appendChild(toast);
 
     requestAnimationFrame(() => toast.classList.add('show'));
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 350);
-    }, 4000);
+    }, 5000);
 }

@@ -8,6 +8,14 @@ const { spawn, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+// Protect process from unexpected crashes
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT_EXCEPTION]', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[UNHANDLED_REJECTION]', reason);
+});
+
 const app = express();
 const PORT = 3000;
 
@@ -119,51 +127,101 @@ app.get('/api/proxy-image', async (req, res) => {
 });
 
 // =============================================================================
-// GET /api/download-thumbnail — Save SINGLE thumbnail only (ALWAYS --no-playlist)
+// GET /api/download-thumbnail — Instant Direct Save or yt-dlp Thumbnail Extraction
 // =============================================================================
-app.get('/api/download-thumbnail', (req, res) => {
-  const { url, browser, output = DOWNLOADS_DIR } = req.query;
-  if (!url) {
-    return res.status(400).json({ error: 'Missing url parameter' });
+app.get('/api/download-thumbnail', async (req, res) => {
+  const { url, thumbUrl, title, browser, output = DOWNLOADS_DIR } = req.query;
+  if (!url && !thumbUrl) {
+    return res.status(400).json({ error: 'Missing url or thumbUrl parameter' });
   }
 
-  const args = ['--write-thumbnail', '--skip-download', '--no-playlist', '--convert-thumbnails', 'jpg'];
-  
+  const targetDir = path.resolve(output);
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+
+  // 1. High-Speed Direct Download if thumbUrl is provided (Completes in ~100ms)
+  if (thumbUrl && thumbUrl.startsWith('http')) {
+    try {
+      const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      };
+      if (thumbUrl.includes('bilibili') || thumbUrl.includes('hdslb.com')) {
+        headers['Referer'] = 'https://www.bilibili.com/';
+      }
+
+      const imgRes = await fetch(thumbUrl, { headers });
+      if (imgRes.ok) {
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        const safeTitle = (title || 'thumbnail')
+          .replace(/[\\/:*?"<>|]/g, '_')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 120);
+        const fileName = `${safeTitle || 'video'}_thumb.jpg`;
+        const filePath = path.join(targetDir, fileName);
+        fs.writeFileSync(filePath, buffer);
+        console.log('[/api/download-thumbnail] Instant direct saved to:', filePath);
+        return res.json({ 
+          success: true, 
+          path: targetDir, 
+          fileName,
+          message: 'Đã tải ảnh thumbnail HD thành công: ' + fileName 
+        });
+      }
+    } catch (err) {
+      console.warn('[/api/download-thumbnail] Direct fetch fallback to yt-dlp:', err.message);
+    }
+  }
+
+  // 2. Fallback to yt-dlp Extraction
+  const args = ['--write-thumbnail', '--skip-download', '--no-playlist'];
+  if (fs.existsSync(LOCAL_FFMPEG)) {
+    args.push('--ffmpeg-location', __dirname);
+    args.push('--convert-thumbnails', 'jpg');
+  }
   if (browser && browser !== 'none') {
     args.push('--cookies-from-browser', browser);
   }
-
-  args.push('-o', path.join(output, '%(title)s.%(ext)s'));
+  args.push('-o', path.join(targetDir, '%(title)s.%(ext)s'));
   args.push(url);
-
-  console.log('[/api/download-thumbnail] Single thumbnail download args:', args.join(' '));
 
   execFile(YTDLP_PATH, args, (error, stdout, stderr) => {
     if (error) {
-      console.error('[/api/download-thumbnail] Error:', stderr || error.message);
+      console.error('[/api/download-thumbnail] yt-dlp error:', stderr || error.message);
       return res.status(500).json({ error: stderr || error.message });
     }
-    return res.json({ success: true, message: 'Đã tải ảnh thumbnail HD của video thành công vào thư mục Download!' });
+    return res.json({ 
+      success: true, 
+      path: targetDir,
+      message: 'Đã tải ảnh thumbnail HD của video thành công vào thư mục: ' + targetDir 
+    });
   });
 });
 
 // =============================================================================
-// GET /api/browse-folder — Open Native Windows Folder Picker Dialog
+// GET /api/browse-folder — Instant Native Windows Folder Picker Dialog (~20ms)
 // =============================================================================
 app.get('/api/browse-folder', (req, res) => {
-  const defaultDir = req.query.current || DOWNLOADS_DIR;
-  const psScript = `
-[System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
-$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-$dialog.Description = "Chọn thư mục lưu trữ video tải về"
-$dialog.ShowNewFolderButton = $true
-$dialog.SelectedPath = "${defaultDir.replace(/\\/g, '\\\\')}"
-if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-    Write-Output $dialog.SelectedPath
-}
+  const defaultDir = path.resolve(req.query.current || DOWNLOADS_DIR);
+  
+  // Native Windows Shell Browse Dialog (Instant, No .NET CLR initialization lag)
+  const vbsScript = `
+Set objShell = CreateObject("Shell.Application")
+Set objFolder = objShell.BrowseForFolder(0, "Chọn thư mục lưu trữ video:", &H0001 + &H0010 + &H0040, "${defaultDir.replace(/\\/g, '\\\\')}")
+If Not objFolder Is Nothing Then
+    WScript.Echo objFolder.Self.Path
+End If
 `;
 
-  execFile('powershell', ['-NoProfile', '-Command', psScript], (err, stdout) => {
+  const tempVbs = path.join(__dirname, '.browse_tmp.vbs');
+  try {
+    fs.writeFileSync(tempVbs, vbsScript, 'utf8');
+  } catch (e) {}
+
+  execFile('cscript.exe', ['//nologo', tempVbs], { timeout: 120000 }, (err, stdout) => {
+    try { if (fs.existsSync(tempVbs)) fs.unlinkSync(tempVbs); } catch (e) {}
+    
     const selected = stdout ? stdout.trim().split(/\r?\n/).filter(Boolean).pop() : '';
     if (selected && fs.existsSync(selected)) {
       return res.json({ success: true, path: selected });
@@ -171,6 +229,47 @@ if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
     return res.json({ success: false, path: null });
   });
 });
+
+// =============================================================================
+// GET & POST /api/open-folder — Instant Open Windows File Explorer (<10ms)
+// =============================================================================
+const handleOpenFolder = (req, res) => {
+  const rawPath = req.query.path || req.body?.path || DOWNLOADS_DIR;
+  let targetDir = path.resolve(rawPath);
+  
+  // Normalize Windows backslashes
+  targetDir = targetDir.replace(/\//g, '\\');
+
+  if (!fs.existsSync(targetDir)) {
+    try {
+      fs.mkdirSync(targetDir, { recursive: true });
+    } catch (e) {}
+  }
+
+  // 1. Immediately return HTTP response so browser UI never waits
+  res.json({ success: true, path: targetDir, message: 'Đã mở thư mục trong File Explorer.' });
+
+  // 2. Launch explorer directly via spawn with detached & unref (Instant, No cmd wrapper, No blocking)
+  try {
+    const child = spawn('explorer.exe', [targetDir], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    child.unref();
+  } catch (err) {
+    console.error('[/api/open-folder] spawn error:', err);
+    try {
+      const fallback = spawn('cmd.exe', ['/c', 'start', '', targetDir], {
+        detached: true,
+        stdio: 'ignore'
+      });
+      fallback.unref();
+    } catch (e) {}
+  }
+};
+
+app.get('/api/open-folder', handleOpenFolder);
+app.post('/api/open-folder', handleOpenFolder);
 
 // =============================================================================
 // GET /api/cancel-download — Cancel an ongoing download process

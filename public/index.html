@@ -12,6 +12,7 @@
 
 <div class="studio-app">
     <!-- ═══════════════ TOP NAVIGATION BAR ═══════════════ -->
+    <!-- ═══════════════ TOP NAVIGATION BAR (MAX HORIZONTAL SPACE FOR URL INPUT) ═══════════════ -->
     <header class="studio-topbar">
         <div class="topbar-left">
             <div class="brand-badge">
@@ -30,17 +31,17 @@
             </div>
         </div>
 
-        <!-- Global Quick URL Input Bar in Topbar -->
+        <!-- Global Quick URL Input Bar in Topbar (Spacious & Full Width) -->
         <div class="topbar-search-area">
             <form id="checkForm" class="topbar-url-form" onsubmit="return false;">
                 <div class="url-input-wrap">
-                    <svg class="url-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    <input type="url" id="url" name="url" placeholder="Dán link Video (YouTube, Bilibili, TikTok, Facebook, Twitter...)" required autocomplete="off">
+                    <svg class="url-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <input type="url" id="url" name="url" placeholder="Dán link Video (YouTube, TikTok, Bilibili, Facebook, Douyin, X...)" required autocomplete="off">
                 </div>
                 <div class="cookies-select-wrap">
                     <svg class="cookie-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/></svg>
-                    <select id="browser" name="browser" title="Lấy cookies từ trình duyệt">
-                        <option value="none" selected>Không Cookie</option>
+                    <select id="browser" name="browser" title="Cookies trình duyệt (tùy chọn)">
+                        <option value="none" selected>Mặc định</option>
                         <option value="chrome">Chrome</option>
                         <option value="firefox">Firefox</option>
                         <option value="edge">Edge</option>
@@ -57,31 +58,36 @@
         </div>
 
         <div class="topbar-right">
-            <!-- Studio Tab Switcher -->
-            <nav class="nav-tabs" role="tablist">
-                <button class="tab-btn active" data-target="tab-workstation" role="tab" aria-selected="true" title="Bàn làm việc chính">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    Studio
-                </button>
-                <button class="tab-btn" data-target="tab-queue" role="tab" aria-selected="false" title="Hàng chờ tải xuống">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                    Hàng Chờ (<span id="topQueueCount">0</span>)
-                </button>
-                <button class="tab-btn" data-target="tab-advanced" role="tab" aria-selected="false" title="Tùy chọn nâng cao">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    Nâng Cao
-                </button>
-                <button class="tab-btn" data-target="tab-settings" role="tab" aria-selected="false" title="Cài đặt hệ thống">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
-                    Cài Đặt
-                </button>
-            </nav>
             <button id="themeToggle" class="theme-toggle-btn" title="Chuyển chế độ Sáng / Tối" aria-label="Toggle theme">
                 <svg class="theme-icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                 <svg class="theme-icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             </button>
         </div>
     </header>
+
+    <!-- ═══════════════ SUB-NAVIGATION BAR (Studio, Hàng Chờ, Nâng Cao, Cài Đặt) ═══════════════ -->
+    <div class="studio-subnav-bar">
+        <div class="subnav-container">
+            <nav class="nav-tabs" role="tablist">
+                <button class="tab-btn active" data-target="tab-workstation" role="tab" aria-selected="true" title="Bàn làm việc chính">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    <span>Studio</span>
+                </button>
+                <button class="tab-btn" data-target="tab-queue" role="tab" aria-selected="false" title="Hàng chờ tải xuống">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    <span>Hàng Chờ</span> (<span id="topQueueCount">0</span>)
+                </button>
+                <button class="tab-btn" data-target="tab-advanced" role="tab" aria-selected="false" title="Tùy chọn nâng cao">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <span>Nâng Cao</span>
+                </button>
+                <button class="tab-btn" data-target="tab-settings" role="tab" aria-selected="false" title="Cài đặt hệ thống">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+                    <span>Cài Đặt</span>
+                </button>
+            </nav>
+        </div>
+    </div>
 
     <!-- ═══════════════ MAIN STUDIO WORKSPACE (TAB 1) ═══════════════ -->
     <main id="tab-workstation" class="tab-panel active">
@@ -173,26 +179,33 @@
                     </div>
 
                     <div class="compact-form-grid">
-                        <!-- Destination Folder Picker Row -->
-                        <div class="field-item">
-                            <label class="label-with-tip" for="quickDownloadFolder">
-                                <span>Thư mục lưu:</span>
-                            </label>
-                            <div class="folder-picker-input-group">
-                                <input type="text" id="quickDownloadFolder" value="D:\yt-dlp\Download" class="compact-input-folder" title="Đường dẫn lưu file">
-                                <button type="button" id="browseFolderBtn" class="btn-browse-folder" title="Duyệt và chọn thư mục lưu trữ trên máy tính">
-                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                                    <span>Chọn Thư Mục</span>
-                                </button>
+                        <!-- Destination Folder Picker Block (Clean Vertical Layout: No Overflow) -->
+                        <div class="field-item-block">
+                            <div class="field-label-row">
+                                <label class="label-with-tip" for="quickDownloadFolder">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                    <span>Thư mục lưu:</span>
+                                </label>
+                                <div class="folder-action-btns">
+                                    <button type="button" id="openStorageFolderBtn" class="btn-open-folder" title="Mở ngay thư mục lưu trữ trong Windows Explorer">
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                        <span>Mở Folder</span>
+                                    </button>
+                                    <button type="button" id="browseFolderBtn" class="btn-browse-folder" title="Duyệt và đổi thư mục lưu trữ trên máy tính">
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                        <span>Đổi...</span>
+                                    </button>
+                                </div>
                             </div>
+                            <input type="text" id="quickDownloadFolder" value="D:\yt-dlp\Download" class="compact-input-folder full-width" title="Đường dẫn lưu file">
                         </div>
 
                         <!-- Merge format -->
                         <div class="field-item">
                             <label for="quickMergeFormat" class="label-with-tip">
-                                <span>Định dạng container:</span>
+                                <span>Container:</span>
                                 <div class="tip-wrap">
-                                    <svg class="tip-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                    <svg class="tip-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                                     <div class="tip-box">
                                         <strong>--merge-output-format FORMAT</strong><br>
                                         Định dạng file sau khi FFmpeg ghép video và audio.<br>
@@ -214,7 +227,7 @@
                             <label for="quickConcurrentFragments" class="label-with-tip">
                                 <span>Đa luồng (-N):</span>
                                 <div class="tip-wrap">
-                                    <svg class="tip-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                    <svg class="tip-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                                     <div class="tip-box">
                                         <strong>-N, --concurrent-fragments N</strong><br>
                                         Số luồng tải song song các phân mảnh video DASH/HLS (YouTube, Bilibili).<br>
@@ -235,7 +248,7 @@
                             <label for="quickHttpChunkSize" class="label-with-tip">
                                 <span>Chunk size:</span>
                                 <div class="tip-wrap">
-                                    <svg class="tip-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                    <svg class="tip-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                                     <div class="tip-box">
                                         <strong>--http-chunk-size SIZE</strong><br>
                                         Chia file thành các khối Range HTTP nhỏ.<br>
@@ -277,8 +290,133 @@
                         </label>
                     </div>
                 </div>
+            </aside>
 
-                <!-- Download Action & Queue CTA -->
+            <!-- ════════════ RIGHT WORKSTATION COLUMN (Format Table Explorer & Actions) ════════════ -->
+            <div class="workstation-main-wrapper">
+                <section class="workstation-main card format-explorer-card">
+                    <!-- Playlist Banner (Hidden by default, shown if playlist detected) -->
+                    <div id="playlistBanner" class="playlist-banner-box hidden">
+                        <div class="playlist-banner-header">
+                            <div class="playlist-title-info">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><line x1="3" y1="6" x2="7" y2="6"/><line x1="3" y1="10" x2="7" y2="10"/><line x1="3" y1="14" x2="7" y2="14"/></svg>
+                                <span id="playlistTitleText">Danh Sách Phát (Playlist)</span>
+                                <span id="playlistCountBadge" class="badge-playlist-count">0 videos</span>
+                            </div>
+                        </div>
+                        <div id="playlistItemsScroll" class="playlist-items-list"></div>
+                    </div>
+
+                    <!-- Toolbar with Mode Switch, Filters & Sorting Info -->
+                    <div class="explorer-toolbar">
+                        <div class="toolbar-left">
+                            <div class="filter-pills-bar" id="typeFilterPills">
+                                <button type="button" class="filter-pill active" data-filter="all">Tất Cả (<span id="countAll">0</span>)</button>
+                                <button type="button" class="filter-pill" data-filter="video">🎬 Video Only (<span id="countVideo">0</span>)</button>
+                                <button type="button" class="filter-pill" data-filter="audio">🎵 Audio Only (<span id="countAudio">0</span>)</button>
+                                <button type="button" class="filter-pill" data-filter="combo">🎥 Combo (<span id="countCombo">0</span>)</button>
+                            </div>
+                        </div>
+
+                        <div class="toolbar-right">
+                            <div class="table-search-box">
+                                <svg class="search-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                <input type="text" id="formatSearchInput" placeholder="Tìm ID, Codec (av01, hvc1, avc), 1080p, mp4...">
+                            </div>
+                            <div class="view-mode-switch">
+                                <button type="button" class="mode-switch-btn active" data-mode="table" title="Xem dạng Bảng chi tiết (hỗ trợ Sort & Multi-select)">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+                                </button>
+                                <button type="button" class="mode-switch-btn" data-mode="cards" title="Xem dạng Mẫu nhanh gọn">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Multi-select Queue Action Toolbar (Fixed, Always Visible) -->
+                    <div id="multiSelectBar" class="multi-select-toolbar">
+                        <div class="multi-select-left">
+                            <span class="multi-select-count">Đã chọn: <strong id="selectedCountText">0</strong> định dạng</span>
+                        </div>
+                        <div class="multi-select-right">
+                            <button type="button" id="addSelectedToQueueBtn" class="btn-add-multi-queue" disabled>
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                <span>Thêm Mục Đã Chọn Vào Hàng Chờ</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mode 1: Detailed Formats Table with Sorting Headers -->
+                    <div id="tableModeContainer" class="table-container-scroll">
+                        <table class="format-table" id="formatsTable">
+                            <thead>
+                                <tr>
+                                    <th class="th-checkbox">
+                                        <input type="checkbox" id="selectAllCheckbox" title="Chọn tất cả">
+                                    </th>
+                                    <th class="th-sortable" data-sort="id" title="Bấm để sắp xếp theo ID (Click 3 lần để về mặc định)">
+                                        <span>ID</span> <span class="sort-icon">↕</span>
+                                    </th>
+                                    <th class="th-sortable" data-sort="resolution" title="Bấm để sắp xếp theo Độ Phân Giải (Click 3 lần để về mặc định)">
+                                        <span>Độ Phân Giải</span> <span class="sort-icon">↕</span>
+                                    </th>
+                                    <th class="th-sortable" data-sort="ext" title="Bấm để sắp xếp theo Extension (Click 3 lần để về mặc định)">
+                                        <span>Ext</span> <span class="sort-icon">↕</span>
+                                    </th>
+                                    <th class="th-sortable" data-sort="fps" title="Bấm để sắp xếp theo FPS (Click 3 lần để về mặc định)">
+                                        <span>FPS</span> <span class="sort-icon">↕</span>
+                                    </th>
+                                    <th class="th-sortable" data-sort="vcodec" title="Bấm để sắp xếp theo Video Codec (Click 3 lần để về mặc định)">
+                                        <span>Video Codec</span> <span class="sort-icon">↕</span>
+                                    </th>
+                                    <th class="th-sortable" data-sort="acodec" title="Bấm để sắp xếp theo Audio Codec (Click 3 lần để về mặc định)">
+                                        <span>Audio Codec</span> <span class="sort-icon">↕</span>
+                                    </th>
+                                    <th class="th-sortable" data-sort="bitrate" title="Bấm để sắp xếp theo Bitrate (Click 3 lần để về mặc định)">
+                                        <span>Bitrate</span> <span class="sort-icon">↕</span>
+                                    </th>
+                                    <th class="th-sortable" data-sort="size" title="Bấm để sắp xếp theo Dung Lượng (Click 3 lần để về mặc định)">
+                                        <span>Dung Lượng</span> <span class="sort-icon">↕</span>
+                                    </th>
+                                    <th class="th-note">Thông Tin / Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="formatsTableBody">
+                                <tr>
+                                    <td colspan="10" class="empty-table-prompt">
+                                        <div class="empty-table-inner">
+                                            <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                                            <p>Chưa có dữ liệu formats. Vui lòng nhập link video phía trên và nhấn <strong>Phân Tích (-F)</strong>.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mode 2: Quick Preset Cards Container -->
+                    <div id="presetCardsContainer" class="preset-cards-grid hidden"></div>
+
+                    <!-- Smart Audio Merge Helper (Bottom Bar of Format Explorer) -->
+                    <div id="audioMergeHelperBox" class="audio-merge-bar hidden">
+                        <div class="merge-bar-left">
+                            <svg class="merge-music-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                            <label class="merge-check-wrap">
+                                <input type="checkbox" id="enableAudioMerge" checked>
+                                <span>Tự động ghép âm thanh tốt nhất (Khuyên dùng)</span>
+                            </label>
+                        </div>
+                        <div class="merge-bar-right" id="audioMergeSelectRow">
+                            <label for="selectedAudioTrack" class="merge-track-label">Track âm thanh:</label>
+                            <select id="selectedAudioTrack" class="merge-track-select">
+                                <option value="bestaudio/best">🌟 Best Audio (Tự động chọn âm thanh tốt nhất)</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Download Action & Queue CTA Bar (Directly below Format Explorer Card) -->
                 <div class="card action-download-card">
                     <div class="cmd-line-preview">
                         <span class="cmd-label">Format flag:</span>
@@ -290,13 +428,9 @@
                     </div>
 
                     <div class="cta-actions-group">
-                        <button type="button" id="downloadBtn" class="btn-download-hero">
-                            <svg class="dl-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <button type="button" id="downloadBtn" class="btn-download-hero full-width" disabled>
+                            <svg class="dl-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                             <span id="downloadBtnText">Bắt Đầu Tải Xuống</span>
-                        </button>
-                        <button type="button" id="addToQueueBtn" class="btn-queue-action" title="Thêm định dạng hiện tại vào danh sách hàng chờ">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            <span>Thêm Vào Hàng Chờ</span>
                         </button>
                     </div>
                 </div>
@@ -321,139 +455,43 @@
                         <span class="metric-item" id="metricSize">📦 Dung lượng: --</span>
                     </div>
 
+                    <!-- Prominent Download Success Alert Banner -->
+                    <div id="downloadSuccessAlert" class="download-success-box hidden">
+                        <div class="success-icon-wrap">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <div class="success-text-wrap">
+                            <div class="success-title">🎉 Tải Xuống Hoàn Tất Thành Công!</div>
+                            <div class="success-sub" id="successSavePathText">File đã lưu an toàn vào thư mục máy tính</div>
+                        </div>
+                    </div>
+
                     <div class="progress-buttons-row">
-                        <button type="button" id="pauseCancelBtn" class="btn-ctrl-action btn-danger" title="Tạm dừng hoặc hủy tải tiến trình hiện tại">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                            <span id="pauseCancelBtnText">Hủy Tải / Tạm Dừng</span>
+                        <!-- Open Downloaded Folder Button (Prominent when complete) -->
+                        <button type="button" id="openFolderBtn" class="btn-ctrl-action btn-success hidden" title="Mở thư mục chứa file vừa tải xong trong Windows Explorer">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            <span>📂 Mở Thư Mục Chứa File</span>
                         </button>
+                        <!-- Pause / Resume Button -->
+                        <button type="button" id="pauseResumeBtn" class="btn-ctrl-action btn-warning" title="Tạm dừng tiến trình tải">
+                            <svg id="pauseResumeIcon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                            <span id="pauseResumeBtnText">Tạm Dừng</span>
+                        </button>
+                        <!-- Cancel Button -->
+                        <button type="button" id="cancelBtn" class="btn-ctrl-action btn-danger" title="Hủy bỏ tiến trình tải này">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                            <span>Hủy Tải</span>
+                        </button>
+                        <!-- Toggle Terminal Logs Button -->
                         <button type="button" id="toggleLogsBtn" class="btn-ctrl-action" title="Ẩn/Hiện nhật ký terminal">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
                             <span>Log Terminal</span>
                         </button>
                     </div>
 
                     <div class="log-console hidden" id="logsContainer"></div>
                 </div>
-            </aside>
-
-            <!-- ════════════ RIGHT WORKSTATION COLUMN (Format Table Explorer) ════════════ -->
-            <section class="workstation-main card format-explorer-card">
-                <!-- Playlist Banner (Hidden by default, shown if playlist detected) -->
-                <div id="playlistBanner" class="playlist-banner-box hidden">
-                    <div class="playlist-banner-header">
-                        <div class="playlist-title-info">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><line x1="3" y1="6" x2="7" y2="6"/><line x1="3" y1="10" x2="7" y2="10"/><line x1="3" y1="14" x2="7" y2="14"/></svg>
-                            <span id="playlistTitleText">Danh Sách Phát (Playlist)</span>
-                            <span id="playlistCountBadge" class="badge-playlist-count">0 videos</span>
-                        </div>
-                    </div>
-                    <div id="playlistItemsScroll" class="playlist-items-list"></div>
-                </div>
-
-                <!-- Toolbar with Mode Switch, Filters & Sorting Info -->
-                <div class="explorer-toolbar">
-                    <div class="toolbar-left">
-                        <div class="filter-pills-bar" id="typeFilterPills">
-                            <button type="button" class="filter-pill active" data-filter="all">Tất Cả (<span id="countAll">0</span>)</button>
-                            <button type="button" class="filter-pill" data-filter="video">🎬 Video Only (<span id="countVideo">0</span>)</button>
-                            <button type="button" class="filter-pill" data-filter="audio">🎵 Audio Only (<span id="countAudio">0</span>)</button>
-                            <button type="button" class="filter-pill" data-filter="combo">🎥 Combo (<span id="countCombo">0</span>)</button>
-                        </div>
-                    </div>
-
-                    <div class="toolbar-right">
-                        <div class="table-search-box">
-                            <svg class="search-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            <input type="text" id="formatSearchInput" placeholder="Tìm ID, Codec (av01, hvc1, avc), 1080p, mp4...">
-                        </div>
-                        <div class="view-mode-switch">
-                            <button type="button" class="mode-switch-btn active" data-mode="table" title="Xem dạng Bảng chi tiết (hỗ trợ Sort & Multi-select)">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-                            </button>
-                            <button type="button" class="mode-switch-btn" data-mode="cards" title="Xem dạng Mẫu nhanh gọn">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Multi-select Queue Action Toolbar on Top of Table -->
-                <div id="multiSelectBar" class="multi-select-toolbar hidden">
-                    <span class="multi-select-count">Đã chọn <strong id="selectedCountText">0</strong> format</span>
-                    <button type="button" id="addSelectedToQueueBtn" class="btn-add-multi-queue">
-                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        <span>Thêm Tất Cả Mục Đã Chọn Vào Hàng Chờ</span>
-                    </button>
-                </div>
-
-                <!-- Mode 1: Detailed Formats Table with Sorting Headers -->
-                <div id="tableModeContainer" class="table-container-scroll">
-                    <table class="format-table" id="formatsTable">
-                        <thead>
-                            <tr>
-                                <th class="th-checkbox">
-                                    <input type="checkbox" id="selectAllCheckbox" title="Chọn tất cả">
-                                </th>
-                                <th class="th-sortable" data-sort="id" title="Bấm để sắp xếp theo ID">
-                                    <span>ID</span> <span class="sort-icon">↕</span>
-                                </th>
-                                <th class="th-sortable" data-sort="resolution" title="Bấm để sắp xếp theo Độ Phân Giải">
-                                    <span>Độ Phân Giải</span> <span class="sort-icon">↕</span>
-                                </th>
-                                <th class="th-sortable" data-sort="ext" title="Bấm để sắp xếp theo Extension">
-                                    <span>Ext</span> <span class="sort-icon">↕</span>
-                                </th>
-                                <th class="th-sortable" data-sort="fps" title="Bấm để sắp xếp theo FPS">
-                                    <span>FPS</span> <span class="sort-icon">↕</span>
-                                </th>
-                                <th class="th-sortable" data-sort="vcodec" title="Bấm để sắp xếp theo Video Codec">
-                                    <span>Video Codec</span> <span class="sort-icon">↕</span>
-                                </th>
-                                <th class="th-sortable" data-sort="acodec" title="Bấm để sắp xếp theo Audio Codec">
-                                    <span>Audio Codec</span> <span class="sort-icon">↕</span>
-                                </th>
-                                <th class="th-sortable" data-sort="bitrate" title="Bấm để sắp xếp theo Bitrate">
-                                    <span>Bitrate</span> <span class="sort-icon">↕</span>
-                                </th>
-                                <th class="th-sortable" data-sort="size" title="Bấm để sắp xếp theo Dung Lượng">
-                                    <span>Dung Lượng</span> <span class="sort-icon">↕</span>
-                                </th>
-                                <th class="th-note">Thông Tin / Notes</th>
-                            </tr>
-                        </thead>
-                        <tbody id="formatsTableBody">
-                            <tr>
-                                <td colspan="10" class="empty-table-prompt">
-                                    <div class="empty-table-inner">
-                                        <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-                                        <p>Chưa có dữ liệu formats. Vui lòng nhập link video phía trên và nhấn <strong>Phân Tích (-F)</strong>.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Mode 2: Quick Preset Cards Container -->
-                <div id="presetCardsContainer" class="preset-cards-grid hidden"></div>
-
-                <!-- Smart Audio Merge Helper (Bottom Bar of Format Explorer) -->
-                <div id="audioMergeHelperBox" class="audio-merge-bar hidden">
-                    <div class="merge-bar-left">
-                        <svg class="merge-music-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                        <label class="merge-check-wrap">
-                            <input type="checkbox" id="enableAudioMerge" checked>
-                            <span>Tự động ghép âm thanh tốt nhất (Khuyên dùng)</span>
-                        </label>
-                    </div>
-                    <div class="merge-bar-right" id="audioMergeSelectRow">
-                        <label for="selectedAudioTrack" class="merge-track-label">Track âm thanh:</label>
-                        <select id="selectedAudioTrack" class="merge-track-select">
-                            <option value="bestaudio/best">🌟 Best Audio (Tự động chọn âm thanh tốt nhất)</option>
-                        </select>
-                    </div>
-                </div>
-            </section>
+            </div>
         </div>
     </main>
 
@@ -630,9 +668,13 @@
                 <label for="downloadFolder">Thư mục lưu video tải về</label>
                 <div class="folder-picker-input-group">
                     <input type="text" id="downloadFolder" value="D:\yt-dlp\Download">
-                    <button type="button" id="browseFolderBtnSettings" class="btn-browse-folder" title="Duyệt thư mục trên máy tính">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                        <span>Duyệt Thư Mục...</span>
+                    <button type="button" id="openFolderBtnSettings" class="btn-open-folder" title="Mở ngay thư mục trong Windows Explorer">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        <span>Mở Thư Mục</span>
+                    </button>
+                    <button type="button" id="browseFolderBtnSettings" class="btn-browse-folder" title="Duyệt và đổi thư mục trên máy tính">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <span>Đổi...</span>
                     </button>
                 </div>
             </div>
