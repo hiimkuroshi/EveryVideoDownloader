@@ -1,4 +1,4 @@
-# 🎬 yt-dlp Studio Pro
+# 🎬 EveryVideoDownloader
 
 > **Trạm Tải Đa Phương Tiện & Trình Khám Phá Formats Độc Lập Cho yt-dlp**  
 > *Giao diện Desktop Studio 2 cột hiện đại, hỗ trợ tăng tốc đa luồng, hàng chờ tải, dịch tự động tiêu đề sang Tiếng Việt.*
