@@ -66,6 +66,7 @@ EveryVideoDownloader/
 │   ├── style.css                 # Hệ thống màu sắc Dark/Light Theme
 │   └── script.js                 # Xử lý sự kiện & SSE stream tiến trình
 ├── Download/                     # Thư mục chứa video & thumbnail tải về
+├── RELEASE_NOTES.md              # Ghi chú phát hành các phiên bản
 ├── Chay_Studio.bat               # File khởi động 1-click Windows
 └── README.md                     # Tài liệu giới thiệu dự án
 ```
@@ -76,3 +77,5 @@ EveryVideoDownloader/
 
 - Engine tải xuống được cung cấp bởi **[yt-dlp](https://github.com/yt-dlp/yt-dlp)**.
 - Dự án được phát triển và phân phối dưới giấy phép **MIT License**.
+
+

@@ -16,23 +16,76 @@ const htmlEl = document.documentElement;
     }
 })();
 
-themeToggle.addEventListener('click', () => {
-    const current = htmlEl.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    htmlEl.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-});
+// ── Language (i18n) Management ────────────────────────
+const appLangSelect = document.getElementById('appLanguageSelect');
+const settingsLangSelect = document.getElementById('settingsLanguageSelect');
 
-// Fetch dynamic server configuration on load
+function setAppLanguage(lang) {
+    if (!lang) return;
+    if (typeof applyLanguage === 'function') {
+        applyLanguage(lang);
+    }
+    if (appLangSelect && appLangSelect.value !== lang) appLangSelect.value = lang;
+    if (settingsLangSelect && settingsLangSelect.value !== lang) settingsLangSelect.value = lang;
+
+    // If a video is already loaded, re-translate title to the newly selected language
+    if (currentVideoData?.title) {
+        translateVideoTitle(currentVideoData.title);
+    }
+}
+
+// Initial sync and apply on page load
+const initialLang = localStorage.getItem('appLanguage') || 'vi';
+if (appLangSelect) appLangSelect.value = initialLang;
+if (settingsLangSelect) settingsLangSelect.value = initialLang;
+if (typeof applyLanguage === 'function') {
+    applyLanguage(initialLang);
+}
+
+appLangSelect?.addEventListener('change', (e) => setAppLanguage(e.target.value));
+settingsLangSelect?.addEventListener('change', (e) => setAppLanguage(e.target.value));
+
+// ── Dynamic & Persistent Configuration Synchronization ──────────
+const cachedSavedFolder = localStorage.getItem('userDownloadFolder');
+if (cachedSavedFolder) {
+    if (document.getElementById('quickDownloadFolder')) document.getElementById('quickDownloadFolder').value = cachedSavedFolder;
+    if (document.getElementById('downloadFolder')) document.getElementById('downloadFolder').value = cachedSavedFolder;
+}
+
+// Fetch dynamic server configuration on load (from server's config.json)
 fetch('/api/config')
   .then(r => r.json())
   .then(cfg => {
     if (cfg.downloadFolder) {
-      if ($('quickDownloadFolder')) $('quickDownloadFolder').value = cfg.downloadFolder;
-      if ($('downloadFolder')) $('downloadFolder').value = cfg.downloadFolder;
+      localStorage.setItem('userDownloadFolder', cfg.downloadFolder);
+      if (document.getElementById('quickDownloadFolder')) document.getElementById('quickDownloadFolder').value = cfg.downloadFolder;
+      if (document.getElementById('downloadFolder')) document.getElementById('downloadFolder').value = cfg.downloadFolder;
     }
   })
   .catch(() => {});
+
+// Sync and save user-selected download directory across sessions
+function syncAndPersistDownloadFolder(folderPath) {
+    if (!folderPath) return;
+    const cleanPath = folderPath.trim();
+    if (!cleanPath) return;
+
+    // 1. Immediately cache in localStorage for instant reload
+    localStorage.setItem('userDownloadFolder', cleanPath);
+
+    // 2. Update all folder inputs on the page
+    const qf = document.getElementById('quickDownloadFolder');
+    const df = document.getElementById('downloadFolder');
+    if (qf && qf.value !== cleanPath) qf.value = cleanPath;
+    if (df && df.value !== cleanPath) df.value = cleanPath;
+
+    // 3. Save permanently to server's config.json
+    fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ downloadFolder: cleanPath })
+    }).catch(err => console.warn('[Config] Failed to persist download folder:', err));
+}
 
 // ── Tab Navigation ───────────────────────────────────
 const tabBtns   = document.querySelectorAll('.tab-btn');
@@ -179,11 +232,47 @@ let currentVideoData = null;
 let currentThumbnailUrl = '';
 let parsedFormats = [];
 let audioOnlyFormats = [];
+let parsedSubtitles = [];
 let currentTypeFilter = 'all';
 let currentSearchQuery = '';
+let currentSubFilterQuery = '';
+let currentPreviewSub = null;
 let selectedFormatValue = 'bv*+ba/b';
 let selectedRawFormat = null;
 let currentViewMode = 'table';
+
+// Language Code Dictionary & Friendly Name Mappings
+const LANG_NAMES = {
+    'vi': { name: 'Tiếng Việt', flag: '🇻🇳' },
+    'vi-VN': { name: 'Tiếng Việt (VN)', flag: '🇻🇳' },
+    'en': { name: 'English (Tiếng Anh)', flag: '🇺🇸' },
+    'en-US': { name: 'English (US)', flag: '🇺🇸' },
+    'en-GB': { name: 'English (UK)', flag: '🇬🇧' },
+    'zh': { name: 'Tiếng Trung (Chinese)', flag: '🇨🇳' },
+    'zh-Hans': { name: 'Tiếng Trung (Giản thể)', flag: '🇨🇳' },
+    'zh-Hant': { name: 'Tiếng Trung (Phồn thể)', flag: '🇹🇼' },
+    'zh-CN': { name: 'Tiếng Trung (CN)', flag: '🇨🇳' },
+    'zh-TW': { name: 'Tiếng Trung (TW)', flag: '🇹🇼' },
+    'ja': { name: 'Tiếng Nhật (Japanese)', flag: '🇯🇵' },
+    'ko': { name: 'Tiếng Hàn (Korean)', flag: '🇰🇷' },
+    'fr': { name: 'Tiếng Pháp (French)', flag: '🇫🇷' },
+    'de': { name: 'Tiếng Đức (German)', flag: '🇩🇪' },
+    'es': { name: 'Tiếng Tây Ban Nha (Spanish)', flag: '🇪🇸' },
+    'ru': { name: 'Tiếng Nga (Russian)', flag: '🇷🇺' },
+    'th': { name: 'Tiếng Thái (Thai)', flag: '🇹🇭' },
+    'id': { name: 'Tiếng Indonesia', flag: '🇮🇩' },
+    'pt': { name: 'Tiếng Bồ Đào Nha', flag: '🇧🇷' },
+    'it': { name: 'Tiếng Ý (Italian)', flag: '🇮🇹' },
+    'ar': { name: 'Tiếng Ả Rập (Arabic)', flag: '🇸🇦' },
+    'hi': { name: 'Tiếng Hindi (India)', flag: '🇮🇳' }
+};
+
+function getLanguageMeta(code, rawName) {
+    if (LANG_NAMES[code]) return LANG_NAMES[code];
+    const baseCode = code.split('-')[0];
+    if (LANG_NAMES[baseCode]) return { name: rawName || LANG_NAMES[baseCode].name, flag: LANG_NAMES[baseCode].flag };
+    return { name: rawName || code, flag: '🌐' };
+}
 
 // 3-State Sorting State: 'none' (Default) -> 'desc' -> 'asc' -> 'none'
 let currentSortField = null;
@@ -229,13 +318,8 @@ async function triggerFolderBrowser(targetInputId) {
         const res = await fetch(`/api/browse-folder?current=${encodeURIComponent(currentPath)}`);
         const data = await res.json();
         if (data.success && data.path) {
-            $(targetInputId).value = data.path;
-            if (targetInputId === 'quickDownloadFolder') {
-                if ($('downloadFolder')) $('downloadFolder').value = data.path;
-            } else {
-                if ($('quickDownloadFolder')) $('quickDownloadFolder').value = data.path;
-            }
-            showToast(`✅ Đã chọn thư mục: ${data.path}`, 'success');
+            syncAndPersistDownloadFolder(data.path);
+            showToast(`✅ Đã lưu thư mục mặc định mới:\n${data.path}`, 'success');
         } else {
             showToast('Đã hủy chọn thư mục.', 'info');
         }
@@ -252,6 +336,14 @@ $('browseFolderBtn')?.addEventListener('click', (e) => {
 $('browseFolderBtnSettings')?.addEventListener('click', (e) => {
     e.preventDefault();
     triggerFolderBrowser('downloadFolder');
+});
+
+// Auto-save whenever user manually edits or pastes a folder path
+$('quickDownloadFolder')?.addEventListener('change', (e) => {
+    syncAndPersistDownloadFolder(e.target.value);
+});
+$('downloadFolder')?.addEventListener('change', (e) => {
+    syncAndPersistDownloadFolder(e.target.value);
 });
 
 // ── Update Download Button Enabled / Disabled State ──
@@ -310,12 +402,14 @@ $('checkBtn').addEventListener('click', async () => {
         
         handlePlaylistDisplay(data);
         processAndRenderFormats(data.formats || []);
+        processAndRenderSubtitles(data);
         translateVideoTitle(data.title);
 
         // Enable download buttons once options/formats are successfully loaded
         updateDownloadButtonState();
 
-        showToast(`🎉 Phân tích thành công! Đã tìm thấy ${data.formats?.length || 0} formats.`, 'success');
+        const subMsg = parsedSubtitles.length > 0 ? ` và ${parsedSubtitles.length} phụ đề` : '';
+        showToast(`🎉 Phân tích thành công! Đã tìm thấy ${data.formats?.length || 0} formats${subMsg}.`, 'success');
     } catch (err) {
         showToast(err.message, 'error');
         updateDownloadButtonState();
@@ -346,6 +440,7 @@ function renderVideoHero(data) {
     const uploader = $('videoUploader').querySelector('.text');
     const views = $('videoViews').querySelector('.text');
     const fmtCount = $('videoFormatCount').querySelector('.text');
+    const subCountEl = $('videoSubCount');
 
     currentThumbnailUrl = data.thumbnail || '';
 
@@ -363,18 +458,51 @@ function renderVideoHero(data) {
     views.textContent = data.view_count ? Number(data.view_count).toLocaleString() + ' views' : 'Video';
     fmtCount.textContent = (data.formats?.length || 0) + ' Formats';
 
+    if (subCountEl) {
+        const totalSubs = parsedSubtitles.length;
+        const hasVi = parsedSubtitles.some(s => s.langCode.startsWith('vi'));
+        subCountEl.querySelector('.text').textContent = totalSubs > 0 ? (hasVi ? `💬 ${totalSubs} Subs (Có Tiếng Việt ⭐)` : `💬 ${totalSubs} Phụ đề`) : '0 Phụ đề';
+        subCountEl.classList.toggle('has-vi', hasVi);
+    }
+
     card.classList.remove('hidden');
 }
 
-// ── Google Translate Title into Vietnamese ───────────
+// Click Subtitle pill in Hero Card to switch to subtitles view
+$('videoSubCount')?.addEventListener('click', () => {
+    const subPill = document.querySelector('.filter-pill[data-filter="subtitles"]');
+    if (subPill) subPill.click();
+});
+
+// ── Multilingual Video Title Translation (Google Translate) ───
 async function translateVideoTitle(rawTitle) {
     const transText = $('videoTranslatedTitle');
     if (!rawTitle || !transText) return;
 
-    transText.textContent = 'Đang dịch tiêu đề sang tiếng Việt...';
+    const lang = (typeof currentAppLanguage !== 'undefined' ? currentAppLanguage : localStorage.getItem('app_language')) || 'vi';
+    const langNames = {
+        vi: 'Tiếng Việt',
+        en: 'English',
+        zh: '简体中文',
+        ja: '日本語'
+    };
+    const targetLabel = langNames[lang] || lang;
+    
+    const transLabelEl = document.querySelector('#videoTranslatedBox .trans-label span');
+    if (transLabelEl) {
+        transLabelEl.textContent = `${targetLabel} (Google Translate):`;
+    }
+
+    transText.textContent = typeof t === 'function' ? t('translatingText') : 'Đang dịch tiêu đề...';
+
+    // If English and already standard ascii English, keep directly
+    if (lang === 'en' && /^[\x00-\x7F]*$/.test(rawTitle)) {
+        transText.textContent = rawTitle;
+        return;
+    }
 
     try {
-        const res = await fetch(`/api/translate?text=${encodeURIComponent(rawTitle)}&to=vi`);
+        const res = await fetch(`/api/translate?text=${encodeURIComponent(rawTitle)}&to=${encodeURIComponent(lang)}`);
         const data = await res.json();
         if (data.translated) {
             transText.textContent = data.translated;
@@ -871,7 +999,32 @@ $('typeFilterPills').addEventListener('click', (e) => {
     document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     currentTypeFilter = btn.dataset.filter;
-    renderFormatTable();
+
+    const subContainer = $('subtitlesModeContainer');
+    const tableContainer = $('tableModeContainer');
+    const cardsContainer = $('presetCardsContainer');
+    const multiBar = $('multiSelectBar');
+    const audioMergeBox = $('audioMergeHelperBox');
+
+    if (currentTypeFilter === 'subtitles') {
+        if (tableContainer) tableContainer.classList.add('hidden');
+        if (cardsContainer) cardsContainer.classList.add('hidden');
+        if (multiBar) multiBar.classList.add('hidden');
+        if (audioMergeBox) audioMergeBox.classList.add('hidden');
+        if (subContainer) subContainer.classList.remove('hidden');
+        renderSubtitlesTable();
+    } else {
+        if (subContainer) subContainer.classList.add('hidden');
+        if (multiBar) multiBar.classList.remove('hidden');
+        if (currentViewMode === 'cards') {
+            if (cardsContainer) cardsContainer.classList.remove('hidden');
+            if (tableContainer) tableContainer.classList.add('hidden');
+        } else {
+            if (tableContainer) tableContainer.classList.remove('hidden');
+            if (cardsContainer) cardsContainer.classList.add('hidden');
+        }
+        renderFormatTable();
+    }
 });
 
 $('formatSearchInput').addEventListener('input', (e) => {
@@ -879,9 +1032,20 @@ $('formatSearchInput').addEventListener('input', (e) => {
     renderFormatTable();
 });
 
+$('subSearchInput')?.addEventListener('input', (e) => {
+    currentSubFilterQuery = e.target.value.trim().toLowerCase();
+    renderSubtitlesTable();
+});
+
 // ── View Mode Switcher (Table vs Cards) ───────────────
 document.querySelectorAll('.mode-switch-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+        if (currentTypeFilter === 'subtitles') {
+            // If in subtitles mode, switch back to 'all' filter first
+            const allPill = document.querySelector('.filter-pill[data-filter="all"]');
+            if (allPill) allPill.click();
+        }
+
         document.querySelectorAll('.mode-switch-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentViewMode = btn.dataset.mode;
@@ -894,6 +1058,317 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn => {
             $('tableModeContainer').classList.remove('hidden');
         }
     });
+});
+
+// ============================================================
+// ── SUBTITLES EXPLORER & MANAGEMENT LOGIC ───────────────────
+// ============================================================
+
+function processAndRenderSubtitles(data) {
+    parsedSubtitles = [];
+    const manualSubs = data.subtitles || {};
+    const autoSubs = data.automatic_captions || {};
+
+    // 1. Extract Manual Uploaded Subtitles (Authored)
+    Object.keys(manualSubs).forEach(lang => {
+        const formats = manualSubs[lang] || [];
+        const rawName = formats[0]?.name || '';
+        const meta = getLanguageMeta(lang, rawName);
+        const srtFmt = formats.find(f => f.ext === 'srt') || formats.find(f => f.ext === 'vtt') || formats[0];
+        const vttFmt = formats.find(f => f.ext === 'vtt') || formats.find(f => f.ext === 'srt') || formats[0];
+
+        parsedSubtitles.push({
+            langCode: lang,
+            langName: meta.name,
+            flag: meta.flag,
+            isAuto: false,
+            formats: formats,
+            srtUrl: srtFmt?.url || '',
+            vttUrl: vttFmt?.url || formats[0]?.url || '',
+            availableExts: Array.from(new Set(formats.map(f => f.ext?.toUpperCase() || 'SRT'))).slice(0, 4)
+        });
+    });
+
+    // 2. Extract Auto-generated Subtitles (Speech Recognition)
+    Object.keys(autoSubs).forEach(lang => {
+        if (!manualSubs[lang]) {
+            const formats = autoSubs[lang] || [];
+            const rawName = formats[0]?.name || '';
+            const meta = getLanguageMeta(lang, rawName);
+            const srtFmt = formats.find(f => f.ext === 'srt') || formats.find(f => f.ext === 'vtt') || formats[0];
+            const vttFmt = formats.find(f => f.ext === 'vtt') || formats.find(f => f.ext === 'srt') || formats[0];
+
+            parsedSubtitles.push({
+                langCode: lang,
+                langName: meta.name,
+                flag: meta.flag,
+                isAuto: true,
+                formats: formats,
+                srtUrl: srtFmt?.url || '',
+                vttUrl: vttFmt?.url || formats[0]?.url || '',
+                availableExts: Array.from(new Set(formats.map(f => f.ext?.toUpperCase() || 'SRT'))).slice(0, 4)
+            });
+        }
+    });
+
+    // 3. Priority Sorting: Vietnamese -> English -> Manual before Auto -> Alphabetical
+    parsedSubtitles.sort((a, b) => {
+        const aIsVi = a.langCode.startsWith('vi');
+        const bIsVi = b.langCode.startsWith('vi');
+        if (aIsVi && !bIsVi) return -1;
+        if (!aIsVi && bIsVi) return 1;
+
+        const aIsEn = a.langCode.startsWith('en');
+        const bIsEn = b.langCode.startsWith('en');
+        if (aIsEn && !bIsEn) return -1;
+        if (!aIsEn && bIsEn) return 1;
+
+        if (a.isAuto !== b.isAuto) return a.isAuto ? 1 : -1;
+        return a.langName.localeCompare(b.langName);
+    });
+
+    // Update Counts & Badges in Topbar, Hero Card, Subnav
+    if ($('countSub')) $('countSub').textContent = parsedSubtitles.length;
+    if ($('quickSubCountBadge')) $('quickSubCountBadge').textContent = `${parsedSubtitles.length} Subs`;
+    if ($('subHeaderBadge')) {
+        const manualCount = parsedSubtitles.filter(s => !s.isAuto).length;
+        const autoCount = parsedSubtitles.filter(s => s.isAuto).length;
+        $('subHeaderBadge').textContent = `${manualCount} thủ công · ${autoCount} tự động`;
+    }
+
+    const subCountEl = $('videoSubCount');
+    if (subCountEl) {
+        const totalSubs = parsedSubtitles.length;
+        const hasVi = parsedSubtitles.some(s => s.langCode.startsWith('vi'));
+        subCountEl.querySelector('.text').textContent = totalSubs > 0 ? (hasVi ? `💬 ${totalSubs} Subs (Có Tiếng Việt ⭐)` : `💬 ${totalSubs} Phụ đề`) : '0 Phụ đề';
+        subCountEl.classList.toggle('has-vi', hasVi);
+    }
+
+    // Toggle Left Sidebar Quick Sub Card
+    const quickSubCard = $('quickSubtitleCard');
+    if (quickSubCard) {
+        if (parsedSubtitles.length > 0) {
+            quickSubCard.classList.remove('hidden');
+            populateQuickSubDropdown();
+        } else {
+            quickSubCard.classList.add('hidden');
+        }
+    }
+
+    renderSubtitlesTable();
+}
+
+// ── Populate Sidebar Quick Sub Dropdown ───────────────
+function populateQuickSubDropdown() {
+    const select = $('quickSubLangSelect');
+    if (!select) return;
+    select.innerHTML = '';
+
+    parsedSubtitles.forEach(sub => {
+        const opt = document.createElement('option');
+        opt.value = sub.langCode;
+        const typeTag = sub.isAuto ? '[Auto]' : '[Tác giả]';
+        opt.textContent = `${sub.flag} ${sub.langName} (${sub.langCode}) ${typeTag}`;
+        select.appendChild(opt);
+    });
+}
+
+// ── Render Subtitles Table ────────────────────────────
+function renderSubtitlesTable() {
+    const tbody = $('subtitlesTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const filtered = parsedSubtitles.filter(sub => {
+        if (!currentSubFilterQuery) return true;
+        const q = currentSubFilterQuery;
+        return sub.langName.toLowerCase().includes(q) ||
+               sub.langCode.toLowerCase().includes(q);
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 36px; color: var(--fg-muted);">
+                    ${parsedSubtitles.length === 0 ? 'Video này không có phụ đề hoặc nền tảng không hỗ trợ trích xuất.' : 'Không tìm thấy phụ đề nào khớp với từ khóa.'}
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    filtered.forEach(sub => {
+        const tr = document.createElement('tr');
+        tr.className = 'sub-row';
+
+        const typeBadge = sub.isAuto
+            ? '<span class="sub-type-badge auto">🤖 Tự động (Auto)</span>'
+            : '<span class="sub-type-badge manual">✨ Tác giả (Manual)</span>';
+
+        const extsBadges = (sub.availableExts.length ? sub.availableExts : ['SRT', 'VTT'])
+            .map(e => `<span class="badge-tag" style="font-size:0.72rem; padding: 2px 6px;">${e}</span>`)
+            .join(' ');
+
+        tr.innerHTML = `
+            <td>
+                <div class="sub-lang-title">
+                    <span class="sub-lang-flag">${sub.flag}</span>
+                    <span>${sub.langName}</span>
+                </div>
+            </td>
+            <td>
+                <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+                    <span class="sub-lang-code">${sub.langCode}</span>
+                    ${typeBadge}
+                </div>
+            </td>
+            <td>
+                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                    ${extsBadges}
+                </div>
+            </td>
+            <td>
+                <div class="sub-table-actions">
+                    <button type="button" class="btn-sub-table-dl srt" title="Tải file phụ đề SubRip (.SRT)">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span>Tải .SRT</span>
+                    </button>
+                    <button type="button" class="btn-sub-table-dl vtt" title="Tải file phụ đề WebVTT (.VTT)">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span>Tải .VTT</span>
+                    </button>
+                    <button type="button" class="btn-sub-table-preview" title="Xem trước nội dung phụ đề">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span>Xem Trước</span>
+                    </button>
+                </div>
+            </td>
+        `;
+
+        tr.querySelector('.btn-sub-table-dl.srt').addEventListener('click', () => downloadSubtitleDirect(sub, 'srt'));
+        tr.querySelector('.btn-sub-table-dl.vtt').addEventListener('click', () => downloadSubtitleDirect(sub, 'vtt'));
+        tr.querySelector('.btn-sub-table-preview').addEventListener('click', () => previewSubtitle(sub));
+
+        tbody.appendChild(tr);
+    });
+}
+
+// ── Direct Subtitle Downloader ────────────────────────
+async function downloadSubtitleDirect(subItem, format = 'srt') {
+    if (!subItem) return;
+    const targetFolder = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
+    const videoTitle = currentVideoData?.title || 'video';
+
+    showToast(`⏳ Đang tải phụ đề [${subItem.langName}] dạng .${format.toUpperCase()}...`, 'info');
+
+    try {
+        const subUrl = (format === 'srt' ? subItem.srtUrl : subItem.vttUrl) || subItem.vttUrl || subItem.srtUrl;
+        const qp = new URLSearchParams({
+            url: currentUrl,
+            subUrl: subUrl,
+            lang: subItem.langCode,
+            format: format,
+            title: videoTitle,
+            browser: currentBrowser,
+            output: targetFolder
+        });
+
+        const res = await fetch(`/api/download-subtitle?${qp}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Lỗi khi tải phụ đề');
+
+        showToast(`🎉 ${data.message || 'Đã tải xong phụ đề!'}`, 'success');
+    } catch (err) {
+        showToast(`❌ Lỗi tải phụ đề: ${err.message}`, 'error');
+    }
+}
+
+// ── Preview Subtitle Modal Handler ───────────────────
+async function previewSubtitle(subItem) {
+    if (!subItem) return;
+    currentPreviewSub = subItem;
+
+    const modal = $('subPreviewModal');
+    const modalTitle = $('subModalTitle');
+    const loading = $('subModalLoading');
+    const content = $('subModalContent');
+    const meta = $('subModalMeta');
+
+    if (!modal) return;
+    modalTitle.textContent = `Xem Trước: ${subItem.flag} ${subItem.langName} (${subItem.langCode})`;
+    content.innerHTML = '';
+    loading.classList.remove('hidden');
+    modal.classList.remove('hidden');
+
+    try {
+        const subUrl = subItem.vttUrl || subItem.srtUrl;
+        if (!subUrl) throw new Error('Không có đường dẫn stream trực tiếp cho phụ đề này');
+
+        const res = await fetch(`/api/preview-subtitle?subUrl=${encodeURIComponent(subUrl)}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Lỗi khi tải bản xem trước');
+
+        const cues = data.cues || [];
+        if (cues.length === 0) {
+            content.innerHTML = '<p style="text-align:center; color:var(--fg-muted); padding:20px;">Không có nội dung thoại.</p>';
+        } else {
+            cues.forEach(c => {
+                const cueDiv = document.createElement('div');
+                cueDiv.className = 'sub-cue-item';
+                cueDiv.innerHTML = `
+                    <div class="sub-cue-time">⏱️ ${c.time}</div>
+                    <div class="sub-cue-text">${c.text}</div>
+                `;
+                content.appendChild(cueDiv);
+            });
+            meta.textContent = `Hiển thị ${cues.length} câu thoại đầu tiên của video`;
+        }
+    } catch (err) {
+        content.innerHTML = `<p style="text-align:center; color:var(--color-destructive); padding:20px;">❌ Không thể xem trước: ${err.message}</p>`;
+    } finally {
+        loading.classList.add('hidden');
+    }
+}
+
+// Subtitle Modal Close & Actions
+$('closeSubModalBtn')?.addEventListener('click', () => {
+    $('subPreviewModal')?.classList.add('hidden');
+});
+
+$('subPreviewModal')?.addEventListener('click', (e) => {
+    if (e.target === $('subPreviewModal')) {
+        $('subPreviewModal').classList.add('hidden');
+    }
+});
+
+$('modalDlSrtBtn')?.addEventListener('click', () => {
+    if (currentPreviewSub) downloadSubtitleDirect(currentPreviewSub, 'srt');
+});
+
+$('modalDlVttBtn')?.addEventListener('click', () => {
+    if (currentPreviewSub) downloadSubtitleDirect(currentPreviewSub, 'vtt');
+});
+
+// Sidebar Quick Subtitle Downloader Buttons
+$('quickDlSrtBtn')?.addEventListener('click', () => {
+    const selectedLang = val('quickSubLangSelect');
+    const sub = parsedSubtitles.find(s => s.langCode === selectedLang) || parsedSubtitles[0];
+    if (sub) downloadSubtitleDirect(sub, 'srt');
+    else showToast('Vui lòng phân tích video có phụ đề trước.', 'info');
+});
+
+$('quickDlVttBtn')?.addEventListener('click', () => {
+    const selectedLang = val('quickSubLangSelect');
+    const sub = parsedSubtitles.find(s => s.langCode === selectedLang) || parsedSubtitles[0];
+    if (sub) downloadSubtitleDirect(sub, 'vtt');
+    else showToast('Vui lòng phân tích video có phụ đề trước.', 'info');
+});
+
+$('quickPreviewSubBtn')?.addEventListener('click', () => {
+    const selectedLang = val('quickSubLangSelect');
+    const sub = parsedSubtitles.find(s => s.langCode === selectedLang) || parsedSubtitles[0];
+    if (sub) previewSubtitle(sub);
+    else showToast('Vui lòng phân tích video có phụ đề trước.', 'info');
 });
 
 // ── Manual Format String Edit Toggle ──────────────────

@@ -17,6 +17,11 @@ Download/*
 
 # Temporary files & internal docs
 PROJECT_SUMMARY.md
+YTDLP_CORE_ARCHITECTURE.md
+YTDLP_CORE_ARCHITECTURE_EN.md
+YTDLP_ARCHITECTURE*.md
+config.json
+*.vbs
 scratch/
 .system_generated/
 *.log
@@ -26,3 +31,4 @@ scratch/
 Thumbs.db
 .vscode/
 .idea/
+

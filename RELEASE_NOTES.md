@@ -1,4 +1,52 @@
-# 📦 EveryVideoDownloader — Release 0.2
+# 📦 EveryVideoDownloader — Release 0.2.2
+
+> **Phiên bản:** `v0.2.2`  
+> **Ngày phát hành:** 17/08/2026  
+> **Nền tảng cốt lõi:** [yt-dlp](https://github.com/yt-dlp/yt-dlp)  
+
+---
+
+## 🌟 Những Điểm Mới & Cải Tiến Nổi Bật (What's New in v0.2.2)
+
+### 1. 💬 Trích Xuất & Tải Phụ Đề Riêng Biệt (Subtitles Explorer & 1-Click Downloader)
+- **Tự động bóc tách đa nguồn**: Phân tích toàn bộ phụ đề thủ công do tác giả tải lên (*Manual Subtitles*) và phụ đề máy tạo tự động (*Auto-generated Captions*).
+- **Bộ lọc & Sắp xếp thông minh**: Tự động ưu tiên Tiếng Việt `vi` (đính kèm huy hiệu `⭐`) và Tiếng Anh `en` lên hàng đầu danh sách.
+- **Tải nhanh độc lập (<100ms)**: Cung cấp tùy chọn tải trực tiếp file phụ đề **`.SRT`** (tự động chuẩn hóa timestamps `00:00:00,000` và đánh số thứ tự) hoặc **`.VTT`** về máy mà không cần phải tải toàn bộ video nặng.
+- **👁️ Xem Trước Phụ Đề (Live Preview Modal)**: Xem nhanh các câu thoại đầu tiên kèm mốc thời gian trước khi quyết định tải xuống.
+
+### 2. 🎨 Trải Nghiệm Giao Diện Tinh Tế & Chuẩn UI/UX
+- **Huy hiệu Hero Card**: Hiển thị tổng số phụ đề tìm thấy `💬 N Phụ đề (Có Tiếng Việt ⭐)`, bấm vào là tự động mở bảng phụ đề.
+- **Tab Lọc Phụ Đề (`💬 Phụ Đề`)**: Tích hợp mượt mà vào thanh lọc của Bàn làm việc Studio.
+- **Khung Điều Khiển Phụ Đề Nhanh ở Sidebar**: Cho phép chọn nhanh ngôn ngữ và bấm tải ngay tức thì.
+
+---
+
+# 📦 EveryVideoDownloader — Release 0.2.1
+
+> **Phiên bản:** `v0.2.1`  
+> **Ngày phát hành:** 17/08/2026  
+> **Nền tảng cốt lõi:** [yt-dlp](https://github.com/yt-dlp/yt-dlp)  
+
+---
+
+## 🌟 Những Điểm Mới & Cải Tiến Nổi Bật (What's New in v0.2.1)
+
+
+### 1. 🛡️ Khắc Phục Lỗi Tải TikTok (Anti-Bot WAF Bypass)
+- **Vượt lỗi `Unexpected response from webpage request`**: Tích hợp công cụ phân giải và tải luồng trực tiếp chuyên dụng cho TikTok (kể cả link rút gọn `vt.tiktok.com`).
+- **Trích xuất đa định dạng**: Tự động bóc tách video MP4 không logo watermark chất lượng HD, video kèm watermark và file âm thanh gốc MP3 128kbps.
+- **Tiến trình SSE thời gian thực**: Báo cáo đầy đủ thanh progress bar %, tốc độ `MiB/s`, thời gian còn lại `ETA` và dung lượng tải.
+
+### 2. 🎬 Mở Khóa Đầy Đủ 4K / 2K / 1080p Cho Douyin (`aid=6383` & `ttwid`)
+- **Tự động cấp phát token `ttwid`**: Tự động đăng ký và cache cookie xác thực từ Bytedance mỗi giờ.
+- **Mở khóa 30 formats cao cấp**: Sử dụng endpoint PC Client của Douyin để lấy toàn bộ các profile 4K UHD (`5048x2160`), 2K QHD (`3366x1440`), 1080p Full HD (`2524x1080` H.264 & H.265 60fps) cho các video tỷ lệ màn ảnh rộng (Cinematic 21:9), giải quyết triệt để vấn đề chỉ nhận tối đa 720p khi dùng web scraper thông thường.
+
+### 3. 🚀 Cập Nhật Core Engine `yt-dlp`
+- Nâng cấp `yt-dlp.exe` lên phiên bản `nightly@2026.08.17` tối ưu cho hơn 1700+ website khác (YouTube, Bilibili, Facebook, Twitter/X,...).
+
+---
+
+# 📦 EveryVideoDownloader — Release 0.2.0
 
 > **Phiên bản:** `v0.2.0`  
 > **Ngày phát hành:** 14/08/2026  
@@ -38,3 +86,4 @@
 ## 🚀 Hướng Dẫn Nâng Cấp & Sử Dụng
 1. Tải bản cập nhật mới nhất từ GitHub.
 2. Nhấp đúp vào file **`Chay_Studio.bat`** để khởi động ứng dụng ngay lập tức tại `http://localhost:3000`.
+

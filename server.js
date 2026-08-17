@@ -37,19 +37,69 @@ const LOCAL_FFMPEG = fs.existsSync(path.join(__dirname, 'ffmpeg.exe'))
 // Active download child processes store for cancel/pause support
 const activeDownloads = new Map();
 
+// -- Persistent User Configuration Manager (config.json) -----------------------
+const CONFIG_PATH = path.join(__dirname, 'config.json');
+
+function loadPersistentConfig() {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      const raw = fs.readFileSync(CONFIG_PATH, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('[Config] Error reading config.json:', err.message);
+  }
+  return { downloadFolder: DOWNLOADS_DIR };
+}
+
+function savePersistentConfig(updates) {
+  try {
+    const current = loadPersistentConfig();
+    const merged = { ...current, ...updates };
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(merged, null, 2), 'utf8');
+    console.log('[Config] Saved persistent configuration:', merged);
+    return merged;
+  } catch (err) {
+    console.error('[Config] Error writing config.json:', err.message);
+    return null;
+  }
+}
+
 // -- Middleware ---------------------------------------------------------------
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // =============================================================================
-// GET /api/config — Get dynamic server configuration & paths
+// GET & POST /api/config — Get / Update dynamic & persistent server config
 // =============================================================================
 app.get('/api/config', (req, res) => {
+  const cfg = loadPersistentConfig();
   res.json({
-    downloadFolder: DOWNLOADS_DIR,
+    downloadFolder: cfg.downloadFolder || DOWNLOADS_DIR,
     hasLocalFfmpeg: !!LOCAL_FFMPEG,
+    ...cfg,
   });
+});
+
+app.post('/api/config', (req, res) => {
+  const { downloadFolder, ...otherSettings } = req.body || {};
+  const updates = {};
+
+  if (downloadFolder && typeof downloadFolder === 'string') {
+    const norm = path.resolve(downloadFolder.trim());
+    updates.downloadFolder = norm;
+    if (!fs.existsSync(norm)) {
+      try { fs.mkdirSync(norm, { recursive: true }); } catch (e) {}
+    }
+  }
+
+  Object.assign(updates, otherSettings);
+  const saved = savePersistentConfig(updates);
+  return res.json({ success: true, config: saved });
 });
 
 // =============================================================================
@@ -200,31 +250,217 @@ app.get('/api/download-thumbnail', async (req, res) => {
 });
 
 // =============================================================================
-// GET /api/browse-folder — Instant Native Windows Folder Picker Dialog (~20ms)
+// Helper: Convert WebVTT content to standard SubRip (.SRT) format
 // =============================================================================
+function vttToSrt(vttText) {
+  if (!vttText) return '';
+  let text = vttText.replace(/^WEBVTT[^\n]*\n+/i, '');
+  text = text.replace(/^(?:NOTE|STYLE|REGION)[\s\S]*?\n\n/gm, '');
+
+  const blocks = text.trim().split(/\n\s*\n/);
+  const srtBlocks = [];
+  let index = 1;
+
+  for (const block of blocks) {
+    const lines = block.trim().split(/\r?\n/);
+    if (!lines.length) continue;
+
+    let timeLineIdx = lines.findIndex(l => l.includes('-->'));
+    if (timeLineIdx === -1) continue;
+
+    let timeLine = lines[timeLineIdx];
+    // Convert WebVTT timestamps 00:00:01.360 to SRT 00:00:01,360
+    timeLine = timeLine
+      .replace(/(\d{2}:\d{2}:\d{2})\.(\d{3})/g, '$1,$2')
+      .replace(/(\d{2}:\d{2})\.(\d{3})/g, '00:$1,$2');
+
+    // Clean up positioning tags
+    timeLine = timeLine.replace(/-->\s*([0-9:,\.]+)\s+.*$/, '--> $1');
+
+    const cueTextLines = lines.slice(timeLineIdx + 1)
+      .map(l => l.replace(/<[^>]+>/g, '').trim())
+      .filter(Boolean);
+
+    if (cueTextLines.length) {
+      srtBlocks.push(`${index}\n${timeLine}\n${cueTextLines.join('\n')}`);
+      index++;
+    }
+  }
+
+  return srtBlocks.join('\n\n') + '\n';
+}
+
+// =============================================================================
+// GET /api/download-subtitle — Instant Subtitle Download (.SRT / .VTT)
+// =============================================================================
+app.get('/api/download-subtitle', async (req, res) => {
+  const { url, subUrl, lang = 'vi', format = 'srt', title, browser, output = DOWNLOADS_DIR } = req.query;
+
+  if (!url && !subUrl) {
+    return res.status(400).json({ error: 'Missing url or subUrl parameter' });
+  }
+
+  const targetDir = path.resolve(output);
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+
+  const safeTitle = (title || 'video')
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120) || 'video';
+
+  const ext = (format || 'srt').toLowerCase();
+  const fileName = `${safeTitle}.${lang}.${ext}`;
+  const filePath = path.join(targetDir, fileName);
+
+  // 1. Instant Direct Subtitle Download via Stream URL (<100ms)
+  if (subUrl && subUrl.startsWith('http')) {
+    try {
+      const subRes = await fetch(subUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+          'Referer': 'https://www.youtube.com/'
+        }
+      });
+
+      if (subRes.ok) {
+        let content = await subRes.text();
+        if (ext === 'srt' && (content.startsWith('WEBVTT') || subUrl.includes('fmt=vtt'))) {
+          content = vttToSrt(content);
+        }
+
+        fs.writeFileSync(filePath, content, 'utf8');
+        console.log('[/api/download-subtitle] Instant saved subtitle to:', filePath);
+        return res.json({
+          success: true,
+          path: targetDir,
+          fileName,
+          filePath,
+          message: `Đã tải phụ đề [${lang.toUpperCase()}] thành công: ${fileName}`
+        });
+      }
+    } catch (err) {
+      console.warn('[/api/download-subtitle] Direct fetch fallback to yt-dlp:', err.message);
+    }
+  }
+
+  // 2. Fallback to yt-dlp Subtitle Extraction
+  const args = ['--write-subs', '--write-auto-subs', '--sub-lang', lang, '--sub-format', ext, '--skip-download', '--no-playlist'];
+  if (browser && browser !== 'none') {
+    args.push('--cookies-from-browser', browser);
+  }
+  args.push('-o', path.join(targetDir, '%(title)s.%(ext)s'));
+  args.push(url);
+
+  execFile(YTDLP_PATH, args, (error, stdout, stderr) => {
+    if (error) {
+      console.error('[/api/download-subtitle] yt-dlp error:', stderr || error.message);
+      return res.status(500).json({ error: stderr || error.message });
+    }
+    return res.json({
+      success: true,
+      path: targetDir,
+      fileName,
+      message: `Đã tải phụ đề [${lang.toUpperCase()}] thành công vào thư mục: ${targetDir}`
+    });
+  });
+});
+
+// =============================================================================
+// GET /api/preview-subtitle — Preview First Cues of Subtitle
+// =============================================================================
+app.get('/api/preview-subtitle', async (req, res) => {
+  const { subUrl } = req.query;
+  if (!subUrl || !subUrl.startsWith('http')) {
+    return res.status(400).json({ error: 'Missing or invalid subUrl parameter' });
+  }
+
+  try {
+    const subRes = await fetch(subUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+        'Referer': 'https://www.youtube.com/'
+      }
+    });
+
+    if (!subRes.ok) throw new Error(`HTTP ${subRes.status}: ${subRes.statusText}`);
+    const text = await subRes.text();
+
+    const cues = [];
+    const blocks = text.trim().split(/\n\s*\n/).slice(0, 35);
+    for (const block of blocks) {
+      const lines = block.trim().split(/\r?\n/);
+      const timeLineIdx = lines.findIndex(l => l.includes('-->'));
+      if (timeLineIdx !== -1) {
+        const timeLine = lines[timeLineIdx].trim();
+        const content = lines.slice(timeLineIdx + 1).map(l => l.replace(/<[^>]+>/g, '').trim()).filter(Boolean).join(' ');
+        if (content) {
+          cues.push({ time: timeLine, text: content });
+        }
+      }
+    }
+
+    return res.json({ success: true, cues: cues.slice(0, 25), total: cues.length });
+  } catch (err) {
+    console.error('[/api/preview-subtitle] Error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// =============================================================================
+// GET /api/browse-folder — Modern Windows 10/11 Explorer Folder Picker Dialog
+// =============================================================================
+const FOLDER_PICKER_EXE = path.join(__dirname, 'bin', 'folder_picker.exe');
+
 app.get('/api/browse-folder', (req, res) => {
   const defaultDir = path.resolve(req.query.current || DOWNLOADS_DIR);
-  
-  // Native Windows Shell Browse Dialog (Instant, No .NET CLR initialization lag)
-  const vbsScript = `
-Set objShell = CreateObject("Shell.Application")
-Set objFolder = objShell.BrowseForFolder(0, "Chọn thư mục lưu trữ video:", &H0001 + &H0010 + &H0040, "${defaultDir.replace(/\\/g, '\\\\')}")
-If Not objFolder Is Nothing Then
-    WScript.Echo objFolder.Self.Path
-End If
+
+  // 1. Primary: Native Windows 10/11 Explorer IFileOpenDialog (TopMost + UTF-8 + Direct Navigation)
+  if (fs.existsSync(FOLDER_PICKER_EXE)) {
+    return execFile(FOLDER_PICKER_EXE, [defaultDir], { encoding: 'utf8', timeout: 180000 }, (err, stdout) => {
+      const selected = stdout ? stdout.trim().split(/\r?\n/).filter(Boolean).pop() : '';
+      if (selected && fs.existsSync(selected)) {
+        savePersistentConfig({ downloadFolder: selected });
+        return res.json({ success: true, path: selected });
+      }
+      return res.json({ success: false, path: null });
+    });
+  }
+
+  // 2. Secondary Fallback: PowerShell Dialog with TopMost
+  const psScript = `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Windows.Forms
+$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialog.Description = "Chọn thư mục lưu trữ video EveryVideoDownloader"
+$dialog.ShowNewFolderButton = $true
+if (Test-Path '${defaultDir.replace(/'/g, "''")}') {
+    $dialog.SelectedPath = '${defaultDir.replace(/'/g, "''")}'
+}
+$form = New-Object System.Windows.Forms.Form
+$form.TopMost = $true
+$form.Opacity = 0
+$form.ShowInTaskbar = $false
+$form.Show()
+$form.BringToFront()
+$result = $dialog.ShowDialog($form)
+if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+    [System.Console]::WriteLine("CHOSEN:" + $dialog.SelectedPath)
+}
+$form.Dispose()
 `;
 
-  const tempVbs = path.join(__dirname, '.browse_tmp.vbs');
-  try {
-    fs.writeFileSync(tempVbs, vbsScript, 'utf8');
-  } catch (e) {}
-
-  execFile('cscript.exe', ['//nologo', tempVbs], { timeout: 120000 }, (err, stdout) => {
-    try { if (fs.existsSync(tempVbs)) fs.unlinkSync(tempVbs); } catch (e) {}
-    
-    const selected = stdout ? stdout.trim().split(/\r?\n/).filter(Boolean).pop() : '';
-    if (selected && fs.existsSync(selected)) {
-      return res.json({ success: true, path: selected });
+  const b64 = Buffer.from(psScript, 'utf16le').toString('base64');
+  execFile('powershell.exe', ['-NoProfile', '-STA', '-EncodedCommand', b64], { timeout: 180000 }, (err, stdout) => {
+    if (stdout && stdout.includes('CHOSEN:')) {
+      const match = stdout.match(/CHOSEN:(.*)/);
+      const selected = match ? match[1].trim() : '';
+      if (selected && fs.existsSync(selected)) {
+        savePersistentConfig({ downloadFolder: selected });
+        return res.json({ success: true, path: selected });
+      }
     }
     return res.json({ success: false, path: null });
   });
@@ -272,6 +508,311 @@ app.get('/api/open-folder', handleOpenFolder);
 app.post('/api/open-folder', handleOpenFolder);
 
 // =============================================================================
+// GET /api/translate — Multilingual Title Translation (vi, en, zh-CN, ja)
+// =============================================================================
+app.get('/api/translate', async (req, res) => {
+  const text = req.query.text;
+  const target = req.query.to || 'vi';
+  if (!text) return res.json({ translated: '' });
+
+  // Map 2-letter codes to Google Translate codes
+  const langMap = {
+    'vi': 'vi',
+    'en': 'en',
+    'zh': 'zh-CN',
+    'ja': 'ja'
+  };
+  const tl = langMap[target] || target;
+
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(tl)}&dt=t&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Translation failed');
+    const data = await response.json();
+    if (Array.isArray(data) && Array.isArray(data[0])) {
+      const translatedText = data[0].map(item => item[0]).filter(Boolean).join('');
+      return res.json({ translated: translatedText });
+    }
+    return res.json({ translated: text });
+  } catch (err) {
+    return res.json({ translated: text });
+  }
+});
+
+// Check if a URL belongs to Douyin
+function isDouyinUrl(url) {
+  if (!url) return false;
+  return /douyin\.com|iesdouyin\.com/i.test(url);
+}
+
+// Check if a URL belongs to TikTok
+function isTikTokUrl(url) {
+  if (!url) return false;
+  return /tiktok\.com/i.test(url);
+}
+
+// In-memory cache for Douyin ttwid security cookie
+let cachedTtwid = '';
+let ttwidExpireTime = 0;
+
+async function getTtwidCookie() {
+  if (cachedTtwid && Date.now() < ttwidExpireTime) {
+    return cachedTtwid;
+  }
+  try {
+    const res = await fetch('https://ttwid.bytedance.com/ttwid/union/register/', {
+      method: 'POST',
+      body: JSON.stringify({
+        region: 'cn', aid: 1768, needFid: 'false', service: 'www.ixigua.com',
+        migrate_info: { ticket: '', src: 'uc' }, cbUrlProtocol: 'https', union: 'true'
+      }),
+      headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+    });
+    const setCookies = res.headers.getSetCookie ? res.headers.getSetCookie() : [res.headers.get('set-cookie')].filter(Boolean);
+    for (const c of setCookies) {
+      if (c.includes('ttwid=')) {
+        cachedTtwid = c.split(';')[0];
+        ttwidExpireTime = Date.now() + 3600 * 1000; // cache for 1 hour
+        return cachedTtwid;
+      }
+    }
+  } catch (e) {
+    console.warn('[/api/douyin] getTtwidCookie error:', e.message);
+  }
+  return '';
+}
+
+// Extract video ID from direct or shortened Douyin URL
+async function extractDouyinVideoId(url) {
+  if (!url) return null;
+  const directMatch = url.match(/(?:video\/|note\/)(\d+)/) || url.match(/\/(\d{19})\b/);
+  if (directMatch) return directMatch[1];
+
+  try {
+    const res = await fetch(url, {
+      redirect: 'follow',
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+    });
+    const finalUrl = res.url || '';
+    const match = finalUrl.match(/(?:video\/|note\/)(\d+)/) || finalUrl.match(/\/(\d{19})\b/);
+    return match ? match[1] : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Fetch full Douyin metadata including 4K, 2K, 1080p, 720p H.264/H.265 via PC Client endpoint
+async function fetchDouyinMetadata(url) {
+  try {
+    const videoId = await extractDouyinVideoId(url);
+    if (!videoId) return null;
+
+    const cookie = await getTtwidCookie();
+    const apiUrl = `https://www.douyin.com/aweme/v1/web/aweme/detail/?aweme_id=${videoId}&aid=6383&version_name=23.5.0&device_platform=windows&os=windows`;
+
+    const res = await fetch(apiUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+        'Referer': 'https://www.douyin.com/',
+        'Cookie': cookie
+      }
+    });
+
+    if (!res.ok) return null;
+    const json = await res.json();
+    const item = json.aweme_detail;
+    if (!item) return null;
+
+    const v = item.video || {};
+    const formats = [];
+    const seenUrls = new Set();
+
+    for (let i = 0; i < (v.bit_rate || []).length; i++) {
+      const b = v.bit_rate[i];
+      const playUrl = b.play_addr?.url_list?.[0];
+      if (!playUrl || seenUrls.has(playUrl)) continue;
+      seenUrls.add(playUrl);
+
+      const w = b.play_addr?.width || 0;
+      const h = b.play_addr?.height || 0;
+      const isH265 = !!(b.is_bytevc1 || b.is_h265);
+      const codec = isH265 ? 'h265' : 'h264';
+
+      let qualityLabel = `${w}x${h}`;
+      let note = b.gear_name || '';
+
+      if (h >= 2160 || w >= 3840) qualityLabel += ' (4K UHD)';
+      else if (h >= 1440 || w >= 2560) qualityLabel += ' (2K QHD)';
+      else if (h >= 1080 || w >= 1920) qualityLabel += ' (1080p Full HD)';
+      else if (h >= 720 || w >= 1280) qualityLabel += ' (720p HD)';
+      else if (h >= 540) qualityLabel += ' (540p)';
+
+      note += ` [${codec.toUpperCase()}]`;
+
+      formats.push({
+        format_id: `douyin_${b.gear_name || 'stream'}_${codec}_${i}`,
+        format_note: note,
+        ext: 'mp4',
+        resolution: qualityLabel,
+        width: w,
+        height: h,
+        fps: b.FPS || 30,
+        filesize: b.play_addr?.data_size || null,
+        vcodec: codec,
+        acodec: 'aac',
+        url: playUrl,
+        tbr: Math.round((b.bit_rate || 0) / 1000) || null,
+      });
+    }
+
+    // Add Audio MP3 format
+    if (item.music?.play_url?.url_list?.[0]) {
+      formats.push({
+        format_id: 'douyin_audio',
+        format_note: 'Âm thanh gốc (Audio MP3)',
+        ext: 'mp3',
+        resolution: 'audio only',
+        vcodec: 'none',
+        acodec: 'mp3',
+        filesize: null,
+        url: item.music.play_url.url_list[0],
+        tbr: 128
+      });
+    }
+
+    return {
+      id: videoId,
+      title: item.desc || 'Douyin Video',
+      description: item.desc || '',
+      uploader: item.author?.nickname || 'Douyin Creator',
+      uploader_id: item.author?.unique_id || item.author?.short_id || '',
+      thumbnail: v.cover?.url_list?.[0] || v.origin_cover?.url_list?.[0] || '',
+      duration: Math.round((v.duration || 0) / 1000),
+      view_count: item.statistics?.play_count || 0,
+      like_count: item.statistics?.digg_count || 0,
+      comment_count: item.statistics?.comment_count || 0,
+      extractor: 'douyin',
+      extractor_key: 'Douyin',
+      webpage_url: url,
+      formats,
+      _douyin_direct: true,
+    };
+  } catch (err) {
+    console.warn('[/api/info] Douyin API resolver error:', err.message);
+  }
+  return null;
+}
+
+// Fetch TikTok metadata via direct high-speed resolver
+async function fetchTikTokMetadata(url) {
+  try {
+    const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+      }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.code === 0 && data.data) {
+      const d = data.data;
+      const formats = [];
+
+      if (d.hdplay) {
+        formats.push({
+          format_id: 'hd',
+          format_note: 'HD (Không logo watermark)',
+          ext: 'mp4',
+          resolution: `${d.width || 1080}x${d.height || 1920}`,
+          width: d.width || 1080,
+          height: d.height || 1920,
+          filesize: d.hd_size || d.size || null,
+          vcodec: 'h264',
+          acodec: 'aac',
+          url: d.hdplay,
+          tbr: Math.round((d.hd_size || d.size || 0) * 8 / (d.duration || 1) / 1024) || 1200,
+        });
+      }
+
+      if (d.play) {
+        formats.push({
+          format_id: 'no-watermark',
+          format_note: 'Gốc (Không logo watermark)',
+          ext: 'mp4',
+          resolution: `${d.width || 720}x${d.height || 1280}`,
+          width: d.width || 720,
+          height: d.height || 1280,
+          filesize: d.size || null,
+          vcodec: 'h264',
+          acodec: 'aac',
+          url: d.play,
+          tbr: Math.round((d.size || 0) * 8 / (d.duration || 1) / 1024) || 800,
+        });
+      }
+
+      if (d.wmplay) {
+        formats.push({
+          format_id: 'watermark',
+          format_note: 'Kèm logo TikTok (Watermark)',
+          ext: 'mp4',
+          resolution: `${d.width || 720}x${d.height || 1280}`,
+          width: d.width || 720,
+          height: d.height || 1280,
+          filesize: d.wm_size || null,
+          vcodec: 'h264',
+          acodec: 'aac',
+          url: d.wmplay,
+        });
+      }
+
+      if (d.music) {
+        formats.push({
+          format_id: 'audio-only',
+          format_note: 'Âm thanh gốc (Audio MP3)',
+          ext: 'mp3',
+          resolution: 'audio only',
+          vcodec: 'none',
+          acodec: 'mp3',
+          filesize: null,
+          url: d.music,
+          tbr: 128,
+        });
+      }
+
+      return {
+        id: String(d.id || 'tiktok_video'),
+        title: d.title || 'TikTok Video',
+        description: d.title || '',
+        uploader: d.author?.nickname || 'TikTok Creator',
+        uploader_id: d.author?.unique_id || '',
+        thumbnail: d.cover || d.origin_cover || '',
+        duration: d.duration || 0,
+        view_count: d.play_count || 0,
+        like_count: d.digg_count || 0,
+        comment_count: d.comment_count || 0,
+        extractor: 'tiktok',
+        extractor_key: 'TikTok',
+        webpage_url: url,
+        formats: formats.length > 0 ? formats : [
+          {
+            format_id: 'default',
+            format_note: 'Video MP4',
+            ext: 'mp4',
+            resolution: '720x1280',
+            vcodec: 'h264',
+            acodec: 'aac',
+            url: d.play || d.wmplay
+          }
+        ],
+        _tiktok_direct: true,
+      };
+    }
+  } catch (err) {
+    console.warn('[/api/info] TikTok API resolver error:', err.message);
+  }
+  return null;
+}
+
+// =============================================================================
 // GET /api/cancel-download — Cancel an ongoing download process
 // =============================================================================
 app.get('/api/cancel-download', (req, res) => {
@@ -280,11 +821,15 @@ app.get('/api/cancel-download', (req, res) => {
     return res.status(400).json({ error: 'Missing downloadId' });
   }
 
-  const child = activeDownloads.get(downloadId);
-  if (child && !child.killed) {
-    child.kill('SIGTERM');
+  const task = activeDownloads.get(downloadId);
+  if (task) {
+    if (typeof task.kill === 'function' && !task.killed) {
+      task.kill('SIGTERM');
+    } else if (typeof task.abort === 'function') {
+      task.abort();
+    }
     activeDownloads.delete(downloadId);
-    console.log(`[/api/cancel-download] Killed download task ${downloadId}`);
+    console.log(`[/api/cancel-download] Cancelled download task ${downloadId}`);
     return res.json({ success: true, message: 'Đã dừng tiến trình tải xuống.' });
   }
 
@@ -294,11 +839,29 @@ app.get('/api/cancel-download', (req, res) => {
 // =============================================================================
 // GET /api/info — Fetch video or playlist metadata as JSON
 // =============================================================================
-app.get('/api/info', (req, res) => {
+app.get('/api/info', async (req, res) => {
   const { url, browser, playlist } = req.query;
 
   if (!url) {
     return res.status(400).json({ error: 'Missing required query parameter: url' });
+  }
+
+  // 1. Direct high-speed resolver for Douyin (unlocked 4K, 2K, 1080p Full HD)
+  if (isDouyinUrl(url)) {
+    const douyinInfo = await fetchDouyinMetadata(url);
+    if (douyinInfo) {
+      console.log('[/api/info] Fetched Douyin metadata with full 1080p/4K formats.');
+      return res.json(douyinInfo);
+    }
+  }
+
+  // 2. Direct high-speed resolver for TikTok to bypass WAF captcha challenge
+  if (isTikTokUrl(url)) {
+    const ttInfo = await fetchTikTokMetadata(url);
+    if (ttInfo) {
+      console.log('[/api/info] Fetched TikTok metadata via direct engine.');
+      return res.json(ttInfo);
+    }
   }
 
   const args = ['-J'];
@@ -320,10 +883,21 @@ app.get('/api/info', (req, res) => {
 
   args.push(url);
 
-  execFile(YTDLP_PATH, args, { maxBuffer: 35 * 1024 * 1024 }, (error, stdout, stderr) => {
+  execFile(YTDLP_PATH, args, { maxBuffer: 35 * 1024 * 1024 }, async (error, stdout, stderr) => {
     if (error) {
       const message = stderr?.trim() || error.message;
       console.error('[/api/info] Error:', message);
+
+      // Secondary fallback for Douyin / TikTok if initial check didn't catch it
+      if (isDouyinUrl(url)) {
+        const fallbackDouyin = await fetchDouyinMetadata(url);
+        if (fallbackDouyin) return res.json(fallbackDouyin);
+      }
+      if (isTikTokUrl(url)) {
+        const fallbackInfo = await fetchTikTokMetadata(url);
+        if (fallbackInfo) return res.json(fallbackInfo);
+      }
+
       return res.status(500).json({ error: message });
     }
 
@@ -340,7 +914,7 @@ app.get('/api/info', (req, res) => {
 // =============================================================================
 // GET /api/download — Start a download and stream progress via SSE
 // =============================================================================
-app.get('/api/download', (req, res) => {
+app.get('/api/download', async (req, res) => {
   const {
     url,
     format,
@@ -398,6 +972,226 @@ app.get('/api/download', (req, res) => {
 
   sendEvent({ downloadId, started: true });
 
+  // 1. Direct high-speed download for Douyin (4K, 2K, 1080p, 720p, MP3)
+  if (isDouyinUrl(url)) {
+    try {
+      const douyinData = await fetchDouyinMetadata(url);
+      if (douyinData && douyinData.formats?.length > 0) {
+        let chosen = null;
+        let ext = 'mp4';
+
+        if (format === 'douyin_audio' || format === 'audio-only' || audio_format) {
+          chosen = douyinData.formats.find(f => f.format_id === 'douyin_audio') || douyinData.formats[0];
+          ext = 'mp3';
+        } else if (format) {
+          chosen = douyinData.formats.find(f => f.format_id === format) ||
+                   douyinData.formats.find(f => f.resolution.includes(format)) ||
+                   douyinData.formats[0];
+          ext = chosen.ext || 'mp4';
+        } else {
+          chosen = douyinData.formats[0];
+          ext = chosen.ext || 'mp4';
+        }
+
+        const directStreamUrl = chosen?.url;
+        if (!directStreamUrl) throw new Error('No stream URL found for selected Douyin format');
+
+        const safeTitle = (douyinData.title || 'douyin_video')
+          .replace(/[\\/:*?"<>|]/g, '_')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 120) || 'douyin_video';
+
+        const targetDir = path.resolve(output || DOWNLOADS_DIR);
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        const fileName = output_template 
+          ? output_template.replace('%(title)s', safeTitle).replace('%(ext)s', ext)
+          : `${safeTitle}.${ext}`;
+        const filePath = path.join(targetDir, fileName);
+
+        console.log(`[/api/download] [${downloadId}] Downloading direct Douyin (${chosen.resolution}) to: ${filePath}`);
+        sendEvent({ downloadId, output: `[download] Destination: ${filePath}` });
+        sendEvent({ downloadId, output: `[Douyin-Engine] Chất lượng: ${chosen.resolution} - Codec: ${chosen.vcodec?.toUpperCase()}` });
+
+        const abortController = new AbortController();
+        activeDownloads.set(downloadId, {
+          abort: () => abortController.abort(),
+          killed: false,
+        });
+
+        const cookie = await getTtwidCookie();
+        const videoRes = await fetch(directStreamUrl, {
+          signal: abortController.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'Referer': 'https://www.douyin.com/',
+            'Cookie': cookie
+          }
+        });
+
+        if (!videoRes.ok) throw new Error(`HTTP ${videoRes.status}: ${videoRes.statusText}`);
+
+        const totalBytes = parseInt(videoRes.headers.get('content-length') || String(chosen.filesize || 0), 10);
+        const fileStream = fs.createWriteStream(filePath);
+        const reader = videoRes.body.getReader();
+
+        let receivedBytes = 0;
+        let startTime = Date.now();
+        let lastReport = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          fileStream.write(Buffer.from(value));
+          receivedBytes += value.length;
+
+          const now = Date.now();
+          if (now - lastReport > 200 || receivedBytes === totalBytes) {
+            lastReport = now;
+            const elapsed = (now - startTime) / 1000 || 0.001;
+            const speed = receivedBytes / elapsed;
+            const speedStr = (speed / 1048576).toFixed(2) + 'MiB/s';
+            const pct = totalBytes > 0 ? ((receivedBytes / totalBytes) * 100).toFixed(1) : '50.0';
+            const remainingBytes = Math.max(0, totalBytes - receivedBytes);
+            const etaSec = speed > 0 ? Math.round(remainingBytes / speed) : 0;
+            const etaMin = Math.floor(etaSec / 60);
+            const etaRem = etaSec % 60;
+            const etaStr = `${String(etaMin).padStart(2, '0')}:${String(etaRem).padStart(2, '0')}`;
+            const totalStr = totalBytes > 0 ? (totalBytes / 1048576).toFixed(2) + 'MiB' : 'Unknown';
+
+            sendEvent({ downloadId, output: `[download]  ${pct}% of ~${totalStr} at ${speedStr} ETA ${etaStr}` });
+          }
+        }
+
+        fileStream.end();
+        sendEvent({ downloadId, output: `[download] 100% of ${fileName} completed.` });
+        activeDownloads.delete(downloadId);
+        sendEvent({ downloadId, done: true, code: 0 });
+        return res.end();
+      }
+    } catch (dyErr) {
+      if (dyErr.name === 'AbortError') {
+        console.log(`[/api/download] [${downloadId}] Douyin download aborted.`);
+        activeDownloads.delete(downloadId);
+        sendEvent({ downloadId, done: true, code: 1 });
+        return res.end();
+      }
+      console.warn(`[/api/download] [${downloadId}] Douyin direct download failed, falling back to yt-dlp:`, dyErr.message);
+      sendEvent({ downloadId, output: `[Douyin-Engine] Fallback to yt-dlp engine: ${dyErr.message}` });
+    }
+  }
+
+  // 2. Direct fast download for TikTok to bypass bot challenge & WAF
+  if (isTikTokUrl(url)) {
+    try {
+      const ttMetaRes = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
+      const ttData = await ttMetaRes.json();
+      if (ttData.code === 0 && ttData.data) {
+        const d = ttData.data;
+        let directStreamUrl = d.play;
+        let ext = 'mp4';
+
+        if (format === 'audio-only' || format === 'ba' || format === 'bestaudio' || audio_format) {
+          directStreamUrl = d.music || d.play;
+          ext = 'mp3';
+        } else if (format === 'hd' && d.hdplay) {
+          directStreamUrl = d.hdplay;
+        } else if (format === 'watermark' && d.wmplay) {
+          directStreamUrl = d.wmplay;
+        }
+
+        const safeTitle = (d.title || 'tiktok_video')
+          .replace(/[\\/:*?"<>|]/g, '_')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 120) || 'tiktok_video';
+
+        const targetDir = path.resolve(output || DOWNLOADS_DIR);
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        const fileName = output_template 
+          ? output_template.replace('%(title)s', safeTitle).replace('%(ext)s', ext)
+          : `${safeTitle}.${ext}`;
+        const filePath = path.join(targetDir, fileName);
+
+        console.log(`[/api/download] [${downloadId}] Downloading direct TikTok to: ${filePath}`);
+        sendEvent({ downloadId, output: `[download] Destination: ${filePath}` });
+
+        const abortController = new AbortController();
+        activeDownloads.set(downloadId, {
+          abort: () => abortController.abort(),
+          killed: false,
+        });
+
+        const videoRes = await fetch(directStreamUrl, {
+          signal: abortController.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://www.tiktok.com/'
+          }
+        });
+
+        if (!videoRes.ok) throw new Error(`HTTP ${videoRes.status}: ${videoRes.statusText}`);
+
+        const totalBytes = parseInt(videoRes.headers.get('content-length') || '0', 10);
+        const fileStream = fs.createWriteStream(filePath);
+        const reader = videoRes.body.getReader();
+
+        let receivedBytes = 0;
+        let startTime = Date.now();
+        let lastReport = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          fileStream.write(Buffer.from(value));
+          receivedBytes += value.length;
+
+          const now = Date.now();
+          if (now - lastReport > 200 || receivedBytes === totalBytes) {
+            lastReport = now;
+            const elapsed = (now - startTime) / 1000 || 0.001;
+            const speed = receivedBytes / elapsed;
+            const speedStr = (speed / 1048576).toFixed(2) + 'MiB/s';
+            const pct = totalBytes > 0 ? ((receivedBytes / totalBytes) * 100).toFixed(1) : '50.0';
+            const remainingBytes = Math.max(0, totalBytes - receivedBytes);
+            const etaSec = speed > 0 ? Math.round(remainingBytes / speed) : 0;
+            const etaMin = Math.floor(etaSec / 60);
+            const etaRem = etaSec % 60;
+            const etaStr = `${String(etaMin).padStart(2, '0')}:${String(etaRem).padStart(2, '0')}`;
+            const totalStr = totalBytes > 0 ? (totalBytes / 1048576).toFixed(2) + 'MiB' : 'Unknown';
+
+            sendEvent({ downloadId, output: `[download]  ${pct}% of ~${totalStr} at ${speedStr} ETA ${etaStr}` });
+          }
+        }
+
+        fileStream.end();
+        sendEvent({ downloadId, output: `[download] 100% of ${fileName} completed.` });
+        activeDownloads.delete(downloadId);
+        sendEvent({ downloadId, done: true, code: 0 });
+        return res.end();
+      }
+    } catch (ttErr) {
+      if (ttErr.name === 'AbortError') {
+        console.log(`[/api/download] [${downloadId}] TikTok download aborted.`);
+        activeDownloads.delete(downloadId);
+        sendEvent({ downloadId, done: true, code: 1 });
+        return res.end();
+      }
+      console.warn(`[/api/download] [${downloadId}] TikTok direct download failed, falling back to yt-dlp:`, ttErr.message);
+      sendEvent({ downloadId, output: `[TikTok-Engine] Fallback to yt-dlp engine: ${ttErr.message}` });
+    }
+  }
+
   const args = ['--newline'];
 
   // Format selection
@@ -418,6 +1212,12 @@ app.get('/api/download', (req, res) => {
   // Subtitles
   if (subtitles === 'true') {
     args.push('--write-auto-subs', '--write-subs', '--embed-subs');
+    if (sub_lang) {
+      args.push('--sub-lang', sub_lang);
+    }
+    if (sub_format) {
+      args.push('--sub-format', sub_format);
+    }
   }
 
   // Thumbnail embedding
@@ -483,7 +1283,6 @@ app.get('/api/download', (req, res) => {
     args.push('--http-chunk-size', http_chunk_size);
   }
 
-  // Intervals
   // Local FFmpeg location if present
   if (LOCAL_FFMPEG) {
     args.push('--ffmpeg-location', LOCAL_FFMPEG);
@@ -523,10 +1322,14 @@ app.get('/api/download', (req, res) => {
 
   req.on('close', () => {
     if (activeDownloads.has(downloadId)) {
-      const p = activeDownloads.get(downloadId);
-      if (p && !p.killed) {
-        p.kill('SIGTERM');
-        console.log(`[/api/download] [${downloadId}] Client disconnected — killed process`);
+      const task = activeDownloads.get(downloadId);
+      if (task) {
+        if (typeof task.kill === 'function' && !task.killed) {
+          task.kill('SIGTERM');
+        } else if (typeof task.abort === 'function') {
+          task.abort();
+        }
+        console.log(`[/api/download] [${downloadId}] Client disconnected — cleaned up task`);
       }
       activeDownloads.delete(downloadId);
     }
@@ -539,3 +1342,4 @@ app.get('/api/download', (req, res) => {
 app.listen(PORT, () => {
   console.log(`EveryVideoDownloader server running at http://localhost:${PORT}`);
 });
+
