@@ -7,9 +7,25 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const ROOT_DIR = __dirname;
-const YTDLP_EXE = path.join(ROOT_DIR, 'yt-dlp.exe');
+const CORE_DIR = path.join(ROOT_DIR, 'core');
+const YTDLP_MODULE = path.join(CORE_DIR, 'yt_dlp');
 const FFMPEG_EXE = path.join(ROOT_DIR, 'ffmpeg.exe');
 const DOWNLOAD_DIR = path.join(ROOT_DIR, 'Download');
+
+// Check Python executable
+function checkPythonSystem() {
+  try {
+    const out = execSync('python --version', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return out.trim();
+  } catch (e) {
+    try {
+      const out2 = execSync('py --version', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      return out2.trim();
+    } catch (e2) {
+      return null;
+    }
+  }
+}
 
 // ANSI Color Codes for terminal
 const C = {
@@ -90,18 +106,27 @@ async function runSetup() {
     console.log(`${C.green}[SẴN SÀNG]${C.reset}`);
   }
 
-  // 2. Check yt-dlp.exe
-  process.stdout.write(` [2/4] Kiểm tra yt-dlp Engine... `);
-  if (fs.existsSync(YTDLP_EXE)) {
-    console.log(`${C.green}[SẴN SÀNG]${C.reset}`);
+  // 2. Check Python Runtime & yt-dlp Source Core
+  process.stdout.write(` [2/4] Kiểm tra Python & yt-dlp Source Engine... `);
+  const pyVer = checkPythonSystem();
+  if (!pyVer) {
+    console.log(`${C.red}[CHƯA CÓ PYTHON]${C.reset}`);
+    console.log(`   ${C.yellow}⚠️ Hãy cài đặt Python 3.9+ từ https://python.org để chạy engine.${C.reset}`);
+    allReady = false;
+  } else if (!fs.existsSync(YTDLP_MODULE)) {
+    console.log(`${C.yellow}[CHƯA CÓ MÃ NGUỒN CORE - ĐANG CLONE]${C.reset}`);
+    try {
+      if (!fs.existsSync(CORE_DIR)) fs.mkdirSync(CORE_DIR, { recursive: true });
+      execSync('git clone --depth 1 https://github.com/yt-dlp/yt-dlp.git temp_repo', { cwd: ROOT_DIR, stdio: 'inherit' });
+      fs.renameSync(path.join(ROOT_DIR, 'temp_repo', 'yt_dlp'), YTDLP_MODULE);
+      try { fs.rmSync(path.join(ROOT_DIR, 'temp_repo'), { recursive: true, force: true }); } catch (e) {}
+      console.log(`   ${C.green}✅ Đã tải mã nguồn yt-dlp thành công! (${pyVer})${C.reset}`);
+    } catch (err) {
+      console.log(`   ${C.red}❌ Lỗi tải mã nguồn yt-dlp: ${err.message}${C.reset}`);
+      allReady = false;
+    }
   } else {
-    console.log(`${C.yellow}[CHƯA CÓ - ĐANG TỰ ĐỘNG TẢI]${C.reset}`);
-    const ok = await downloadFile(
-      'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
-      YTDLP_EXE,
-      'yt-dlp.exe'
-    );
-    if (!ok) allReady = false;
+    console.log(`${C.green}[SẴN SÀNG - ${pyVer}]${C.reset}`);
   }
 
   // 3. Check FFmpeg

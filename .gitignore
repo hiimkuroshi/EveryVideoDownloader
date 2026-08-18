@@ -1,5 +1,8 @@
 # Dependencies
 node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
 
 # Downloaded files & media (bỏ qua các file video/ảnh tải về)
 Download/*
@@ -16,12 +19,9 @@ Download/*
 *.webp
 
 # Temporary files & internal docs
+docs/PROJECT_SUMMARY.md
 PROJECT_SUMMARY.md
-YTDLP_CORE_ARCHITECTURE.md
-YTDLP_CORE_ARCHITECTURE_EN.md
-YTDLP_ARCHITECTURE*.md
 config.json
-*.vbs
 scratch/
 .system_generated/
 *.log

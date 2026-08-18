@@ -18,6 +18,22 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
+where python >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    where py >nul 2>nul
+    if %ERRORLEVEL% NEQ 0 (
+        echo =======================================================================
+        echo  [!] CANH BAO: Khong tim thay Python tren may tinh cua ban!
+        echo =======================================================================
+        echo  EveryVideoDownloader can Python de chay engine ma nguon yt-dlp.
+        echo  Dang mo trang tai Python: https://www.python.org
+        echo.
+        start https://www.python.org
+        pause
+        exit /b 1
+    )
+)
+
 if not exist node_modules (
     echo [Khoi tao] Dang cai dat thu vien ban dau: npm install...
     call npm install

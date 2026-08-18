@@ -20,9 +20,34 @@ const app = express();
 const PORT = 3000;
 
 // -- Portable Dynamic Paths (Relative to this folder) -------------------------
-const YTDLP_PATH = path.join(__dirname, 'yt-dlp.exe');
+const CORE_DIR = path.join(__dirname, 'core');
 const DOWNLOADS_DIR = path.join(__dirname, 'Download');
 const DEFAULT_DOWNLOAD_PATH = path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s');
+
+// Detect Python executable command
+const PYTHON_CMD = process.platform === 'win32' ? 'python' : 'python3';
+
+/**
+ * Helper to spawn yt_dlp Python package
+ */
+function spawnYtDlp(args, options = {}) {
+  const fullArgs = ['-m', 'yt_dlp', ...args];
+  const env = { ...process.env, PYTHONPATH: CORE_DIR, ...(options.env || {}) };
+  return spawn(PYTHON_CMD, fullArgs, { ...options, env });
+}
+
+/**
+ * Helper to execute yt_dlp Python package via execFile
+ */
+function execFileYtDlp(args, options = {}, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  const fullArgs = ['-m', 'yt_dlp', ...args];
+  const env = { ...process.env, PYTHONPATH: CORE_DIR, ...(options.env || {}) };
+  return execFile(PYTHON_CMD, fullArgs, { ...options, env }, callback);
+}
 
 // Ensure Download folder exists
 if (!fs.existsSync(DOWNLOADS_DIR)) {
@@ -236,7 +261,7 @@ app.get('/api/download-thumbnail', async (req, res) => {
   args.push('-o', path.join(targetDir, '%(title)s.%(ext)s'));
   args.push(url);
 
-  execFile(YTDLP_PATH, args, (error, stdout, stderr) => {
+  execFileYtDlp(args, (error, stdout, stderr) => {
     if (error) {
       console.error('[/api/download-thumbnail] yt-dlp error:', stderr || error.message);
       return res.status(500).json({ error: stderr || error.message });
@@ -250,10 +275,84 @@ app.get('/api/download-thumbnail', async (req, res) => {
 });
 
 // =============================================================================
-// Helper: Convert WebVTT content to standard SubRip (.SRT) format
+// Helper: Convert Subtitle content (WebVTT, XML, JSON3) to standard SubRip (.SRT) format
 // =============================================================================
+function formatTimeSec(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  const ms = Math.floor((sec % 1) * 1000);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+}
+
+function extractCuesFromText(text) {
+  const cues = [];
+  if (!text) return cues;
+
+  // 1. Try WebVTT / SRT (lines with -->)
+  const blocks = text.trim().split(/\n\s*\n/).slice(0, 50);
+  for (const block of blocks) {
+    const lines = block.trim().split(/\r?\n/);
+    const timeLineIdx = lines.findIndex(l => l.includes('-->'));
+    if (timeLineIdx !== -1) {
+      let timeLine = lines[timeLineIdx].trim();
+      timeLine = timeLine.replace(/-->\s*([0-9:,\.]+)\s+.*$/, '--> $1');
+      const content = lines.slice(timeLineIdx + 1).map(l => l.replace(/<[^>]+>/g, '').trim()).filter(Boolean).join(' ');
+      if (content) {
+        cues.push({ time: timeLine, text: content });
+      }
+    }
+  }
+  if (cues.length > 0) return cues;
+
+  // 2. Try YouTube XML (<text start="X" dur="Y">Text</text>)
+  const xmlRegex = /<text\s+start="([0-9\.]+)"(?:\s+dur="([0-9\.]+)")?[^>]*>([\s\S]*?)<\/text>/gi;
+  let m;
+  while ((m = xmlRegex.exec(text)) !== null && cues.length < 50) {
+    const startSec = parseFloat(m[1]) || 0;
+    const durSec = parseFloat(m[2]) || 2;
+    const endSec = startSec + durSec;
+    const timeLine = `${formatTimeSec(startSec)} --> ${formatTimeSec(endSec)}`;
+    const content = m[3]
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+    if (content) cues.push({ time: timeLine, text: content });
+  }
+  if (cues.length > 0) return cues;
+
+  // 3. Try YouTube JSON3 ({ events: [ { tStartMs, dDurationMs, segs: [{ utf8 }] } ] })
+  try {
+    const data = JSON.parse(text);
+    if (data.events && Array.isArray(data.events)) {
+      for (const ev of data.events) {
+        if (!ev.segs) continue;
+        const startSec = (ev.tStartMs || 0) / 1000;
+        const durSec = (ev.dDurationMs || 2000) / 1000;
+        const timeLine = `${formatTimeSec(startSec)} --> ${formatTimeSec(startSec + durSec)}`;
+        const content = ev.segs.map(s => s.utf8 || '').join('').trim();
+        if (content && content !== '\n') {
+          cues.push({ time: timeLine, text: content });
+        }
+        if (cues.length >= 50) break;
+      }
+    }
+  } catch (e) {}
+
+  return cues;
+}
+
 function vttToSrt(vttText) {
   if (!vttText) return '';
+  const cues = extractCuesFromText(vttText);
+  if (cues.length > 0) {
+    return cues.map((c, i) => `${i + 1}\n${c.time.replace(/(\d{2}:\d{2}:\d{2})\.(\d{3})/g, '$1,$2')}\n${c.text}`).join('\n\n') + '\n';
+  }
+
   let text = vttText.replace(/^WEBVTT[^\n]*\n+/i, '');
   text = text.replace(/^(?:NOTE|STYLE|REGION)[\s\S]*?\n\n/gm, '');
 
@@ -269,12 +368,10 @@ function vttToSrt(vttText) {
     if (timeLineIdx === -1) continue;
 
     let timeLine = lines[timeLineIdx];
-    // Convert WebVTT timestamps 00:00:01.360 to SRT 00:00:01,360
     timeLine = timeLine
       .replace(/(\d{2}:\d{2}:\d{2})\.(\d{3})/g, '$1,$2')
       .replace(/(\d{2}:\d{2})\.(\d{3})/g, '00:$1,$2');
 
-    // Clean up positioning tags
     timeLine = timeLine.replace(/-->\s*([0-9:,\.]+)\s+.*$/, '--> $1');
 
     const cueTextLines = lines.slice(timeLineIdx + 1)
@@ -288,6 +385,25 @@ function vttToSrt(vttText) {
   }
 
   return srtBlocks.join('\n\n') + '\n';
+}
+
+async function fetchSubtitleRawContent(subUrl) {
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+    'Referer': 'https://www.youtube.com/'
+  };
+  let subRes = await fetch(subUrl, { headers });
+  if (!subRes.ok) throw new Error(`HTTP ${subRes.status}: ${subRes.statusText}`);
+  let text = await subRes.text();
+
+  if (text.startsWith('#EXTM3U')) {
+    const match = text.match(/https?:\/\/[^\r\n]+/);
+    if (match) {
+      const segRes = await fetch(match[0], { headers });
+      if (segRes.ok) text = await segRes.text();
+    }
+  }
+  return text;
 }
 
 // =============================================================================
@@ -318,29 +434,20 @@ app.get('/api/download-subtitle', async (req, res) => {
   // 1. Instant Direct Subtitle Download via Stream URL (<100ms)
   if (subUrl && subUrl.startsWith('http')) {
     try {
-      const subRes = await fetch(subUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-          'Referer': 'https://www.youtube.com/'
-        }
-      });
-
-      if (subRes.ok) {
-        let content = await subRes.text();
-        if (ext === 'srt' && (content.startsWith('WEBVTT') || subUrl.includes('fmt=vtt'))) {
-          content = vttToSrt(content);
-        }
-
-        fs.writeFileSync(filePath, content, 'utf8');
-        console.log('[/api/download-subtitle] Instant saved subtitle to:', filePath);
-        return res.json({
-          success: true,
-          path: targetDir,
-          fileName,
-          filePath,
-          message: `Đã tải phụ đề [${lang.toUpperCase()}] thành công: ${fileName}`
-        });
+      let content = await fetchSubtitleRawContent(subUrl);
+      if (ext === 'srt') {
+        content = vttToSrt(content);
       }
+
+      fs.writeFileSync(filePath, content, 'utf8');
+      console.log('[/api/download-subtitle] Instant saved subtitle to:', filePath);
+      return res.json({
+        success: true,
+        path: targetDir,
+        fileName,
+        filePath,
+        message: `Đã tải phụ đề [${lang.toUpperCase()}] thành công: ${fileName}`
+      });
     } catch (err) {
       console.warn('[/api/download-subtitle] Direct fetch fallback to yt-dlp:', err.message);
     }
@@ -354,7 +461,7 @@ app.get('/api/download-subtitle', async (req, res) => {
   args.push('-o', path.join(targetDir, '%(title)s.%(ext)s'));
   args.push(url);
 
-  execFile(YTDLP_PATH, args, (error, stdout, stderr) => {
+  execFileYtDlp(args, (error, stdout, stderr) => {
     if (error) {
       console.error('[/api/download-subtitle] yt-dlp error:', stderr || error.message);
       return res.status(500).json({ error: stderr || error.message });
@@ -378,29 +485,8 @@ app.get('/api/preview-subtitle', async (req, res) => {
   }
 
   try {
-    const subRes = await fetch(subUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-        'Referer': 'https://www.youtube.com/'
-      }
-    });
-
-    if (!subRes.ok) throw new Error(`HTTP ${subRes.status}: ${subRes.statusText}`);
-    const text = await subRes.text();
-
-    const cues = [];
-    const blocks = text.trim().split(/\n\s*\n/).slice(0, 35);
-    for (const block of blocks) {
-      const lines = block.trim().split(/\r?\n/);
-      const timeLineIdx = lines.findIndex(l => l.includes('-->'));
-      if (timeLineIdx !== -1) {
-        const timeLine = lines[timeLineIdx].trim();
-        const content = lines.slice(timeLineIdx + 1).map(l => l.replace(/<[^>]+>/g, '').trim()).filter(Boolean).join(' ');
-        if (content) {
-          cues.push({ time: timeLine, text: content });
-        }
-      }
-    }
+    const text = await fetchSubtitleRawContent(subUrl);
+    const cues = extractCuesFromText(text);
 
     return res.json({ success: true, cues: cues.slice(0, 25), total: cues.length });
   } catch (err) {
@@ -883,7 +969,7 @@ app.get('/api/info', async (req, res) => {
 
   args.push(url);
 
-  execFile(YTDLP_PATH, args, { maxBuffer: 35 * 1024 * 1024 }, async (error, stdout, stderr) => {
+  execFileYtDlp(args, { maxBuffer: 35 * 1024 * 1024 }, async (error, stdout, stderr) => {
     if (error) {
       const message = stderr?.trim() || error.message;
       console.error('[/api/info] Error:', message);
@@ -1294,9 +1380,9 @@ app.get('/api/download', async (req, res) => {
   // Target URL
   args.push(url);
 
-  console.log(`[/api/download] [${downloadId}] Spawning yt-dlp with args:`, args.join(' '));
+  console.log(`[/api/download] [${downloadId}] Spawning Python yt_dlp with args:`, args.join(' '));
 
-  const child = spawn(YTDLP_PATH, args);
+  const child = spawnYtDlp(args);
   activeDownloads.set(downloadId, child);
 
   child.stdout.on('data', (data) => {

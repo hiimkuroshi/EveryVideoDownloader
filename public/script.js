@@ -1074,8 +1074,10 @@ function processAndRenderSubtitles(data) {
         const formats = manualSubs[lang] || [];
         const rawName = formats[0]?.name || '';
         const meta = getLanguageMeta(lang, rawName);
-        const srtFmt = formats.find(f => f.ext === 'srt') || formats.find(f => f.ext === 'vtt') || formats[0];
-        const vttFmt = formats.find(f => f.ext === 'vtt') || formats.find(f => f.ext === 'srt') || formats[0];
+        const directFormats = formats.filter(f => !f.url?.includes('manifest') && !f.url?.includes('m3u8'));
+        const pool = directFormats.length > 0 ? directFormats : formats;
+        const srtFmt = pool.find(f => f.ext === 'srt') || pool.find(f => f.ext === 'vtt') || pool[0];
+        const vttFmt = pool.find(f => f.ext === 'vtt') || pool.find(f => f.ext === 'srt') || pool[0];
 
         parsedSubtitles.push({
             langCode: lang,
@@ -1095,8 +1097,10 @@ function processAndRenderSubtitles(data) {
             const formats = autoSubs[lang] || [];
             const rawName = formats[0]?.name || '';
             const meta = getLanguageMeta(lang, rawName);
-            const srtFmt = formats.find(f => f.ext === 'srt') || formats.find(f => f.ext === 'vtt') || formats[0];
-            const vttFmt = formats.find(f => f.ext === 'vtt') || formats.find(f => f.ext === 'srt') || formats[0];
+            const directFormats = formats.filter(f => !f.url?.includes('manifest') && !f.url?.includes('m3u8'));
+            const pool = directFormats.length > 0 ? directFormats : formats;
+            const srtFmt = pool.find(f => f.ext === 'srt') || pool.find(f => f.ext === 'vtt') || pool[0];
+            const vttFmt = pool.find(f => f.ext === 'vtt') || pool.find(f => f.ext === 'srt') || pool[0];
 
             parsedSubtitles.push({
                 langCode: lang,
