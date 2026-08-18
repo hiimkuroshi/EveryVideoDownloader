@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "setup": "node setup.js"
+    "setup": "node setup.js",
+    "test": "node tests/test_suite.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
