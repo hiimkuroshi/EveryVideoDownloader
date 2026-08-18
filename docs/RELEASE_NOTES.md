@@ -1,3 +1,30 @@
+# 📦 EveryVideoDownloader — Release 0.3.0 (Beta)
+
+> **Phiên bản:** `v0.3.0-beta`  
+> **Ngày phát hành:** 18/08/2026  
+> **Nền tảng cốt lõi:** Lõi mã nguồn mở Python [yt-dlp](https://github.com/yt-dlp/yt-dlp)  
+
+---
+
+## 🌟 Những Điểm Mới & Cải Tiến Nổi Bật (What's New in v0.3.0)
+
+### 1. 🧠 Chuyển Đổi Sang Lõi Mã Nguồn Mở Python `yt_dlp` Cốt Lõi
+- **Loại bỏ hoàn toàn file nhị phân `yt-dlp.exe`**: Ứng dụng giờ đây chạy trực tiếp trên cây mã nguồn Python gốc (`core/yt_dlp/`) với hơn 1.800+ extractors chính thức từ GitHub.
+- **Tốc độ phản hồi tức thì**: Loại bỏ 100% thời gian trễ giải nén file tạm `%TEMP%/_MEIxxxx` của PyInstaller.
+- **Khả năng mở rộng và tùy biến**: Cho phép lập trình viên dễ dàng xem, sửa đổi và thêm mới các bộ trích xuất trực tiếp trong thư mục `core/yt_dlp/extractor/`.
+
+### 2. 🗂️ Tinh Gọn & Chuẩn Hóa Cấu Trúc Thư Mục
+- Di chuyển toàn bộ tài liệu kiến trúc, thiết kế và ghi chú phát hành vào thư mục chuyên biệt `docs/`.
+- Tích hợp bộ kiểm thử tự động toàn diện 15 bài test vào thư mục `tests/`, hỗ trợ chạy qua lệnh chuẩn `npm test`.
+- Làm sạch thư mục gốc, giữ lại các tệp cấu hình và khởi chạy tối giản, chuyên nghiệp.
+
+### 3. 📖 Tài Liệu Song Ngữ Chuẩn Mực (English & Tiếng Việt)
+- Phát hành `README.md` (Tiếng Anh) và `README_VI.md` (Tiếng Việt) với thanh chuyển ngữ 1-click.
+- Bổ sung hướng dẫn chi tiết yêu cầu công cụ (Node.js, Python, FFmpeg) và bảng tra cứu toàn diện các API Backend.
+- Loại bỏ các emoji thừa, giữ phong cách kỹ thuật hiện đại.
+
+---
+
 # 📦 EveryVideoDownloader — Release 0.2.2
 
 > **Phiên bản:** `v0.2.2`  
