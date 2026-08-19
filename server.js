@@ -1404,7 +1404,7 @@ app.get('/api/download', async (req, res) => {
   args.push('--socket-timeout', '15');
   args.push('--retries', '10');
   args.push('--fragment-retries', '10');
-  args.push('--buffersize', '1M');
+  args.push('--buffer-size', '1M');
 
   // Acceleration options
   if (concurrent_fragments) {
