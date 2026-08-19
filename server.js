@@ -958,6 +958,8 @@ app.get('/api/info', async (req, res) => {
 
   if (browser && browser !== 'none') {
     args.push('--cookies-from-browser', browser);
+  } else if (fs.existsSync(path.join(__dirname, 'cookies.txt'))) {
+    args.push('--cookies', path.join(__dirname, 'cookies.txt'));
   }
 
   if (LOCAL_FFMPEG) {
@@ -1310,9 +1312,11 @@ app.get('/api/download', async (req, res) => {
   // Format selection
   args.push('-f', format || 'bv*+ba/b');
 
-  // Browser cookies
+  // Browser cookies (or local cookies.txt file)
   if (browser && browser !== 'none') {
     args.push('--cookies-from-browser', browser);
+  } else if (fs.existsSync(path.join(__dirname, 'cookies.txt'))) {
+    args.push('--cookies', path.join(__dirname, 'cookies.txt'));
   }
 
   // Playlist handling
