@@ -1569,7 +1569,7 @@ function startDirectDownload(customParams = null) {
         convert_thumbnails:   val('convertThumbnails') !== 'none' ? val('convertThumbnails') : '',
         sponsorblock_mark:    val('sponsorblockMark'),
         extractor_retries:    val('extractorRetries'),
-        concurrent_fragments: val('quickConcurrentFragments') || val('concurrentFragments') || '8',
+        concurrent_fragments: val('quickConcurrentFragments') || val('concurrentFragments') || '1',
         http_chunk_size:      (val('quickHttpChunkSize') || val('httpChunkSize')) !== 'none' ? (val('quickHttpChunkSize') || val('httpChunkSize') || '') : '',
         audio_format:         val('audioFormat'),
         audio_quality:        val('audioQuality'),

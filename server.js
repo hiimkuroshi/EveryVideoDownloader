@@ -1400,11 +1400,12 @@ app.get('/api/download', async (req, res) => {
   if (sub_lang) args.push('--sub-lang', sub_lang);
   if (sub_format) args.push('--sub-format', sub_format);
 
-  // Anti-stall, network resiliency and high-throughput buffer flags
-  args.push('--socket-timeout', '15');
-  args.push('--retries', '10');
-  args.push('--fragment-retries', '10');
-  args.push('--buffer-size', '1M');
+  // Anti-stall, network resiliency and adaptive buffer flags
+  args.push('--socket-timeout', '30');
+  args.push('--retries', '20');
+  args.push('--fragment-retries', '50');
+  args.push('--retry-sleep', 'fragment:exp=1:10');
+  args.push('--file-access-retries', '5');
 
   // Acceleration options
   if (concurrent_fragments) {
