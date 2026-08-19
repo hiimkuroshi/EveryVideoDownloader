@@ -334,14 +334,14 @@
                                 </div>
                             </label>
                             <select id="quickHttpChunkSize" class="compact-select">
-                                <option value="10M" selected>⭐ 10 MB (Khuyên dùng)</option>
+                                <option value="none" selected data-i18n="chunkOff">🔄 Tắt (Mặc định - Luồng mượt)</option>
+                                <option value="10M">⭐ 10 MB (Chia khối Range)</option>
                                 <option value="5M">🛡️ 5 MB (Mạng yếu / 4G)</option>
                                 <option value="2M">⚡ 2 MB</option>
                                 <option value="1M">🐢 1 MB</option>
                                 <option value="20M">🚀 20 MB (Mạng mạnh)</option>
                                 <option value="50M">🔥 50 MB</option>
                                 <option value="100M">⚡ 100 MB</option>
-                                <option value="none" data-i18n="chunkOff">🔄 Tắt</option>
                             </select>
                         </div>
                     </div>
@@ -671,14 +671,14 @@
                         </div>
                     </label>
                     <select id="httpChunkSize">
-                        <option value="10M" selected>⭐ 10 MB (Khuyên dùng - Chống bóp tốc độ)</option>
-                        <option value="5M">🛡️ 5 MB (Ổn định mạng yếu)</option>
+                        <option value="none" selected>🔄 Tắt (Mặc định - Luồng liên tục mượt mà)</option>
+                        <option value="10M">⭐ 10 MB (Chia khối Range)</option>
+                        <option value="5M">🛡️ 5 MB (Ổn định mạng yếu / 4G)</option>
                         <option value="2M">⚡ 2 MB</option>
                         <option value="1M">🐢 1 MB</option>
                         <option value="20M">🚀 20 MB (Mạng tốc độ cao)</option>
                         <option value="50M">🔥 50 MB</option>
                         <option value="100M">⚡ 100 MB</option>
-                        <option value="none">🔄 Tắt / Mặc định</option>
                     </select>
                 </div>
             </div>

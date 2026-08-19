@@ -31,8 +31,8 @@ const PYTHON_CMD = process.platform === 'win32' ? 'python' : 'python3';
  * Helper to spawn yt_dlp Python package
  */
 function spawnYtDlp(args, options = {}) {
-  const fullArgs = ['-m', 'yt_dlp', ...args];
-  const env = { ...process.env, PYTHONPATH: CORE_DIR, ...(options.env || {}) };
+  const fullArgs = ['-u', '-m', 'yt_dlp', ...args];
+  const env = { ...process.env, PYTHONUNBUFFERED: '1', PYTHONPATH: CORE_DIR, ...(options.env || {}) };
   return spawn(PYTHON_CMD, fullArgs, { ...options, env });
 }
 
@@ -44,8 +44,8 @@ function execFileYtDlp(args, options = {}, callback) {
     callback = options;
     options = {};
   }
-  const fullArgs = ['-m', 'yt_dlp', ...args];
-  const env = { ...process.env, PYTHONPATH: CORE_DIR, ...(options.env || {}) };
+  const fullArgs = ['-u', '-m', 'yt_dlp', ...args];
+  const env = { ...process.env, PYTHONUNBUFFERED: '1', PYTHONPATH: CORE_DIR, ...(options.env || {}) };
   return execFile(PYTHON_CMD, fullArgs, { ...options, env }, callback);
 }
 
@@ -1130,19 +1130,31 @@ app.get('/api/download', async (req, res) => {
         let receivedBytes = 0;
         let startTime = Date.now();
         let lastReport = 0;
+        let windowStart = Date.now();
+        let windowBytes = 0;
+        let rollingSpeed = 0;
 
         while (true) {
-          const { done, value } = await reader.read();
+          const readPromise = reader.read();
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Douyin stream stalled (timeout 15s)')), 15000));
+          const { done, value } = await Promise.race([readPromise, timeoutPromise]);
           if (done) break;
 
           fileStream.write(Buffer.from(value));
           receivedBytes += value.length;
+          windowBytes += value.length;
 
           const now = Date.now();
+          const winElapsed = (now - windowStart) / 1000;
+          if (winElapsed >= 0.4) {
+            rollingSpeed = windowBytes / winElapsed;
+            windowBytes = 0;
+            windowStart = now;
+          }
+
           if (now - lastReport > 200 || receivedBytes === totalBytes) {
             lastReport = now;
-            const elapsed = (now - startTime) / 1000 || 0.001;
-            const speed = receivedBytes / elapsed;
+            const speed = rollingSpeed || (receivedBytes / ((now - startTime) / 1000 || 0.001));
             const speedStr = (speed / 1048576).toFixed(2) + 'MiB/s';
             const pct = totalBytes > 0 ? ((receivedBytes / totalBytes) * 100).toFixed(1) : '50.0';
             const remainingBytes = Math.max(0, totalBytes - receivedBytes);
@@ -1178,28 +1190,21 @@ app.get('/api/download', async (req, res) => {
     }
   }
 
-  // 2. Direct fast download for TikTok to bypass bot challenge & WAF
+  // 2. Direct high-speed download for TikTok (No watermark HD & Audio MP3)
   if (isTikTokUrl(url)) {
     try {
-      const ttMetaRes = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-      });
-      const ttData = await ttMetaRes.json();
-      if (ttData.code === 0 && ttData.data) {
-        const d = ttData.data;
-        let directStreamUrl = d.play;
-        let ext = 'mp4';
+      const tiktokData = await fetchTikTokDirectMetadata(url);
+      if (tiktokData && tiktokData.formats?.length > 0) {
+        const isAudio = format === 'tiktok_audio' || format === 'audio-only' || audio_format;
+        const chosen = isAudio 
+          ? (tiktokData.formats.find(f => f.format_id === 'tiktok_audio') || tiktokData.formats[0])
+          : (tiktokData.formats.find(f => f.format_id === 'tiktok_nowm') || tiktokData.formats[0]);
 
-        if (format === 'audio-only' || format === 'ba' || format === 'bestaudio' || audio_format) {
-          directStreamUrl = d.music || d.play;
-          ext = 'mp3';
-        } else if (format === 'hd' && d.hdplay) {
-          directStreamUrl = d.hdplay;
-        } else if (format === 'watermark' && d.wmplay) {
-          directStreamUrl = d.wmplay;
-        }
+        const ext = isAudio ? 'mp3' : 'mp4';
+        const directUrl = chosen.url;
+        if (!directUrl) throw new Error('No stream URL found for selected TikTok format');
 
-        const rawTitle = (custom_filename && custom_filename.trim()) ? custom_filename.trim() : (d.title || 'tiktok_video');
+        const rawTitle = (custom_filename && custom_filename.trim()) ? custom_filename.trim() : (tiktokData.title || 'tiktok_video');
         const safeTitle = rawTitle
           .replace(/[\\/:*?"<>|]/g, '_')
           .replace(/\s+/g, ' ')
@@ -1223,10 +1228,10 @@ app.get('/api/download', async (req, res) => {
           killed: false,
         });
 
-        const videoRes = await fetch(directStreamUrl, {
+        const videoRes = await fetch(directUrl, {
           signal: abortController.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/128.0.0.0',
             'Referer': 'https://www.tiktok.com/'
           }
         });
@@ -1240,19 +1245,31 @@ app.get('/api/download', async (req, res) => {
         let receivedBytes = 0;
         let startTime = Date.now();
         let lastReport = 0;
+        let windowStart = Date.now();
+        let windowBytes = 0;
+        let rollingSpeed = 0;
 
         while (true) {
-          const { done, value } = await reader.read();
+          const readPromise = reader.read();
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TikTok stream stalled (timeout 15s)')), 15000));
+          const { done, value } = await Promise.race([readPromise, timeoutPromise]);
           if (done) break;
 
           fileStream.write(Buffer.from(value));
           receivedBytes += value.length;
+          windowBytes += value.length;
 
           const now = Date.now();
-          if (now - lastReport > 200 || receivedBytes === totalBytes) {
+          const winElapsed = (now - windowStart) / 1000;
+          if (winElapsed >= 0.4) {
+            rollingSpeed = windowBytes / winElapsed;
+            windowBytes = 0;
+            windowStart = now;
+          }
+
+          if (now - lastReport > 200 || (totalBytes > 0 && receivedBytes === totalBytes)) {
             lastReport = now;
-            const elapsed = (now - startTime) / 1000 || 0.001;
-            const speed = receivedBytes / elapsed;
+            const speed = rollingSpeed || (receivedBytes / ((now - startTime) / 1000 || 0.001));
             const speedStr = (speed / 1048576).toFixed(2) + 'MiB/s';
             const pct = totalBytes > 0 ? ((receivedBytes / totalBytes) * 100).toFixed(1) : '50.0';
             const remainingBytes = Math.max(0, totalBytes - receivedBytes);
@@ -1262,7 +1279,10 @@ app.get('/api/download', async (req, res) => {
             const etaStr = `${String(etaMin).padStart(2, '0')}:${String(etaRem).padStart(2, '0')}`;
             const totalStr = totalBytes > 0 ? (totalBytes / 1048576).toFixed(2) + 'MiB' : 'Unknown';
 
-            sendEvent({ downloadId, output: `[download]  ${pct}% of ~${totalStr} at ${speedStr} ETA ${etaStr}` });
+            sendEvent({
+              downloadId,
+              output: `[download]  ${pct}% of ~${totalStr} at  ${speedStr} ETA ${etaStr}`
+            });
           }
         }
 
@@ -1379,6 +1399,12 @@ app.get('/api/download', async (req, res) => {
   // Subtitle options
   if (sub_lang) args.push('--sub-lang', sub_lang);
   if (sub_format) args.push('--sub-format', sub_format);
+
+  // Anti-stall, network resiliency and high-throughput buffer flags
+  args.push('--socket-timeout', '15');
+  args.push('--retries', '10');
+  args.push('--fragment-retries', '10');
+  args.push('--buffersize', '1M');
 
   // Acceleration options
   if (concurrent_fragments) {

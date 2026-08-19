@@ -1570,7 +1570,7 @@ function startDirectDownload(customParams = null) {
         sponsorblock_mark:    val('sponsorblockMark'),
         extractor_retries:    val('extractorRetries'),
         concurrent_fragments: val('quickConcurrentFragments') || val('concurrentFragments') || '8',
-        http_chunk_size:      val('quickHttpChunkSize') || val('httpChunkSize') || '10M',
+        http_chunk_size:      (val('quickHttpChunkSize') || val('httpChunkSize')) !== 'none' ? (val('quickHttpChunkSize') || val('httpChunkSize') || '') : '',
         audio_format:         val('audioFormat'),
         audio_quality:        val('audioQuality'),
         recode_video:         val('recodeVideo'),
@@ -1609,9 +1609,9 @@ function startDirectDownload(customParams = null) {
     logs.innerHTML = '';
     bar.style.width = '0%';
     percentCounter.textContent = '0.0%';
-    statusText.textContent = 'Đang kết nối máy chủ...';
     badge.textContent = 'Downloading';
-    badge.className = 'status-badge active';
+    badge.className = 'status-badge processing';
+    statusText.textContent = 'Đang kết nối và tải video...';
     
     pauseResumeBtn.disabled = false;
     pauseResumeBtnText.textContent = 'Tạm Dừng';
@@ -1695,11 +1695,13 @@ function startDirectDownload(customParams = null) {
             } else if (line.includes('[ExtractAudio]')) {
                 statusText.textContent = 'Đang trích xuất audio...';
                 badge.textContent = 'Extracting';
-            } else if (line.includes('[Merger]')) {
-                statusText.textContent = 'Đang ghép video và audio (FFmpeg)...';
+            } else if (line.includes('[Merger]') || line.includes('[ffmpeg]') || line.includes('[Fixup]') || line.includes('[VideoRemuxer]')) {
+                statusText.textContent = '⚙️ Đang ghép Video & Audio (FFmpeg Muxing)...';
+                $('metricSpeed').textContent = '⚡ Đang ghi ổ đĩa';
+                $('metricEta').textContent = '⏱️ Đang hoàn tất';
                 badge.textContent = 'Merging';
-                bar.style.width = '95%';
-                percentCounter.textContent = '95.0%';
+                bar.style.width = '98%';
+                percentCounter.textContent = '98.0%';
             } else if (line.includes('[EmbedSubtitle]')) {
                 statusText.textContent = 'Đang nhúng phụ đề...';
             } else if (line.includes('[EmbedThumbnail]')) {

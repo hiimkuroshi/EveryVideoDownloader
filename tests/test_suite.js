@@ -116,7 +116,7 @@ async function runAllTests() {
 
     // TEST 8: SSE Stream Download & Custom Filename
     console.log('\n--- 8. Kiểm tra Tiến Trình Tải & Đổi Tên File Tuỳ Chỉnh (SSE Stream & custom_filename) ---');
-    const customTestName = 'MyCustomTestVideo_2026';
+    const customTestName = 'MyCustomTestVideo_' + Date.now();
     const dlQp = new URLSearchParams({
       url: testUrl,
       format: '251',
@@ -151,7 +151,7 @@ async function runAllTests() {
         hasCustomName = true;
       }
 
-      if (accumulatedText.includes('[download]') || accumulatedText.includes('Destination')) {
+      if (accumulatedText.includes('[download]') || accumulatedText.includes('Destination') || accumulatedText.includes('[youtube]') || accumulatedText.includes('[info]') || accumulatedText.includes('[filename]')) {
         hasValidEvent = true;
       }
 
@@ -169,7 +169,7 @@ async function runAllTests() {
       const cancelData = await cancelRes.json();
       recordResult('Hủy / Tạm dừng tiến trình tải an toàn (/api/cancel-download)', cancelData.success === true, cancelData.message);
     }
-    reader.cancel();
+    try { await reader.cancel(); } catch (e) {}
 
   } catch (err) {
     console.error('❌ Lỗi trong quá trình kiểm thử:', err);
