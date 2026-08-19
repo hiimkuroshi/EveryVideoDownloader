@@ -17,7 +17,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // -- Portable Dynamic Paths (Relative to this folder) -------------------------
 const CORE_DIR = path.join(__dirname, 'core');
@@ -1037,6 +1037,7 @@ app.get('/api/download', async (req, res) => {
     sleep_interval,
     max_sleep_interval,
     download_id,
+    custom_filename,
   } = req.query;
 
   if (!url) {
@@ -1056,7 +1057,10 @@ app.get('/api/download', async (req, res) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
-  sendEvent({ downloadId, started: true });
+  sendEvent({ downloadId, started: true, custom_filename: custom_filename || null });
+  if (custom_filename && custom_filename.trim()) {
+    sendEvent({ downloadId, output: `[filename] Tên file lưu: ${custom_filename.trim()}` });
+  }
 
   // 1. Direct high-speed download for Douyin (4K, 2K, 1080p, 720p, MP3)
   if (isDouyinUrl(url)) {
@@ -1082,20 +1086,19 @@ app.get('/api/download', async (req, res) => {
         const directStreamUrl = chosen?.url;
         if (!directStreamUrl) throw new Error('No stream URL found for selected Douyin format');
 
-        const safeTitle = (douyinData.title || 'douyin_video')
+        const rawTitle = (custom_filename && custom_filename.trim()) ? custom_filename.trim() : (douyinData.title || 'douyin_video');
+        const safeTitle = rawTitle
           .replace(/[\\/:*?"<>|]/g, '_')
           .replace(/\s+/g, ' ')
           .trim()
-          .slice(0, 120) || 'douyin_video';
+          .slice(0, 150) || 'douyin_video';
 
         const targetDir = path.resolve(output || DOWNLOADS_DIR);
         if (!fs.existsSync(targetDir)) {
           fs.mkdirSync(targetDir, { recursive: true });
         }
 
-        const fileName = output_template 
-          ? output_template.replace('%(title)s', safeTitle).replace('%(ext)s', ext)
-          : `${safeTitle}.${ext}`;
+        const fileName = `${safeTitle}.${ext}`;
         const filePath = path.join(targetDir, fileName);
 
         console.log(`[/api/download] [${downloadId}] Downloading direct Douyin (${chosen.resolution}) to: ${filePath}`);
@@ -1112,7 +1115,7 @@ app.get('/api/download', async (req, res) => {
         const videoRes = await fetch(directStreamUrl, {
           signal: abortController.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/128.0.0.0',
             'Referer': 'https://www.douyin.com/',
             'Cookie': cookie
           }
@@ -1149,14 +1152,18 @@ app.get('/api/download', async (req, res) => {
             const etaStr = `${String(etaMin).padStart(2, '0')}:${String(etaRem).padStart(2, '0')}`;
             const totalStr = totalBytes > 0 ? (totalBytes / 1048576).toFixed(2) + 'MiB' : 'Unknown';
 
-            sendEvent({ downloadId, output: `[download]  ${pct}% of ~${totalStr} at ${speedStr} ETA ${etaStr}` });
+            sendEvent({
+              downloadId,
+              output: `[download]  ${pct}% of ~${totalStr} at  ${speedStr} ETA ${etaStr}`
+            });
           }
         }
 
         fileStream.end();
-        sendEvent({ downloadId, output: `[download] 100% of ${fileName} completed.` });
+        console.log(`[/api/download] [${downloadId}] Douyin download finished successfully: ${filePath}`);
+        sendEvent({ downloadId, output: `100% of ${filePath}` });
+        sendEvent({ downloadId, done: true, code: 0, file: filePath });
         activeDownloads.delete(downloadId);
-        sendEvent({ downloadId, done: true, code: 0 });
         return res.end();
       }
     } catch (dyErr) {
@@ -1192,20 +1199,19 @@ app.get('/api/download', async (req, res) => {
           directStreamUrl = d.wmplay;
         }
 
-        const safeTitle = (d.title || 'tiktok_video')
+        const rawTitle = (custom_filename && custom_filename.trim()) ? custom_filename.trim() : (d.title || 'tiktok_video');
+        const safeTitle = rawTitle
           .replace(/[\\/:*?"<>|]/g, '_')
           .replace(/\s+/g, ' ')
           .trim()
-          .slice(0, 120) || 'tiktok_video';
+          .slice(0, 150) || 'tiktok_video';
 
         const targetDir = path.resolve(output || DOWNLOADS_DIR);
         if (!fs.existsSync(targetDir)) {
           fs.mkdirSync(targetDir, { recursive: true });
         }
 
-        const fileName = output_template 
-          ? output_template.replace('%(title)s', safeTitle).replace('%(ext)s', ext)
-          : `${safeTitle}.${ext}`;
+        const fileName = `${safeTitle}.${ext}`;
         const filePath = path.join(targetDir, fileName);
 
         console.log(`[/api/download] [${downloadId}] Downloading direct TikTok to: ${filePath}`);
@@ -1261,9 +1267,10 @@ app.get('/api/download', async (req, res) => {
         }
 
         fileStream.end();
-        sendEvent({ downloadId, output: `[download] 100% of ${fileName} completed.` });
+        console.log(`[/api/download] [${downloadId}] TikTok download finished successfully: ${filePath}`);
+        sendEvent({ downloadId, output: `100% of ${filePath}` });
+        sendEvent({ downloadId, done: true, code: 0, file: filePath });
         activeDownloads.delete(downloadId);
-        sendEvent({ downloadId, done: true, code: 0 });
         return res.end();
       }
     } catch (ttErr) {
@@ -1325,13 +1332,25 @@ app.get('/api/download', async (req, res) => {
   if (username) args.push('-u', username);
   if (password) args.push('-p', password);
 
+  // Custom output filename template resolution
+  let effectiveOutputTemplate = output_template;
+  if (custom_filename && custom_filename.trim()) {
+    let cleanName = custom_filename.trim().replace(/[\\/:*?"<>|]/g, '_');
+    if (!cleanName.includes('%(ext)s')) {
+      cleanName = cleanName.replace(/\.[a-zA-Z0-9]{2,4}$/, '');
+      effectiveOutputTemplate = `${cleanName}.%(ext)s`;
+    } else {
+      effectiveOutputTemplate = cleanName;
+    }
+  }
+
   // Output destination
-  if (output && output_template) {
-    args.push('-o', path.join(output, output_template));
+  if (output && effectiveOutputTemplate) {
+    args.push('-o', path.join(output, effectiveOutputTemplate));
   } else if (output) {
     args.push('-o', path.join(output, '%(title)s.%(ext)s'));
-  } else if (output_template) {
-    args.push('-o', output_template);
+  } else if (effectiveOutputTemplate) {
+    args.push('-o', effectiveOutputTemplate);
   } else {
     args.push('-o', DEFAULT_DOWNLOAD_PATH);
   }

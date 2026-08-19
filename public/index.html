@@ -163,6 +163,34 @@
                             </div>
                             <p id="videoTranslatedTitle" class="trans-text" data-i18n="translatingText">Đang dịch tiêu đề...</p>
                         </div>
+
+                        <!-- Editable File Name Control Box -->
+                        <div class="custom-filename-box">
+                            <div class="filename-header">
+                                <label for="customFileNameInput" class="filename-label">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    <span data-i18n="customFileNameLabel">Tên file khi tải về:</span>
+                                </label>
+                                <div class="filename-quick-actions">
+                                    <button type="button" id="useOriginalNameBtn" class="btn-name-action" title="Dùng tiêu đề gốc của video" data-i18n-title="useOriginalName">
+                                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        <span data-i18n="useOriginalName">Gốc</span>
+                                    </button>
+                                    <button type="button" id="useTranslatedNameBtn" class="btn-name-action" title="Dùng tên đã dịch tiếng Việt" data-i18n-title="useTranslatedName">
+                                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                        <span data-i18n="useTranslatedName">Dịch</span>
+                                    </button>
+                                    <button type="button" id="cleanFileNameBtn" class="btn-name-action" title="Làm sạch ký tự đặc biệt và emoji" data-i18n-title="cleanFileName">
+                                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                        <span data-i18n="cleanFileName">Làm sạch</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="filename-input-wrap">
+                                <input type="text" id="customFileNameInput" class="custom-filename-input" placeholder="Nhập tên file bạn muốn lưu..." data-i18n-placeholder="customFileNamePlaceholder">
+                                <span class="filename-ext-badge" id="customFileNameExt">.mkv</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

@@ -38,6 +38,11 @@ const I18N = {
     originalTitleLabel: "Tiêu đề video gốc",
     transTitleLabel: "Tiếng Việt (Google Dịch):",
     translatingText: "Đang dịch tiêu đề sang tiếng Việt...",
+    customFileNameLabel: "Tên file khi tải về:",
+    customFileNamePlaceholder: "Nhập tên file bạn muốn lưu...",
+    useOriginalName: "Gốc",
+    useTranslatedName: "Dịch",
+    cleanFileName: "Làm sạch",
 
     // ── Sidebar: Quick Subtitle ──
     quickSubTitle: "Trích Xuất & Tải Nhanh Phụ Đề",
@@ -230,6 +235,11 @@ const I18N = {
     originalTitleLabel: "Original Video Title",
     transTitleLabel: "English Translation:",
     translatingText: "Translating title...",
+    customFileNameLabel: "Custom Download File Name:",
+    customFileNamePlaceholder: "Enter custom file name to save as...",
+    useOriginalName: "Original",
+    useTranslatedName: "Translated",
+    cleanFileName: "Clean",
 
     // ── Sidebar: Quick Subtitle ──
     quickSubTitle: "Extract & Quick Download Subtitles",
@@ -422,6 +432,11 @@ const I18N = {
     originalTitleLabel: "原始视频标题",
     transTitleLabel: "中文翻译标题：",
     translatingText: "正在自动翻译标题...",
+    customFileNameLabel: "下载文件名:",
+    customFileNamePlaceholder: "输入要保存的文件名...",
+    useOriginalName: "原始",
+    useTranslatedName: "翻译",
+    cleanFileName: "清理",
 
     // ── Sidebar: Quick Subtitle ──
     quickSubTitle: "快速提取与下载字幕",
@@ -614,6 +629,11 @@ const I18N = {
     originalTitleLabel: "元の動画タイトル",
     transTitleLabel: "日本語翻訳タイトル：",
     translatingText: "タイトルを翻訳中...",
+    customFileNameLabel: "ダウンロードファイル名:",
+    customFileNamePlaceholder: "保存するファイル名を入力...",
+    useOriginalName: "元の名前",
+    useTranslatedName: "翻訳名",
+    cleanFileName: "クリーン",
 
     // ── Sidebar: Quick Subtitle ──
     quickSubTitle: "字幕の抽出とクイックダウンロード",

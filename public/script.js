@@ -431,6 +431,34 @@ $('url').addEventListener('input', (e) => {
     }
 });
 
+// ── Custom File Name State & Helpers ───────────────────────────
+let currentOriginalTitle = '';
+let currentTranslatedTitle = '';
+
+function cleanFileNameString(str) {
+    if (!str) return '';
+    return str
+        .replace(/[\\/:*?"<>|]/g, '_')
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function updateCustomFileNameExt() {
+    const extBadge = $('customFileNameExt');
+    if (!extBadge) return;
+    
+    // Check if audio format is selected
+    const audioFmt = val('audioFormat');
+    if (audioFmt && audioFmt !== 'none') {
+        extBadge.textContent = '.' + audioFmt;
+        return;
+    }
+
+    const mergeFmt = val('quickMergeFormat') || val('mergeOutputFormat') || 'mkv';
+    extBadge.textContent = mergeFmt ? '.' + mergeFmt : '.mkv';
+}
+
 // ── Render Video Hero Card ───────────────────────────
 function renderVideoHero(data) {
     const card = $('videoHeroCard');
@@ -443,6 +471,14 @@ function renderVideoHero(data) {
     const subCountEl = $('videoSubCount');
 
     currentThumbnailUrl = data.thumbnail || '';
+    currentOriginalTitle = data.title || '';
+    currentTranslatedTitle = '';
+
+    // Set custom file name input default value to current video title
+    if ($('customFileNameInput')) {
+        $('customFileNameInput').value = data.title || '';
+    }
+    updateCustomFileNameExt();
 
     // Proxy image with fallback
     if (currentThumbnailUrl) {
@@ -474,6 +510,32 @@ $('videoSubCount')?.addEventListener('click', () => {
     if (subPill) subPill.click();
 });
 
+// Custom Filename Action Buttons
+$('useOriginalNameBtn')?.addEventListener('click', () => {
+    if (currentOriginalTitle) {
+        if ($('customFileNameInput')) $('customFileNameInput').value = currentOriginalTitle;
+        showToast('Đã áp dụng tiêu đề gốc của video!', 'info');
+    }
+});
+
+$('useTranslatedNameBtn')?.addEventListener('click', () => {
+    if (currentTranslatedTitle || currentOriginalTitle) {
+        if ($('customFileNameInput')) $('customFileNameInput').value = currentTranslatedTitle || currentOriginalTitle;
+        showToast('Đã áp dụng tiêu đề đã dịch!', 'info');
+    }
+});
+
+$('cleanFileNameBtn')?.addEventListener('click', () => {
+    const currentVal = $('customFileNameInput')?.value || '';
+    const cleaned = cleanFileNameString(currentVal);
+    if ($('customFileNameInput')) $('customFileNameInput').value = cleaned;
+    showToast('Đã làm sạch ký tự đặc biệt và emoji!', 'success');
+});
+
+$('quickMergeFormat')?.addEventListener('change', updateCustomFileNameExt);
+$('mergeOutputFormat')?.addEventListener('change', updateCustomFileNameExt);
+$('audioFormat')?.addEventListener('change', updateCustomFileNameExt);
+
 // ── Multilingual Video Title Translation (Google Translate) ───
 async function translateVideoTitle(rawTitle) {
     const transText = $('videoTranslatedTitle');
@@ -498,6 +560,7 @@ async function translateVideoTitle(rawTitle) {
     // If English and already standard ascii English, keep directly
     if (lang === 'en' && /^[\x00-\x7F]*$/.test(rawTitle)) {
         transText.textContent = rawTitle;
+        currentTranslatedTitle = rawTitle;
         return;
     }
 
@@ -506,11 +569,14 @@ async function translateVideoTitle(rawTitle) {
         const data = await res.json();
         if (data.translated) {
             transText.textContent = data.translated;
+            currentTranslatedTitle = data.translated;
         } else {
             transText.textContent = rawTitle;
+            currentTranslatedTitle = rawTitle;
         }
     } catch (err) {
         transText.textContent = rawTitle;
+        currentTranslatedTitle = rawTitle;
     }
 }
 
@@ -528,13 +594,14 @@ $('dlThumbBtn')?.addEventListener('click', async (e) => {
     btn.innerHTML = `<span style="display:inline-block; animation:spin 0.6s linear infinite;">⏳</span> <span>Đang lưu...</span>`;
 
     const targetFolder = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
+    const targetTitle = val('customFileNameInput') || currentVideoData?.title || 'video';
     showToast('⏳ Đang tải ảnh thumbnail HD của video...', 'info');
 
     try {
         const qp = new URLSearchParams({
             url: currentUrl,
             thumbUrl: currentThumbnailUrl || '',
-            title: currentVideoData?.title || 'video',
+            title: targetTitle,
             browser: currentBrowser,
             output: targetFolder
         });
@@ -1261,7 +1328,7 @@ function renderSubtitlesTable() {
 async function downloadSubtitleDirect(subItem, format = 'srt') {
     if (!subItem) return;
     const targetFolder = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
-    const videoTitle = currentVideoData?.title || 'video';
+    const videoTitle = val('customFileNameInput') || currentVideoData?.title || 'video';
 
     showToast(`⏳ Đang tải phụ đề [${subItem.langName}] dạng .${format.toUpperCase()}...`, 'info');
 
@@ -1508,6 +1575,7 @@ function startDirectDownload(customParams = null) {
         audio_quality:        val('audioQuality'),
         recode_video:         val('recodeVideo'),
         merge_output_format:  val('quickMergeFormat') || val('mergeOutputFormat') || 'mkv',
+        custom_filename:      val('customFileNameInput')?.trim() || '',
     };
 
     if (customParams) {
@@ -1726,13 +1794,14 @@ $('cancelBtn')?.addEventListener('click', async () => {
 $('addSelectedToQueueBtn')?.addEventListener('click', () => {
     if (selectedFormatSet.size === 0) return;
 
+    const customTitle = val('customFileNameInput') || currentVideoData?.title || 'Video';
     let addedCount = 0;
     selectedFormatSet.forEach(fmtId => {
         const item = parsedFormats.find(f => f.id === fmtId);
         if (item) {
             addSingleItemToQueue({
                 url: currentUrl,
-                title: currentVideoData?.title || 'Video',
+                title: customTitle,
                 format: item.id,
                 formatLabel: `${item.resolution} (ID ${item.id})`,
                 ext: item.ext,
@@ -1861,9 +1930,10 @@ async function processNextQueueItem() {
     currentUrl = nextItem.url;
     selectedFormatValue = nextItem.format;
     $('url').value = nextItem.url;
+    if ($('customFileNameInput')) $('customFileNameInput').value = nextItem.title;
     setFinalFormat(nextItem.format, nextItem.formatLabel);
 
-    startDirectDownload();
+    startDirectDownload({ custom_filename: nextItem.title });
 
     // Monitor completion to trigger next
     const checkInterval = setInterval(() => {

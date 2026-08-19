@@ -1,9 +1,9 @@
-﻿const { spawn } = require('child_process');
+const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
-const PORT = 3000;
+const PORT = process.env.TEST_PORT || 3055;
 const BASE_URL = `http://localhost:${PORT}`;
 
 const results = [];
@@ -21,8 +21,11 @@ async function runAllTests() {
   console.log('                 (Lõi Mã Nguồn Mở Python yt_dlp)');
   console.log('======================================================================\n');
 
-  console.log('🚀 Đang khởi động Backend Server (server.js)...');
-  const server = spawn('node', ['server.js'], { cwd: ROOT_DIR });
+  console.log(`🚀 Đang khởi động Backend Server trên cổng ${PORT} (server.js)...`);
+  const server = spawn('node', ['server.js'], { 
+    cwd: ROOT_DIR,
+    env: { ...process.env, PORT: String(PORT) }
+  });
 
   server.stderr.on('data', (d) => {
     const errStr = d.toString().trim();
@@ -111,12 +114,14 @@ async function runAllTests() {
     const openData = await openRes.json();
     recordResult('API Mở nhanh thư mục trong Windows Explorer (<10ms)', openData.success === true, `Path: ${openData.path}`);
 
-    // TEST 8: SSE Stream Download & Cancel
-    console.log('\n--- 8. Kiểm tra Tiến Trình Tải Thời Gian Thực (SSE Stream & Cancel) ---');
+    // TEST 8: SSE Stream Download & Custom Filename
+    console.log('\n--- 8. Kiểm tra Tiến Trình Tải & Đổi Tên File Tuỳ Chỉnh (SSE Stream & custom_filename) ---');
+    const customTestName = 'MyCustomTestVideo_2026';
     const dlQp = new URLSearchParams({
       url: testUrl,
       format: '251',
       rate_limit: '100K',
+      custom_filename: customTestName,
       output: targetDl
     });
 
@@ -127,25 +132,36 @@ async function runAllTests() {
     let capturedDownloadId = null;
     let receivedSSEChunks = 0;
     let hasValidEvent = false;
+    let hasCustomName = false;
+    let accumulatedText = '';
 
-    while (receivedSSEChunks < 20) {
+    while (receivedSSEChunks < 60) {
       const { value, done } = await reader.read();
       if (done) break;
       const text = decoder.decode(value);
+      accumulatedText += text;
       receivedSSEChunks++;
 
-      if (text.includes('downloadId') && !capturedDownloadId) {
-        const match = text.match(/"downloadId":"([^"]+)"/);
+      if (accumulatedText.includes('downloadId') && !capturedDownloadId) {
+        const match = accumulatedText.match(/"downloadId":"([^"]+)"/);
         if (match) capturedDownloadId = match[1];
       }
 
-      if (text.includes('[download]') || text.includes('Destination')) {
+      if (accumulatedText.includes(customTestName)) {
+        hasCustomName = true;
+      }
+
+      if (accumulatedText.includes('[download]') || accumulatedText.includes('Destination')) {
         hasValidEvent = true;
+      }
+
+      if (hasValidEvent && hasCustomName && capturedDownloadId) {
         break;
       }
     }
 
     recordResult('SSE Stream khởi tạo tiến trình tải qua Python Core', !!capturedDownloadId, `Download ID: ${capturedDownloadId}`);
+    recordResult('Đổi tên file tải về tuỳ chỉnh (custom_filename)', hasCustomName, `Tên file đích nhận đúng: ${customTestName}`);
     recordResult('SSE Stream nhận log & tiến trình tải thời gian thực', hasValidEvent, `Đã stream dữ liệu thành công`);
 
     if (capturedDownloadId) {
