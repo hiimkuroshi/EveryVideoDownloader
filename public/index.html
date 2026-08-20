@@ -695,6 +695,48 @@
             </div>
 
             <hr class="divider">
+            <h3 class="section-title" data-i18n="advBiliCdnTitle">🚀 Tối Ưu CDN Bilibili & Chống Nghẽn P2P (Bilibili Anti-P2P & UPOS Selector)</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="label-with-tip" style="cursor: pointer;">
+                        <span data-i18n="biliAvoidP2pLabel">Tự động tránh CDN P2P / MCDN (Khuyên dùng)</span>
+                        <div class="tip-wrap">
+                            <svg class="tip-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            <div class="tip-box" data-i18n="biliAvoidP2pTip">
+                                Tự động phát hiện và loại bỏ các node mạng P2P/MCDN (mcdn.bilivideo.cn, szbdyd.com) gây bóp nghẹt băng thông, chuyển sang CDN backbone chính thống.
+                            </div>
+                        </div>
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+                        <input type="checkbox" id="bilibiliAvoidP2p" checked style="width: 18px; height: 18px; cursor: pointer;">
+                        <span id="bilibiliAvoidP2pStatus" style="font-size: 13px; color: var(--color-success, #10b981); font-weight: 500;" data-i18n="biliAvoidP2pActive">🛡️ Đang Bật (Tự động bypass CDN nghẽn)</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="bilibiliUposHost" class="label-with-tip">
+                        <span data-i18n="biliUposHostLabel">Máy chủ CDN Bilibili (UPOS Server)</span>
+                        <div class="tip-wrap">
+                            <svg class="tip-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            <div class="tip-box" data-i18n="biliUposHostTip">
+                                Chọn máy chủ CDN UPOS để tải video Bilibili. Alibaba Cloud CDN (mirrorali) thường cho tốc độ tải cao và ổn định nhất tại Việt Nam & Quốc tế.
+                            </div>
+                        </div>
+                    </label>
+                    <select id="bilibiliUposHost">
+                        <option value="auto" selected data-i18n="biliUposAuto">⚡ Tự động (Ưu tiên CDN Quốc tế Alibaba / Tencent)</option>
+                        <option value="upos-sz-mirroraliov.bilivideo.com" data-i18n="biliUposAliOv">🌏 Alibaba Overseas CDN (upos-sz-mirroraliov) — Tốc độ cao nhất & Ổn định tại VN</option>
+                        <option value="upos-sz-mirrorcosov.bilivideo.com" data-i18n="biliUposCosOv">🌐 Tencent Overseas CDN (upos-sz-mirrorcosov) — Tối ưu Quốc tế</option>
+                        <option value="upos-hz-mirrorakam.akamaized.net" data-i18n="biliUposAkam">⚡ Akamai Global CDN (upos-hz-mirrorakam) — Băng thông toàn cầu</option>
+                        <option value="upos-sz-mirrorali.bilivideo.com" data-i18n="biliUposAli">🚀 Alibaba Cloud Nội địa TQ (upos-sz-mirrorali)</option>
+                        <option value="upos-sz-mirrorcos.bilivideo.com" data-i18n="biliUposCos">🛡️ Tencent Cloud Nội địa TQ (upos-sz-mirrorcos)</option>
+                        <option value="upos-sz-mirrorhw.bilivideo.com" data-i18n="biliUposHw">🌐 Huawei Cloud Nội địa TQ (upos-sz-mirrorhw)</option>
+                        <option value="upos-sz-mirrorbos.bilivideo.com" data-i18n="biliUposBos">🏢 Baidu Cloud Nội địa TQ (upos-sz-mirrorbos)</option>
+                        <option value="allow_p2p" data-i18n="biliUposRaw">🔄 Giữ nguyên CDN gốc Bilibili (Cho phép P2P)</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr class="divider">
             <h3 class="section-title" data-i18n="advPostTitle">🎬 Định Dạng & Hậu Kỳ (Post-Processing)</h3>
             <div class="form-row">
                 <div class="form-group">

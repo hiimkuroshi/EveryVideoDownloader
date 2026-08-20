@@ -67,6 +67,82 @@ class BilibiliBaseIE(InfoExtractor):
                 f'Format(s) {missing_formats} are missing; you have to '
                 f'become a premium member to download them. {self._login_hint()}')
 
+    @staticmethod
+    def _is_p2p_host(url_or_host):
+        if not url_or_host:
+            return False
+        h = str(url_or_host).lower()
+        return any(k in h for k in ('mcdn', 'szbdyd', 'pcdn', 'xy', ':8082', ':8000', 'v1direct'))
+
+    @staticmethod
+    def _replace_upos_host(url, target_host):
+        if not url or not target_host or target_host in ('none', 'allow_p2p', 'default'):
+            return url
+        try:
+            parsed = urllib.parse.urlparse(url)
+            if parsed.netloc:
+                new_parsed = parsed._replace(scheme='https', netloc=target_host)
+                return urllib.parse.urlunparse(new_parsed)
+        except Exception:
+            pass
+        return url
+
+    def _get_extractor_arg(self, key, default=None):
+        try:
+            if hasattr(self, '_configuration_arg'):
+                val = self._configuration_arg(key, [default])
+                if val and isinstance(val, list):
+                    return val[0]
+                return val or default
+            extractor_args = self.get_param('extractor_args', {}) or {}
+            bili_args = extractor_args.get('bilibili', {}) or {}
+            v = bili_args.get(key)
+            if isinstance(v, list) and v:
+                return v[0]
+            return v if v is not None else default
+        except Exception:
+            return default
+
+    def _optimize_stream_url(self, media_dict):
+        raw_avoid = self._get_extractor_arg('avoid_p2p', 'true')
+        avoid_p2p = str(raw_avoid).lower() not in ('false', '0', 'no', 'off', 'allow_p2p')
+        custom_upos_host = self._get_extractor_arg('upos_host', None)
+
+        base_url = traverse_obj(media_dict, 'baseUrl', 'base_url', 'url')
+        if not base_url:
+            return None
+
+        backup_urls = traverse_obj(media_dict, (('backupUrl', 'backup_url'), ...)) or []
+        if isinstance(backup_urls, str):
+            backup_urls = [backup_urls]
+
+        candidates = [u for u in [base_url, *backup_urls] if u and isinstance(u, str)]
+
+        # 1. Custom explicit UPOS host overrides all
+        if custom_upos_host and custom_upos_host not in ('auto', 'default', 'none', 'allow_p2p'):
+            return self._replace_upos_host(base_url, custom_upos_host)
+
+        # 2. Anti-P2P mode (default enabled)
+        if avoid_p2p:
+            if self._is_p2p_host(base_url):
+                # Search backup_urls for a non-P2P mirror
+                clean_cand = next((u for u in candidates if not self._is_p2p_host(u)), None)
+                if clean_cand:
+                    selected_url = clean_cand
+                else:
+                    # All candidates are P2P -> rewrite host to Overseas Alibaba Cloud UPOS CDN mirror (low latency, high speed, no timeout)
+                    selected_url = self._replace_upos_host(base_url, 'upos-sz-mirroraliov.bilivideo.com')
+            else:
+                selected_url = base_url
+        else:
+            selected_url = base_url
+
+        # Upgrade http to https for non-P2P URLs
+        if selected_url and selected_url.startswith('http://') and not self._is_p2p_host(selected_url):
+            selected_url = 'https://' + selected_url[7:]
+
+        return selected_url
+
     def extract_formats(self, play_info):
         format_names = {
             r['quality']: traverse_obj(r, 'new_description', 'display_desc')
@@ -78,7 +154,7 @@ class BilibiliBaseIE(InfoExtractor):
         if flac_audio:
             audios.append(flac_audio)
         formats = [{
-            'url': traverse_obj(audio, 'baseUrl', 'base_url', 'url'),
+            'url': self._optimize_stream_url(audio),
             'ext': mimetype2ext(traverse_obj(audio, 'mimeType', 'mime_type')),
             'acodec': traverse_obj(audio, ('codecs', {str.lower})),
             'vcodec': 'none',
@@ -88,7 +164,7 @@ class BilibiliBaseIE(InfoExtractor):
         } for audio in audios]
 
         formats.extend({
-            'url': traverse_obj(video, 'baseUrl', 'base_url', 'url'),
+            'url': self._optimize_stream_url(video),
             'ext': mimetype2ext(traverse_obj(video, 'mimeType', 'mime_type')),
             'fps': float_or_none(traverse_obj(video, 'frameRate', 'frame_rate')),
             'width': int_or_none(video.get('width')),
@@ -114,6 +190,8 @@ class BilibiliBaseIE(InfoExtractor):
             'filesize': ('size', {int_or_none}),
         }))
         if fragments:
+            for frag in fragments:
+                frag['url'] = self._optimize_stream_url(frag)
             formats.append({
                 'url': fragments[0]['url'],
                 'filesize': sum(traverse_obj(fragments, (..., 'filesize'))),

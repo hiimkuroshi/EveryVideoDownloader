@@ -47,10 +47,14 @@ async function runAllTests() {
     const postCfgRes = await fetch(`${BASE_URL}/api/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ downloadFolder: targetDl })
+      body: JSON.stringify({
+        downloadFolder: targetDl,
+        bilibiliAvoidP2p: true,
+        bilibiliUposHost: 'upos-sz-mirroraliov.bilivideo.com'
+      })
     });
     const postCfgData = await postCfgRes.json();
-    recordResult('POST /api/config lưu cấu hình persistent', postCfgData.success === true, `Thư mục: ${postCfgData.config?.downloadFolder}`);
+    recordResult('POST /api/config lưu cấu hình persistent & Bilibili CDN', postCfgData.success === true && postCfgData.config?.bilibiliAvoidP2p === true, `Thư mục: ${postCfgData.config?.downloadFolder} | UPOS: ${postCfgData.config?.bilibiliUposHost}`);
 
     // TEST 2: Translation API
     console.log('\n--- 2. Kiểm tra Dịch Tự Động Tiêu Đề (/api/translate) ---');

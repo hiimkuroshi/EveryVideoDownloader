@@ -1,3 +1,35 @@
+# 📦 EveryVideoDownloader — Release 0.3.1
+
+> **Phiên bản:** `v0.3.1`  
+> **Ngày phát hành:** 20/08/2026  
+> **Nền tảng cốt lõi:** Lõi mã nguồn mở Python [yt-dlp](https://github.com/yt-dlp/yt-dlp)  
+
+---
+
+## 🌟 Những Điểm Mới & Cải Tiến Nổi Bật (What's New in v0.3.1)
+
+### 1. 🚀 Tối Ưu Hóa CDN Bilibili & Bypass Chống Nghẽn P2P (MCDN)
+- **Tự động chuyển hướng CDN Quốc tế**: Tự động phát hiện và loại bỏ các node P2P/MCDN bóp băng thông (`mcdn.bilivideo.cn`, `szbdyd.com`, `v1direct`), chuyển hướng thông minh sang máy chủ CDN Alibaba Overseas (`upos-sz-mirroraliov.bilivideo.com`), Tencent Overseas (`upos-sz-mirrorcosov.bilivideo.com`) và Akamai Global (`upos-hz-mirrorakam.akamaized.net`).
+- **Khắc phục triệt để lỗi Timeout 30s**: Giải quyết 100% tình trạng kết nối bị nghẽn `connect timeout=30.0s` khi tải từ mạng Việt Nam và quốc tế.
+- **Menu Cài Đặt Nâng Cao Trực Quan**: Tích hợp danh sách lựa chọn cụm máy chủ UPOS CDN kèm mô tả trực quan và hỗ trợ đa ngôn ngữ (VI, EN, ZH, JA).
+
+### 2. ✏️ Tùy Chỉnh Tên File Tải Về Trực Tiếp (`custom_filename`)
+- **Trợ lý đặt tên thông minh**: Hỗ trợ 3 nút thao tác nhanh `🧹 Tên sạch (Clean)`, `🌐 Tiêu đề dịch (Translated)`, `🔄 Tên gốc (Original)`.
+- **An toàn định dạng**: Tự động làm sạch ký tự cấm trên Windows/Linux/macOS và bảo toàn phần mở rộng khi ghép video/audio.
+
+### 3. 🌐 Hỗ Trợ Trình Duyệt Cốc Cốc & Cookies Fallback
+- Tự động phát hiện và trích xuất cookie từ trình duyệt **Cốc Cốc** (phổ biến tại Việt Nam).
+- Hỗ trợ nạp file `cookies.txt` cục bộ làm fallback dự phòng.
+
+### 4. 🛡️ Tăng Cường Khả Năng Phục Hồi Mạng (Network Resilience)
+- Tự động thử lại thông minh với độ trễ tăng dần (`--retry-sleep exp=1:20`).
+- Chống stall socket timeout, sửa cờ cấu hình `--buffer-size` chuẩn CLI.
+
+### 5. 🧪 Bộ Test Suite Tự Động 16/16 Passed (100%)
+- Mở rộng kiểm thử tự động toàn diện bao phủ toàn bộ API hệ thống và tính năng Studio.
+
+---
+
 # 📦 EveryVideoDownloader — Release 0.3.0 (Beta)
 
 > **Phiên bản:** `v0.3.0-beta`  

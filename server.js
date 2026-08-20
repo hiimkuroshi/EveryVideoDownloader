@@ -71,13 +71,22 @@ function loadPersistentConfig() {
       const raw = fs.readFileSync(CONFIG_PATH, 'utf8');
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
-        return parsed;
+        return {
+          downloadFolder: DOWNLOADS_DIR,
+          bilibiliAvoidP2p: true,
+          bilibiliUposHost: 'auto',
+          ...parsed,
+        };
       }
     }
   } catch (err) {
     console.warn('[Config] Error reading config.json:', err.message);
   }
-  return { downloadFolder: DOWNLOADS_DIR };
+  return {
+    downloadFolder: DOWNLOADS_DIR,
+    bilibiliAvoidP2p: true,
+    bilibiliUposHost: 'auto',
+  };
 }
 
 function savePersistentConfig(updates) {
@@ -926,7 +935,7 @@ app.get('/api/cancel-download', (req, res) => {
 // GET /api/info — Fetch video or playlist metadata as JSON
 // =============================================================================
 app.get('/api/info', async (req, res) => {
-  const { url, browser, playlist } = req.query;
+  const { url, browser, playlist, bilibili_upos_host, bilibili_avoid_p2p } = req.query;
 
   if (!url) {
     return res.status(400).json({ error: 'Missing required query parameter: url' });
@@ -968,6 +977,18 @@ app.get('/api/info', async (req, res) => {
 
   // Use Node.js runtime as portable JS engine for yt-dlp
   args.push('--js-runtimes', 'node');
+
+  // Bilibili Anti-P2P CDN & Custom UPOS host
+  const biliExtractorArgs = [];
+  if (bilibili_avoid_p2p && (bilibili_avoid_p2p === 'false' || bilibili_avoid_p2p === 'allow_p2p')) {
+    biliExtractorArgs.push('avoid_p2p=false');
+  }
+  if (bilibili_upos_host && bilibili_upos_host !== 'auto' && bilibili_upos_host !== 'default' && bilibili_upos_host !== 'none') {
+    biliExtractorArgs.push(`upos_host=${bilibili_upos_host}`);
+  }
+  if (biliExtractorArgs.length > 0) {
+    args.push('--extractor-args', `bilibili:${biliExtractorArgs.join(';')}`);
+  }
 
   args.push(url);
 
@@ -1040,6 +1061,8 @@ app.get('/api/download', async (req, res) => {
     max_sleep_interval,
     download_id,
     custom_filename,
+    bilibili_upos_host,
+    bilibili_avoid_p2p,
   } = req.query;
 
   if (!url) {
@@ -1426,6 +1449,18 @@ app.get('/api/download', async (req, res) => {
 
   // Use Node.js runtime as portable JS engine for yt-dlp
   args.push('--js-runtimes', 'node');
+
+  // Bilibili Anti-P2P CDN & Custom UPOS host
+  const biliExtractorArgs = [];
+  if (bilibili_avoid_p2p && (bilibili_avoid_p2p === 'false' || bilibili_avoid_p2p === 'allow_p2p')) {
+    biliExtractorArgs.push('avoid_p2p=false');
+  }
+  if (bilibili_upos_host && bilibili_upos_host !== 'auto' && bilibili_upos_host !== 'default' && bilibili_upos_host !== 'none') {
+    biliExtractorArgs.push(`upos_host=${bilibili_upos_host}`);
+  }
+  if (biliExtractorArgs.length > 0) {
+    args.push('--extractor-args', `bilibili:${biliExtractorArgs.join(';')}`);
+  }
 
   // Target URL
   args.push(url);

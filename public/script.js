@@ -61,8 +61,43 @@ fetch('/api/config')
       if (document.getElementById('quickDownloadFolder')) document.getElementById('quickDownloadFolder').value = cfg.downloadFolder;
       if (document.getElementById('downloadFolder')) document.getElementById('downloadFolder').value = cfg.downloadFolder;
     }
+    if (cfg.bilibiliAvoidP2p !== undefined && document.getElementById('bilibiliAvoidP2p')) {
+      document.getElementById('bilibiliAvoidP2p').checked = cfg.bilibiliAvoidP2p !== false;
+    }
+    if (cfg.bilibiliUposHost && document.getElementById('bilibiliUposHost')) {
+      document.getElementById('bilibiliUposHost').value = cfg.bilibiliUposHost;
+    }
   })
   .catch(() => {});
+
+// Bilibili CDN Anti-P2P Settings event bindings
+document.getElementById('bilibiliAvoidP2p')?.addEventListener('change', (e) => {
+    const statusEl = document.getElementById('bilibiliAvoidP2pStatus');
+    if (statusEl) {
+        if (e.target.checked) {
+            statusEl.textContent = typeof t === 'function' ? t('biliAvoidP2pActive') : '🛡️ Đang Bật (Tự động bypass CDN nghẽn)';
+            statusEl.style.color = 'var(--color-success, #10b981)';
+        } else {
+            statusEl.textContent = typeof t === 'function' ? t('biliAvoidP2pInactive') : '⚠️ Đang Tắt (Có thể dính node P2P chậm)';
+            statusEl.style.color = 'var(--color-warning, #f59e0b)';
+        }
+    }
+    localStorage.setItem('bilibiliAvoidP2p', e.target.checked ? 'true' : 'false');
+    fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bilibiliAvoidP2p: e.target.checked })
+    }).catch(() => {});
+});
+
+document.getElementById('bilibiliUposHost')?.addEventListener('change', (e) => {
+    localStorage.setItem('bilibiliUposHost', e.target.value);
+    fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bilibiliUposHost: e.target.value })
+    }).catch(() => {});
+});
 
 // Sync and save user-selected download directory across sessions
 function syncAndPersistDownloadFolder(folderPath) {
@@ -388,6 +423,14 @@ $('checkBtn').addEventListener('click', async () => {
     try {
         const qp = new URLSearchParams({ url });
         if (browser !== 'none') qp.append('browser', browser);
+
+        // Bilibili Anti-P2P CDN & UPOS Server selection
+        const biliAvoidP2p = $('bilibiliAvoidP2p')?.checked ?? true;
+        const biliUposHost = val('bilibiliUposHost') || 'auto';
+        qp.append('bilibili_avoid_p2p', biliAvoidP2p ? 'true' : 'false');
+        if (biliUposHost !== 'auto' && biliUposHost !== 'default') {
+            qp.append('bilibili_upos_host', biliUposHost);
+        }
 
         const res = await fetch(`/api/info?${qp}`);
         const data = await res.json();
@@ -1576,6 +1619,8 @@ function startDirectDownload(customParams = null) {
         recode_video:         val('recodeVideo'),
         merge_output_format:  val('quickMergeFormat') || val('mergeOutputFormat') || 'mkv',
         custom_filename:      val('customFileNameInput')?.trim() || '',
+        bilibili_avoid_p2p:   $('bilibiliAvoidP2p')?.checked ? 'true' : 'false',
+        bilibili_upos_host:    val('bilibiliUposHost') || 'auto',
     };
 
     if (customParams) {
