@@ -277,6 +277,42 @@
                             <input type="text" id="quickDownloadFolder" value="D:\yt-dlp\Download" class="compact-input-folder full-width" title="Đường dẫn lưu file">
                         </div>
 
+                        <!-- Video Time Range / Download Section Block (Trim Specific Part) -->
+                        <div class="field-item-block time-range-block">
+                            <div class="field-label-row">
+                                <label class="label-with-tip" for="timeRangeStart">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <span data-i18n="timeRangeTitle">Cắt khoảng thời gian:</span>
+                                    <div class="tip-wrap">
+                                        <svg class="tip-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                        <div class="tip-box">
+                                            <strong>--download-sections "*START-END"</strong><br>
+                                            Chỉ tải một đoạn thời gian cụ thể (Ví dụ: từ phút <strong>30:00</strong> đến <strong>01:00:00</strong>).<br>
+                                            • <strong>Mặc định để trống</strong> để tải toàn bộ video.<br>
+                                            • Hỗ trợ định dạng: <code>hh:mm:ss</code>, <code>mm:ss</code> hoặc số giây.
+                                        </div>
+                                    </div>
+                                </label>
+                                <div class="time-range-badge-wrap">
+                                    <span class="time-range-badge" id="timeRangeStatusBadge" data-i18n="timeRangeAll">Toàn bộ video</span>
+                                    <button type="button" id="clearTimeRangeBtn" class="btn-time-clear hidden" title="Đặt lại (Tải toàn bộ video)" data-i18n-title="timeClearBtnTitle">
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="time-range-inputs-row">
+                                <div class="time-input-group">
+                                    <span class="time-input-label" data-i18n="timeStartShort">Từ:</span>
+                                    <input type="text" id="timeRangeStart" class="compact-time-input" placeholder="00:00 (Đầu video)" data-i18n-placeholder="timeStartPlaceholder" title="Thời gian bắt đầu (vd: 30:00 hoặc 00:30:00)">
+                                </div>
+                                <span class="time-separator">➔</span>
+                                <div class="time-input-group">
+                                    <span class="time-input-label" data-i18n="timeEndShort">Đến:</span>
+                                    <input type="text" id="timeRangeEnd" class="compact-time-input" placeholder="Hết video (vd: 01:00:00)" data-i18n-placeholder="timeEndPlaceholder" title="Thời gian kết thúc (vd: 01:00:00 hoặc inf)">
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Merge format -->
                         <div class="field-item">
                             <label for="quickMergeFormat" class="label-with-tip">
@@ -783,6 +819,20 @@
                     </select>
                 </div>
             </div>
+
+            <hr class="divider">
+            <h3 class="section-title" data-i18n="advTimeRangeTitle">✂️ Cắt Khoảng Thời Gian Tải (Time Range / Download Sections)</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="advTimeRangeStart" data-i18n="advTimeRangeStartLabel">Thời gian bắt đầu (Start Time - vd: 00:30:00 hoặc 30:00)</label>
+                    <input type="text" id="advTimeRangeStart" placeholder="00:00 (Mặc định: Đầu video)" data-i18n-placeholder="timeStartPlaceholder">
+                </div>
+                <div class="form-group">
+                    <label for="advTimeRangeEnd" data-i18n="advTimeRangeEndLabel">Thời gian kết thúc (End Time - vd: 01:00:00 hoặc 3600)</label>
+                    <input type="text" id="advTimeRangeEnd" placeholder="Hết video (Mặc định: Toàn bộ)" data-i18n-placeholder="timeEndPlaceholder">
+                </div>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--fg-muted); margin-top: -6px;" data-i18n="advTimeRangeTip">Để trống cả 2 ô để tải toàn bộ video (Mặc định)</p>
 
             <hr class="divider">
             <h3 class="section-title" data-i18n="advSecurityTitle">🛡️ Hành Vi & Bảo Mật</h3>

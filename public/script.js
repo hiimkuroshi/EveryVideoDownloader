@@ -1097,9 +1097,11 @@ function renderPresetCards() {
 // ── Set Final Format & Update Live Code Preview ───────
 function setFinalFormat(formatString, summaryLabel) {
     selectedFormatValue = formatString;
-    $('formatPreviewCode').textContent = `-f "${formatString}"`;
+    const timeSection = getTimeRangeSection();
+    const sectionFlag = timeSection ? ` --download-sections "${timeSection}"` : '';
+    $('formatPreviewCode').textContent = `-f "${formatString}"${sectionFlag}`;
     $('customFormatInput').value = formatString;
-    $('downloadBtnText').textContent = 'Bắt Đầu Tải Xuống';
+    $('downloadBtnText').textContent = typeof t === 'function' ? t('startDownloadBtn') : 'Bắt Đầu Tải Xuống';
 }
 
 // ── Filter Toolbar Event Listeners ────────────────────
@@ -1522,6 +1524,71 @@ bindTwoWaySync('quickConcurrentFragments', 'concurrentFragments');
 bindTwoWaySync('quickHttpChunkSize', 'httpChunkSize');
 bindTwoWaySync('quickDownloadFolder', 'downloadFolder');
 
+// ── Time Range / Download Section Handlers ───────────
+function getTimeRangeSection() {
+    const start = (val('timeRangeStart') || val('advTimeRangeStart') || '').trim();
+    const end = (val('timeRangeEnd') || val('advTimeRangeEnd') || '').trim();
+    if (!start && !end) return '';
+    const s = start || '00:00';
+    const e = end || 'inf';
+    return `*${s}-${e}`;
+}
+
+function updateTimeRangeStatusBadge() {
+    const start = (val('timeRangeStart') || val('advTimeRangeStart') || '').trim();
+    const end = (val('timeRangeEnd') || val('advTimeRangeEnd') || '').trim();
+    const badge = $('timeRangeStatusBadge');
+    const clearBtn = $('clearTimeRangeBtn');
+    if (!badge) return;
+
+    if (!start && !end) {
+        badge.textContent = typeof t === 'function' ? t('timeRangeAll') : 'Toàn bộ video';
+        badge.classList.remove('active');
+        if (clearBtn) clearBtn.classList.add('hidden');
+    } else {
+        const customPrefix = typeof t === 'function' ? t('timeRangeCustom') : 'Cắt: ';
+        badge.textContent = `${customPrefix}${start || '00:00'} - ${end || 'Hết'}`;
+        badge.classList.add('active');
+        if (clearBtn) clearBtn.classList.remove('hidden');
+    }
+
+    if (selectedFormatValue && $('formatPreviewCode')) {
+        const timeSection = getTimeRangeSection();
+        const sectionFlag = timeSection ? ` --download-sections "${timeSection}"` : '';
+        $('formatPreviewCode').textContent = `-f "${selectedFormatValue}"${sectionFlag}`;
+    }
+}
+
+function syncTimeRangeInputs(sourceStartId, sourceEndId, targetStartId, targetEndId) {
+    const s = val(sourceStartId);
+    const e = val(sourceEndId);
+    if ($(targetStartId) && $(targetStartId).value !== s) $(targetStartId).value = s;
+    if ($(targetEndId) && $(targetEndId).value !== e) $(targetEndId).value = e;
+    updateTimeRangeStatusBadge();
+}
+
+$('timeRangeStart')?.addEventListener('input', () => {
+    syncTimeRangeInputs('timeRangeStart', 'timeRangeEnd', 'advTimeRangeStart', 'advTimeRangeEnd');
+});
+$('timeRangeEnd')?.addEventListener('input', () => {
+    syncTimeRangeInputs('timeRangeStart', 'timeRangeEnd', 'advTimeRangeStart', 'advTimeRangeEnd');
+});
+$('advTimeRangeStart')?.addEventListener('input', () => {
+    syncTimeRangeInputs('advTimeRangeStart', 'advTimeRangeEnd', 'timeRangeStart', 'timeRangeEnd');
+});
+$('advTimeRangeEnd')?.addEventListener('input', () => {
+    syncTimeRangeInputs('advTimeRangeStart', 'advTimeRangeEnd', 'timeRangeStart', 'timeRangeEnd');
+});
+
+$('clearTimeRangeBtn')?.addEventListener('click', () => {
+    if ($('timeRangeStart')) $('timeRangeStart').value = '';
+    if ($('timeRangeEnd')) $('timeRangeEnd').value = '';
+    if ($('advTimeRangeStart')) $('advTimeRangeStart').value = '';
+    if ($('advTimeRangeEnd')) $('advTimeRangeEnd').value = '';
+    updateTimeRangeStatusBadge();
+    showToast('Đã đặt lại: Tải toàn bộ video', 'info');
+});
+
 // ── Toggle Log Console ───────────────────────────────
 $('toggleLogsBtn')?.addEventListener('click', () => {
     $('logsContainer')?.classList.toggle('hidden');
@@ -1621,6 +1688,7 @@ function startDirectDownload(customParams = null) {
         custom_filename:      val('customFileNameInput')?.trim() || '',
         bilibili_avoid_p2p:   $('bilibiliAvoidP2p')?.checked ? 'true' : 'false',
         bilibili_upos_host:    val('bilibiliUposHost') || 'auto',
+        download_sections:    (customParams?.download_sections !== undefined) ? customParams.download_sections : getTimeRangeSection(),
     };
 
     if (customParams) {
@@ -1867,12 +1935,14 @@ $('addSelectedToQueueBtn')?.addEventListener('click', () => {
 });
 
 function addSingleItemToQueue(item) {
+    const timeSection = item.downloadSections !== undefined ? item.downloadSections : getTimeRangeSection();
     const queueItem = {
         id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         url: item.url,
         title: item.title,
         format: item.format,
-        formatLabel: item.formatLabel,
+        formatLabel: item.formatLabel + (timeSection ? ` [✂️ ${timeSection}]` : ''),
+        downloadSections: timeSection || '',
         ext: item.ext,
         size: item.size,
         status: 'waiting', // 'waiting', 'downloading', 'done', 'error'
@@ -1980,7 +2050,12 @@ async function processNextQueueItem() {
     if ($('customFileNameInput')) $('customFileNameInput').value = nextItem.title;
     setFinalFormat(nextItem.format, nextItem.formatLabel);
 
-    startDirectDownload({ custom_filename: nextItem.title });
+    startDirectDownload({
+        url: nextItem.url,
+        format: nextItem.format,
+        custom_filename: nextItem.title,
+        download_sections: nextItem.downloadSections || ''
+    });
 
     // Monitor completion to trigger next
     const checkInterval = setInterval(() => {
@@ -2027,3 +2102,15 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 350);
     }, 5000);
 }
+
+// ── Hook into i18n Language Switcher ─────────────────
+window.onLanguageChanged = function(lang) {
+    updateTimeRangeStatusBadge();
+    if (currentVideoData?.title) {
+        translateTitle(currentVideoData.title, lang);
+    }
+};
+
+// Initial badge update
+updateTimeRangeStatusBadge();
+

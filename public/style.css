@@ -1079,6 +1079,127 @@ select option {
   box-sizing: border-box;
 }
 
+/* Time Range / Video Trim Block */
+.time-range-block {
+  margin-top: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+
+.time-range-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.time-range-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--fg-muted);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  transition: all var(--transition-fast);
+}
+
+.time-range-badge.active {
+  background: rgba(99, 102, 241, 0.18);
+  color: #818CF8;
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+[data-theme='light'] .time-range-badge.active {
+  background: #EEF2FF;
+  color: #4F46E5;
+  border-color: #C7D2FE;
+}
+
+.btn-time-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-time-clear:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+}
+
+.time-range-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.time-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  transition: border-color var(--transition-fast);
+}
+
+.time-input-group:focus-within {
+  border-color: var(--color-primary);
+}
+
+.time-input-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.compact-time-input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--fg);
+  padding: 0;
+}
+
+.compact-time-input::placeholder {
+  color: var(--fg-placeholder);
+  font-weight: 400;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+}
+
+.time-separator {
+  color: var(--fg-muted);
+  font-size: 0.78rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
 .field-item {
   display: flex;
   align-items: center;

@@ -1063,6 +1063,7 @@ app.get('/api/download', async (req, res) => {
     custom_filename,
     bilibili_upos_host,
     bilibili_avoid_p2p,
+    download_sections,
   } = req.query;
 
   if (!url) {
@@ -1440,6 +1441,12 @@ app.get('/api/download', async (req, res) => {
   }
   if (http_chunk_size && http_chunk_size !== 'none' && http_chunk_size !== 'default') {
     args.push('--http-chunk-size', http_chunk_size);
+  }
+
+  // Time Range / Download Sections (Trim specific video slice)
+  if (download_sections && download_sections.trim()) {
+    args.push('--download-sections', download_sections.trim());
+    args.push('--force-keyframes-at-cuts');
   }
 
   // Local FFmpeg location if present

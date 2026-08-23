@@ -78,6 +78,20 @@ const I18N = {
     switchMetadata: "Metadata",
     switchPlaylist: "Playlist",
 
+    // ── Sidebar: Time Range Section ──
+    timeRangeTitle: "Cắt khoảng thời gian:",
+    timeRangeAll: "Toàn bộ video",
+    timeRangeCustom: "Cắt đoạn: ",
+    timeStartShort: "Từ:",
+    timeEndShort: "Đến:",
+    timeStartPlaceholder: "00:00 (Đầu video)",
+    timeEndPlaceholder: "Hết video (vd: 01:00:00)",
+    timeClearBtnTitle: "Đặt lại (Tải toàn bộ video)",
+    advTimeRangeTitle: "✂️ Cắt Khoảng Thời Gian Tải (Time Range / Download Sections)",
+    advTimeRangeStartLabel: "Thời gian bắt đầu (Start Time - vd: 00:30:00 hoặc 30:00)",
+    advTimeRangeEndLabel: "Thời gian kết thúc (End Time - vd: 01:00:00 hoặc 3600)",
+    advTimeRangeTip: "Để trống cả 2 ô để tải toàn bộ video (Mặc định)",
+
     // ── Main Explorer Toolbar ──
     filterAll: "Tất Cả",
     filterVideo: "🎬 Video Only",
@@ -290,6 +304,20 @@ const I18N = {
     switchThumbnail: "Thumbnail",
     switchMetadata: "Metadata",
     switchPlaylist: "Playlist",
+
+    // ── Sidebar: Time Range Section ──
+    timeRangeTitle: "Time Range / Trim:",
+    timeRangeAll: "Full Video",
+    timeRangeCustom: "Trim: ",
+    timeStartShort: "From:",
+    timeEndShort: "To:",
+    timeStartPlaceholder: "00:00 (Start)",
+    timeEndPlaceholder: "End (e.g. 01:00:00)",
+    timeClearBtnTitle: "Reset (Download full video)",
+    advTimeRangeTitle: "✂️ Video Section / Time Range Trimming",
+    advTimeRangeStartLabel: "Start Time (e.g. 00:30:00 or 30:00)",
+    advTimeRangeEndLabel: "End Time (e.g. 01:00:00 or 3600)",
+    advTimeRangeTip: "Leave both fields blank to download the full video (Default)",
 
     // ── Main Explorer Toolbar ──
     filterAll: "All",
@@ -504,6 +532,20 @@ const I18N = {
     switchMetadata: "元数据",
     switchPlaylist: "播放列表",
 
+    // ── Sidebar: Time Range Section ──
+    timeRangeTitle: "截取下载时间段：",
+    timeRangeAll: "完整视频",
+    timeRangeCustom: "截取：",
+    timeStartShort: "从：",
+    timeEndShort: "至：",
+    timeStartPlaceholder: "00:00 (开头)",
+    timeEndPlaceholder: "结尾 (如 01:00:00)",
+    timeClearBtnTitle: "重置 (下载完整视频)",
+    advTimeRangeTitle: "✂️ 截取特定时间段下载 (Time Range)",
+    advTimeRangeStartLabel: "起始时间 (Start Time - 例如 00:30:00 或 30:00)",
+    advTimeRangeEndLabel: "结束时间 (End Time - 例如 01:00:00 或 3600)",
+    advTimeRangeTip: "两项均留空将下载完整视频 (默认)",
+
     // ── Main Explorer Toolbar ──
     filterAll: "全部格式",
     filterVideo: "🎬 仅视频",
@@ -716,6 +758,20 @@ const I18N = {
     switchThumbnail: "サムネイル",
     switchMetadata: "メタデータ",
     switchPlaylist: "プレイリスト",
+
+    // ── Sidebar: Time Range Section ──
+    timeRangeTitle: "ダウンロード区間指定：",
+    timeRangeAll: "動画全体",
+    timeRangeCustom: "区間：",
+    timeStartShort: "開始:",
+    timeEndShort: "終了:",
+    timeStartPlaceholder: "00:00 (先頭)",
+    timeEndPlaceholder: "末尾 (例: 01:00:00)",
+    timeClearBtnTitle: "リセット (動画全体をダウンロード)",
+    advTimeRangeTitle: "✂️ 動画の区间切り出しダウンロード (Time Range)",
+    advTimeRangeStartLabel: "開始時間 (Start Time - 例: 00:30:00 または 30:00)",
+    advTimeRangeEndLabel: "終了時間 (End Time - 例: 01:00:00 または 3600)",
+    advTimeRangeTip: "両方空白のときは動画全体をダウンロードします (デフォルト)",
 
     // ── Main Explorer Toolbar ──
     filterAll: "すべて",
