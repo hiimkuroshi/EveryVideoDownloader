@@ -1487,7 +1487,12 @@ app.get('/api/download', async (req, res) => {
   child.stderr.on('data', (data) => {
     const lines = data.toString().split(/\r?\n/).filter(Boolean);
     for (const line of lines) {
-      sendEvent({ downloadId, error: line });
+      const isFfmpegProgress = /frame=\s*\d+|size=\s*\d+|time=\s*\d+|bitrate=\s*|speed=\s*|Opening |Metadata:|Stream #|Output #|encoder\s*:/i.test(line);
+      if (isFfmpegProgress) {
+        sendEvent({ downloadId, output: line });
+      } else {
+        sendEvent({ downloadId, error: line });
+      }
     }
   });
 

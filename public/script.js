@@ -1805,6 +1805,28 @@ function startDirectDownload(customParams = null) {
 
                 const sizeMatch = line.match(/of\s+~?([0-9\.]+[A-Za-z]+)/);
                 if (sizeMatch) $('metricSize').textContent = `📦 Kích thước: ${sizeMatch[1]}`;
+            } else if (line.includes('frame=') && line.includes('time=')) {
+                // Parse FFmpeg real-time stream/slicing progress
+                const timeMatch = line.match(/time=([0-9:.]+)/);
+                const speedMatch = line.match(/speed=\s*([0-9.]+x)/);
+                const sizeMatch = line.match(/size=\s*([0-9A-Za-z]+)/);
+                const frameMatch = line.match(/frame=\s*(\d+)/);
+
+                const timeStr = timeMatch ? timeMatch[1] : '';
+                const speedStr = speedMatch ? speedMatch[1] : '';
+                const sizeStr = sizeMatch ? sizeMatch[1] : '';
+                const frameStr = frameMatch ? frameMatch[1] : '';
+
+                statusText.textContent = `✂️ Đang cắt & stream video: ${timeStr} (Frame: ${frameStr})`;
+                if (speedStr) $('metricSpeed').textContent = `⚡ Tốc độ: ${speedStr}`;
+                if (sizeStr) $('metricSize').textContent = `📦 Đã tải: ${sizeStr}`;
+                $('metricEta').textContent = '⏱️ Đang stream';
+                badge.textContent = 'Trimming';
+                badge.className = 'status-badge active';
+                if (bar.style.width === '0%') {
+                    bar.style.width = '50%';
+                    percentCounter.textContent = '...';
+                }
             } else if (line.includes('[ExtractAudio]')) {
                 statusText.textContent = 'Đang trích xuất audio...';
                 badge.textContent = 'Extracting';
