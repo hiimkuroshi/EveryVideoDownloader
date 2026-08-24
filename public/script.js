@@ -579,12 +579,12 @@ $('quickMergeFormat')?.addEventListener('change', updateCustomFileNameExt);
 $('mergeOutputFormat')?.addEventListener('change', updateCustomFileNameExt);
 $('audioFormat')?.addEventListener('change', updateCustomFileNameExt);
 
-// ── Multilingual Video Title Translation (Google Translate) ───
-async function translateVideoTitle(rawTitle) {
+// ── Multilingual Video Title Translation (Multi-Provider API) ───
+async function translateVideoTitle(rawTitle, targetLang = null) {
     const transText = $('videoTranslatedTitle');
     if (!rawTitle || !transText) return;
 
-    const lang = (typeof currentAppLanguage !== 'undefined' ? currentAppLanguage : localStorage.getItem('app_language')) || 'vi';
+    const lang = targetLang || (typeof currentAppLanguage !== 'undefined' ? currentAppLanguage : localStorage.getItem('app_language')) || 'vi';
     const langNames = {
         vi: 'Tiếng Việt',
         en: 'English',
@@ -595,7 +595,7 @@ async function translateVideoTitle(rawTitle) {
     
     const transLabelEl = document.querySelector('#videoTranslatedBox .trans-label span');
     if (transLabelEl) {
-        transLabelEl.textContent = `${targetLabel} (Google Translate):`;
+        transLabelEl.textContent = (typeof t === 'function' && t('transTitleLabel')) ? t('transTitleLabel') : `${targetLabel} (Google Translate):`;
     }
 
     transText.textContent = typeof t === 'function' ? t('translatingText') : 'Đang dịch tiêu đề...';
@@ -618,10 +618,15 @@ async function translateVideoTitle(rawTitle) {
             currentTranslatedTitle = rawTitle;
         }
     } catch (err) {
+        console.warn('[translateVideoTitle] Error:', err);
         transText.textContent = rawTitle;
         currentTranslatedTitle = rawTitle;
     }
 }
+
+// Global alias for compatibility
+window.translateVideoTitle = translateVideoTitle;
+window.translateTitle = translateVideoTitle;
 
 // ── Single Thumbnail Download Action ─────────────────
 $('dlThumbBtn')?.addEventListener('click', async (e) => {

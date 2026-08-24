@@ -505,6 +505,91 @@ app.get('/api/preview-subtitle', async (req, res) => {
 });
 
 // =============================================================================
+// GET /api/translate — Multi-Provider Video Title Translation
+// =============================================================================
+app.get('/api/translate', async (req, res) => {
+  const text = (req.query.text || '').trim();
+  const targetLang = (req.query.to || 'vi').toLowerCase();
+
+  if (!text) {
+    return res.status(400).json({ error: 'Missing text query parameter' });
+  }
+
+  const langMap = {
+    'vi': 'vi',
+    'en': 'en',
+    'zh': 'zh-CN',
+    'zh-cn': 'zh-CN',
+    'zh-tw': 'zh-TW',
+    'ja': 'ja',
+    'ko': 'ko',
+  };
+  const tl = langMap[targetLang] || targetLang;
+
+  // 1. Primary: Google dict-chrome-ex
+  try {
+    const url = `https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+      }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data) && data[0]) {
+        const trans = Array.isArray(data[0]) ? data[0][0] : data[0];
+        if (trans && typeof trans === 'string') {
+          return res.json({ success: true, original: text, translated: trans, lang: targetLang });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[/api/translate] Provider 1 failed:', e.message);
+  }
+
+  // 2. Secondary: Google Mobile Web API
+  try {
+    const url = `https://translate.google.com/m?sl=auto&tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+      }
+    });
+    if (response.ok) {
+      const html = await response.text();
+      const match = html.match(/class="result-container">([^<]+)<\/div>/);
+      if (match && match[1]) {
+        const trans = match[1]
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>');
+        return res.json({ success: true, original: text, translated: trans, lang: targetLang });
+      }
+    }
+  } catch (e) {
+    console.warn('[/api/translate] Provider 2 failed:', e.message);
+  }
+
+  // 3. Fallback: MyMemory API
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=autodetect|${encodeURIComponent(tl)}`;
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      if (data?.responseData?.translatedText) {
+        return res.json({ success: true, original: text, translated: data.responseData.translatedText, lang: targetLang });
+      }
+    }
+  } catch (e) {
+    console.warn('[/api/translate] Provider 3 failed:', e.message);
+  }
+
+  return res.json({ success: true, original: text, translated: text, lang: targetLang });
+});
+
+// =============================================================================
 // GET /api/browse-folder — Modern Windows 10/11 Explorer Folder Picker Dialog
 // =============================================================================
 const FOLDER_PICKER_EXE = path.join(__dirname, 'bin', 'folder_picker.exe');
