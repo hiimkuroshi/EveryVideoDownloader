@@ -1,13 +1,13 @@
 /* ═════════════════════════════════════════════════════════════════════════
-   EveryVideoDownloader — Internationalization (i18n) System
+   EveryVideo — Internationalization (i18n) System
    Supported Languages: Tiếng Việt (vi), English (en), 简体中文 (zh), 日本語 (ja)
    ═════════════════════════════════════════════════════════════════════════ */
 
 const I18N = {
   vi: {
     // ── Brand & Meta ──
-    appTitle: "EveryVideoDownloader — Media Downloader Workstation (Powered by yt-dlp)",
-    brandSub: "POWERED BY YT-DLP",
+    appTitle: "EveryVideo — Download Studio",
+    brandSub: "DOWNLOAD STUDIO",
 
     // ── Topbar Search & Cookies ──
     urlPlaceholder: "Dán link Video (YouTube, TikTok, Bilibili, Facebook, Douyin, X...)",
@@ -87,17 +87,17 @@ const I18N = {
     timeStartPlaceholder: "00:00 (Đầu video)",
     timeEndPlaceholder: "Hết video (vd: 01:00:00)",
     timeClearBtnTitle: "Đặt lại (Tải toàn bộ video)",
-    advTimeRangeTitle: "✂️ Cắt Khoảng Thời Gian Tải (Time Range / Download Sections)",
+    advTimeRangeTitle: "Cắt Khoảng Thời Gian Tải (Time Range / Download Sections)",
     advTimeRangeStartLabel: "Thời gian bắt đầu (Start Time - vd: 00:30:00 hoặc 30:00)",
     advTimeRangeEndLabel: "Thời gian kết thúc (End Time - vd: 01:00:00 hoặc 3600)",
     advTimeRangeTip: "Để trống cả 2 ô để tải toàn bộ video (Mặc định)",
 
     // ── Main Explorer Toolbar ──
     filterAll: "Tất Cả",
-    filterVideo: "🎬 Video Only",
-    filterAudio: "🎵 Audio Only",
-    filterCombo: "🎥 Combo",
-    filterSubs: "💬 Phụ Đề",
+    filterVideo: "Video Only",
+    filterAudio: "Audio Only",
+    filterCombo: "Combo",
+    filterSubs: "Phụ Đề",
     searchPlaceholder: "Tìm ID, Codec (av01, hvc1, avc), 1080p, mp4...",
     viewTableTitle: "Xem dạng Bảng chi tiết (hỗ trợ Sort & Multi-select)",
     viewCardsTitle: "Xem dạng Mẫu nhanh gọn",
@@ -164,7 +164,7 @@ const I18N = {
     modalDlVtt: "Tải File .VTT",
 
     // ── Tab 2: Queue ──
-    queueTitle: "📋 Danh Sách Hàng Chờ Tải Xuống",
+    queueTitle: "Danh Sách Hàng Chờ Tải Xuống",
     queueDesc: "Các tác vụ trong hàng chờ sẽ được tải tuần tự tự động.",
     startQueueBtn: "Bắt Đầu Tải Hàng Chờ",
     clearQueueBtn: "Xóa Hàng Chờ",
@@ -173,11 +173,11 @@ const I18N = {
     queueDone: "Tất cả tác vụ trong hàng chờ đã hoàn tất!",
 
     // ── Tab 3: Advanced & Tuning ──
-    advSpeedTitle: "⚡ Tăng Tốc Tải & Kết Nối Mạng (Speed & Network)",
+    advSpeedTitle: "Tăng Tốc Tải & Kết Nối Mạng (Speed & Network)",
     advRetriesLabel: "Số lần thử lại khi lỗi trích xuất (Retries)",
     advRateLimitLabel: "Giới hạn tốc độ tải (Rate Limit)",
     advRateLimitPlaceholder: "Ví dụ: 500K, 2M (để trống = không giới hạn)",
-    advBiliCdnTitle: "🚀 Tối Ưu CDN Bilibili & Chống Nghẽn P2P (Bilibili Anti-P2P & UPOS Selector)",
+    advBiliCdnTitle: "Tối Ưu CDN Bilibili & Chống Nghẽn P2P (Bilibili Anti-P2P & UPOS Selector)",
     biliAvoidP2pLabel: "Tự động tránh CDN P2P / MCDN (Khuyên dùng)",
     biliAvoidP2pTip: "Tự động phát hiện và loại bỏ các node mạng P2P/MCDN (mcdn.bilivideo.cn, szbdyd.com) gây bóp nghẹt băng thông, chuyển sang CDN backbone chính thống.",
     biliAvoidP2pActive: "🛡️ Đang Bật (Tự động bypass CDN nghẽn)",
@@ -193,11 +193,11 @@ const I18N = {
     biliUposHw: "🌐 Huawei Cloud Nội địa TQ (upos-sz-mirrorhw)",
     biliUposBos: "🏢 Baidu Cloud Nội địa TQ (upos-sz-mirrorbos)",
     biliUposRaw: "🔄 Giữ nguyên CDN gốc Bilibili (Cho phép P2P)",
-    advPostTitle: "🎬 Định Dạng & Hậu Kỳ (Post-Processing)",
+    advPostTitle: "Định Dạng & Hậu Kỳ (Post-Processing)",
     advRecodeLabel: "Mã hóa lại video sang (Recode Video)",
     advAudioFormatLabel: "Trích xuất riêng âm thanh (Extract Audio)",
     advConvertThumbLabel: "Chuyển đổi định dạng ảnh bìa",
-    advSecurityTitle: "🛡️ Hành Vi & Bảo Mật",
+    advSecurityTitle: "Hành Vi & Bảo Mật",
     advUsernameLabel: "Tên đăng nhập (Username / Email)",
     advPasswordLabel: "Mật khẩu (Password)",
     advGeoBypass: "Bỏ qua giới hạn địa lý (Geo Bypass)",
@@ -206,13 +206,13 @@ const I18N = {
     advNoOverwrites: "Không ghi đè file đã tồn tại",
 
     // ── Tab 4: Settings ──
-    settingsPathTitle: "📁 Đường Dẫn & Mẫu Tên File",
+    settingsPathTitle: "Đường Dẫn & Mẫu Tên File",
     settingsFolderLabel: "Thư mục lưu video tải về",
     settingsTemplateLabel: "Mẫu tên file (Output Template)",
-    settingsProxyTitle: "🌐 Mạng & Proxy",
+    settingsProxyTitle: "Mạng & Proxy",
     settingsProxyLabel: "Địa chỉ Proxy",
     settingsUserAgentLabel: "Tùy chỉnh User-Agent",
-    settingsLangTitle: "🌍 Ngôn Ngữ Giao Diện (Interface Language)",
+    settingsLangTitle: "Ngôn Ngữ Giao Diện (Interface Language)",
     settingsLangLabel: "Chọn ngôn ngữ hiển thị:",
 
     // ── Toast Messages ──
@@ -233,8 +233,8 @@ const I18N = {
 
   en: {
     // ── Brand & Meta ──
-    appTitle: "EveryVideoDownloader — Media Downloader Workstation (Powered by yt-dlp)",
-    brandSub: "POWERED BY YT-DLP",
+    appTitle: "EveryVideo — Download Studio",
+    brandSub: "DOWNLOAD STUDIO",
 
     // ── Topbar Search & Cookies ──
     urlPlaceholder: "Paste video link (YouTube, TikTok, Bilibili, Facebook, Douyin, X...)",
@@ -314,17 +314,17 @@ const I18N = {
     timeStartPlaceholder: "00:00 (Start)",
     timeEndPlaceholder: "End (e.g. 01:00:00)",
     timeClearBtnTitle: "Reset (Download full video)",
-    advTimeRangeTitle: "✂️ Video Section / Time Range Trimming",
+    advTimeRangeTitle: "Video Section / Time Range Trimming",
     advTimeRangeStartLabel: "Start Time (e.g. 00:30:00 or 30:00)",
     advTimeRangeEndLabel: "End Time (e.g. 01:00:00 or 3600)",
     advTimeRangeTip: "Leave both fields blank to download the full video (Default)",
 
     // ── Main Explorer Toolbar ──
     filterAll: "All",
-    filterVideo: "🎬 Video Only",
-    filterAudio: "🎵 Audio Only",
-    filterCombo: "🎥 Combo",
-    filterSubs: "💬 Subtitles",
+    filterVideo: "Video Only",
+    filterAudio: "Audio Only",
+    filterCombo: "Combo",
+    filterSubs: "Subtitles",
     searchPlaceholder: "Search ID, Codec (av01, hvc1, avc), 1080p, mp4...",
     viewTableTitle: "Detailed Table View (Sort & Multi-select)",
     viewCardsTitle: "Quick Cards View",
@@ -391,7 +391,7 @@ const I18N = {
     modalDlVtt: "Download .VTT",
 
     // ── Tab 2: Queue ──
-    queueTitle: "📋 Download Queue Manager",
+    queueTitle: "Download Queue Manager",
     queueDesc: "Tasks in queue will be downloaded sequentially and automatically.",
     startQueueBtn: "Start Queue Download",
     clearQueueBtn: "Clear Queue",
@@ -400,11 +400,11 @@ const I18N = {
     queueDone: "All queued download tasks completed!",
 
     // ── Tab 3: Advanced & Tuning ──
-    advSpeedTitle: "⚡ Speed Acceleration & Network",
+    advSpeedTitle: "Speed Acceleration & Network",
     advRetriesLabel: "Extractor Retries",
     advRateLimitLabel: "Download Rate Limit",
     advRateLimitPlaceholder: "e.g. 500K, 2M (leave blank = unlimited)",
-    advBiliCdnTitle: "🚀 Bilibili CDN & Anti-P2P Optimization (Anti-P2P & UPOS Selector)",
+    advBiliCdnTitle: "Bilibili CDN & Anti-P2P Optimization (Anti-P2P & UPOS Selector)",
     biliAvoidP2pLabel: "Automatically bypass P2P / MCDN CDNs (Recommended)",
     biliAvoidP2pTip: "Automatically detect and avoid bandwidth-throttled P2P/MCDN nodes (mcdn.bilivideo.cn, szbdyd.com) and switch to official backbone CDNs.",
     biliAvoidP2pActive: "🛡️ Enabled (Auto bypass throttled CDNs)",
@@ -420,11 +420,11 @@ const I18N = {
     biliUposHw: "🌐 Huawei Cloud China Domestic (upos-sz-mirrorhw)",
     biliUposBos: "🏢 Baidu Cloud China Domestic (upos-sz-mirrorbos)",
     biliUposRaw: "🔄 Keep Original Bilibili CDN (Allow P2P)",
-    advPostTitle: "🎬 Format & Post-Processing",
+    advPostTitle: "Format & Post-Processing",
     advRecodeLabel: "Recode Video To",
     advAudioFormatLabel: "Extract Audio Only To",
     advConvertThumbLabel: "Convert Thumbnail Format",
-    advSecurityTitle: "🛡️ Behavior & Security",
+    advSecurityTitle: "Behavior & Security",
     advUsernameLabel: "Username / Email",
     advPasswordLabel: "Password",
     advGeoBypass: "Bypass Geographic Restrictions (Geo Bypass)",
@@ -433,13 +433,13 @@ const I18N = {
     advNoOverwrites: "Do Not Overwrite Existing Files",
 
     // ── Tab 4: Settings ──
-    settingsPathTitle: "📁 Storage Paths & Filename Templates",
+    settingsPathTitle: "Storage Paths & Filename Templates",
     settingsFolderLabel: "Default Download Folder",
     settingsTemplateLabel: "Output Filename Template",
-    settingsProxyTitle: "🌐 Network & Proxy",
+    settingsProxyTitle: "Network & Proxy",
     settingsProxyLabel: "Proxy Server Address",
     settingsUserAgentLabel: "Custom User-Agent",
-    settingsLangTitle: "🌍 Interface Language",
+    settingsLangTitle: "Interface Language",
     settingsLangLabel: "Select UI Display Language:",
 
     // ── Toast Messages ──
@@ -460,8 +460,8 @@ const I18N = {
 
   zh: {
     // ── Brand & Meta ──
-    appTitle: "EveryVideoDownloader — 全能音视频下载工作站 (基于 yt-dlp)",
-    brandSub: "POWERED BY YT-DLP",
+    appTitle: "EveryVideo — 下载工作室",
+    brandSub: "DOWNLOAD STUDIO",
 
     // ── Topbar Search & Cookies ──
     urlPlaceholder: "粘贴视频链接 (YouTube, 抖音, 哔哩哔哩, TikTok, Facebook, X...)",
@@ -541,17 +541,17 @@ const I18N = {
     timeStartPlaceholder: "00:00 (开头)",
     timeEndPlaceholder: "结尾 (如 01:00:00)",
     timeClearBtnTitle: "重置 (下载完整视频)",
-    advTimeRangeTitle: "✂️ 截取特定时间段下载 (Time Range)",
+    advTimeRangeTitle: "截取特定时间段下载 (Time Range)",
     advTimeRangeStartLabel: "起始时间 (Start Time - 例如 00:30:00 或 30:00)",
     advTimeRangeEndLabel: "结束时间 (End Time - 例如 01:00:00 或 3600)",
     advTimeRangeTip: "两项均留空将下载完整视频 (默认)",
 
     // ── Main Explorer Toolbar ──
     filterAll: "全部格式",
-    filterVideo: "🎬 仅视频",
-    filterAudio: "🎵 仅音频",
-    filterCombo: "🎥 音画合一",
-    filterSubs: "💬 字幕列表",
+    filterVideo: "仅视频",
+    filterAudio: "仅音频",
+    filterCombo: "音画合一",
+    filterSubs: "字幕列表",
     searchPlaceholder: "搜索 ID, 编码 (av01, hvc1, avc), 1080p, mp4...",
     viewTableTitle: "详细表格视图 (支持多选与排序)",
     viewCardsTitle: "预设卡片视图",
@@ -618,7 +618,7 @@ const I18N = {
     modalDlVtt: "下载 .VTT 文件",
 
     // ── Tab 2: Queue ──
-    queueTitle: "📋 批量下载队列管理",
+    queueTitle: "批量下载队列管理",
     queueDesc: "队列中的任务将按照顺序全自动后台下载。",
     startQueueBtn: "开始下载队列",
     clearQueueBtn: "清空队列",
@@ -627,11 +627,11 @@ const I18N = {
     queueDone: "队列中的所有下载任务已全部完成！",
 
     // ── Tab 3: Advanced & Tuning ──
-    advSpeedTitle: "⚡ 速度优化与网络配置",
+    advSpeedTitle: "速度优化与网络配置",
     advRetriesLabel: "解析重试次数 (Retries)",
     advRateLimitLabel: "下载限速 (Rate Limit)",
     advRateLimitPlaceholder: "例如: 500K, 2M (留空表示不限速)",
-    advBiliCdnTitle: "🚀 哔哩哔哩 CDN 优化与防 P2P 限速 (Bilibili Anti-P2P & UPOS Selector)",
+    advBiliCdnTitle: "哔哩哔哩 CDN 优化与防 P2P 限速 (Bilibili Anti-P2P & UPOS Selector)",
     biliAvoidP2pLabel: "自动绕过 P2P / MCDN 节点 (推荐)",
     biliAvoidP2pTip: "自动检测并过滤容易限速卡顿的 P2P/MCDN 节点 (mcdn.bilivideo.cn, szbdyd.com)，切换到官方高速骨干 CDN 服务器。",
     biliAvoidP2pActive: "🛡️ 已开启 (自动绕过限速节点)",
@@ -647,11 +647,11 @@ const I18N = {
     biliUposHw: "🌐 华为云国内节点 (upos-sz-mirrorhw)",
     biliUposBos: "🏢 百度云国内节点 (upos-sz-mirrorbos)",
     biliUposRaw: "🔄 保持 Bilibili 原始 CDN (允许 P2P)",
-    advPostTitle: "🎬 格式转码与后期处理",
+    advPostTitle: "格式转码与后期处理",
     advRecodeLabel: "视频重新转码为 (Recode Video)",
     advAudioFormatLabel: "单独提取音频为 (Extract Audio)",
     advConvertThumbLabel: "封面图片格式转换",
-    advSecurityTitle: "🛡️ 运行策略与安全",
+    advSecurityTitle: "运行策略与安全",
     advUsernameLabel: "登录用户名 / 邮箱",
     advPasswordLabel: "登录密码",
     advGeoBypass: "绕过地区限制 (Geo Bypass)",
@@ -660,13 +660,13 @@ const I18N = {
     advNoOverwrites: "不覆盖已存在的同名文件",
 
     // ── Tab 4: Settings ──
-    settingsPathTitle: "📁 存储路径与命名规则",
+    settingsPathTitle: "存储路径与命名规则",
     settingsFolderLabel: "默认视频下载保存目录",
     settingsTemplateLabel: "输出文件名命名模板",
-    settingsProxyTitle: "🌐 网络与代理",
+    settingsProxyTitle: "网络与代理",
     settingsProxyLabel: "代理服务器地址 (Proxy)",
     settingsUserAgentLabel: "自定义 User-Agent",
-    settingsLangTitle: "🌍 界面语言设置 (Interface Language)",
+    settingsLangTitle: "界面语言设置 (Interface Language)",
     settingsLangLabel: "选择界面显示语言：",
 
     // ── Toast Messages ──
@@ -687,8 +687,8 @@ const I18N = {
 
   ja: {
     // ── Brand & Meta ──
-    appTitle: "EveryVideoDownloader — メディアダウンローダー ワークステーション (yt-dlp 搭載)",
-    brandSub: "POWERED BY YT-DLP",
+    appTitle: "EveryVideo — ダウンロードスタジオ",
+    brandSub: "DOWNLOAD STUDIO",
 
     // ── Topbar Search & Cookies ──
     urlPlaceholder: "動画リンクを貼り付け (YouTube, TikTok, Bilibili, Facebook, Douyin, X...)",
@@ -768,17 +768,17 @@ const I18N = {
     timeStartPlaceholder: "00:00 (先頭)",
     timeEndPlaceholder: "末尾 (例: 01:00:00)",
     timeClearBtnTitle: "リセット (動画全体をダウンロード)",
-    advTimeRangeTitle: "✂️ 動画の区间切り出しダウンロード (Time Range)",
+    advTimeRangeTitle: "動画の区间切り出しダウンロード (Time Range)",
     advTimeRangeStartLabel: "開始時間 (Start Time - 例: 00:30:00 または 30:00)",
     advTimeRangeEndLabel: "終了時間 (End Time - 例: 01:00:00 または 3600)",
     advTimeRangeTip: "両方空白のときは動画全体をダウンロードします (デフォルト)",
 
     // ── Main Explorer Toolbar ──
     filterAll: "すべて",
-    filterVideo: "🎬 映像のみ",
-    filterAudio: "🎵 音声のみ",
-    filterCombo: "🎥 映像+音声",
-    filterSubs: "💬 字幕リスト",
+    filterVideo: "映像のみ",
+    filterAudio: "音声のみ",
+    filterCombo: "映像+音声",
+    filterSubs: "字幕リスト",
     searchPlaceholder: "ID, コーデック (av01, hvc1, avc), 1080p, mp4 を検索...",
     viewTableTitle: "詳細テーブル表示 (ソート & 複数選択対応)",
     viewCardsTitle: "クイックカード表示",
@@ -845,7 +845,7 @@ const I18N = {
     modalDlVtt: ".VTT をダウンロード",
 
     // ── Tab 2: Queue ──
-    queueTitle: "📋 ダウンロードキュー管理",
+    queueTitle: "ダウンロードキュー管理",
     queueDesc: "キュー内のタスクはバックグラウンドで自動的に順次処理されます。",
     startQueueBtn: "キューのダウンロード開始",
     clearQueueBtn: "キューをクリア",
@@ -854,11 +854,11 @@ const I18N = {
     queueDone: "キュー内のすべてのタスクが完了しました！",
 
     // ── Tab 3: Advanced & Tuning ──
-    advSpeedTitle: "⚡ 速度最適化 & ネットワーク設定",
+    advSpeedTitle: "速度最適化 & ネットワーク設定",
     advRetriesLabel: "解析リトライ回数 (Retries)",
     advRateLimitLabel: "速度制限 (Rate Limit)",
     advRateLimitPlaceholder: "例: 500K, 2M (空白 = 無制限)",
-    advBiliCdnTitle: "🚀 Bilibili CDN 最適化 & P2P 速度制限回避 (Anti-P2P & UPOS Selector)",
+    advBiliCdnTitle: "Bilibili CDN 最適化 & P2P 速度制限回避 (Anti-P2P & UPOS Selector)",
     biliAvoidP2pLabel: "P2P / MCDN ノードを自動回避 (推奨)",
     biliAvoidP2pTip: "低速になりやすい P2P/MCDN ノード (mcdn.bilivideo.cn, szbdyd.com) を自動検知して除外し、公式の高速バックボーン CDN サーバーに切り替えます。",
     biliAvoidP2pActive: "🛡️ 有効 (低速ノードを自動回避)",
@@ -874,11 +874,11 @@ const I18N = {
     biliUposHw: "🌐 Huawei Cloud 中国国内 (upos-sz-mirrorhw)",
     biliUposBos: "🏢 Baidu Cloud 中国国内 (upos-sz-mirrorbos)",
     biliUposRaw: "🔄 元の Bilibili CDN を保持 (P2P を許可)",
-    advPostTitle: "🎬 フォーマット変換 & 後処理",
+    advPostTitle: "フォーマット変換 & 後処理",
     advRecodeLabel: "動画を再エンコード (Recode Video)",
     advAudioFormatLabel: "音声のみ抽出 (Extract Audio)",
     advConvertThumbLabel: "サムネイル形式変換",
-    advSecurityTitle: "🛡️ 動作設定 & セキュリティ",
+    advSecurityTitle: "動作設定 & セキュリティ",
     advUsernameLabel: "ユーザー名 / メールアドレス",
     advPasswordLabel: "パスワード",
     advGeoBypass: "地域制限を回避 (Geo Bypass)",
@@ -887,13 +887,13 @@ const I18N = {
     advNoOverwrites: "既存のファイルを上書きしない",
 
     // ── Tab 4: Settings ──
-    settingsPathTitle: "📁 保存先 & ファイル名テンプレート",
+    settingsPathTitle: "保存先 & ファイル名テンプレート",
     settingsFolderLabel: "デフォルト保存先フォルダ",
     settingsTemplateLabel: "出力ファイル名テンプレート",
-    settingsProxyTitle: "🌐 ネットワーク & プロキシ",
+    settingsProxyTitle: "ネットワーク & プロキシ",
     settingsProxyLabel: "プロキシサーバーのアドレス",
     settingsUserAgentLabel: "カスタム User-Agent",
-    settingsLangTitle: "🌍 インターフェース言語 (Interface Language)",
+    settingsLangTitle: "インターフェース言語 (Interface Language)",
     settingsLangLabel: "表示言語を選択：",
 
     // ── Toast Messages ──

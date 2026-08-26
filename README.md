@@ -1,170 +1,148 @@
-﻿# EveryVideoDownloader
+# EveryVideo
 
-> **Professional Desktop Web UI & Workstation for yt-dlp**  
-> Powered directly by the **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** Python Source Engine.  
-> Modern 2-column studio layout, format explorer, sequential download queue, multi-threading acceleration, subtitle extraction, and automated title translation.
-
----
+EveryVideo is a local media download studio with format inspection, subtitle tools, download queues, advanced network controls, and a responsive Graphite Signal interface.
 
 **Language:** **English** | [Tiếng Việt](README_VI.md)
 
----
+## Quick Start
 
-## 1. Overview
+### Windows one-click launcher
 
-**EveryVideoDownloader** is a standalone Desktop Web UI Workstation engineered to harness the complete feature set of the open-source **yt-dlp** command-line engine across 1,800+ supported platforms (YouTube, Bilibili, TikTok, Douyin, Facebook, X/Twitter, Instagram, etc.).
+Double-click `Chay_Studio.bat` or `Run_Studio.bat`. The launcher checks the required tools, starts the server, and opens `http://localhost:3000`.
 
-Unlike conventional wrappers that rely on opaque pre-compiled binaries, EveryVideoDownloader executes directly against the **official Python source package (`core/yt_dlp/`)**. This architecture enables direct source code inspection, custom extractor extensibility, zero PyInstaller decompression latency, and native performance.
+### Command line
 
----
-
-## 2. Prerequisites & Required Tools
-
-To ensure all video merging, format conversion, and streaming features operate seamlessly, ensure the following dependencies are installed:
-
-### Required Dependencies Summary
-
-| Dependency | Recommended Version | Purpose | Requirement |
-| :--- | :--- | :--- | :---: |
-| **Node.js** | v18.0.0 or higher | Runs the Express backend server (Port 3000) and serves the Web UI | **Required** |
-| **Python** | v3.9 or higher | Executes the `core/yt_dlp` source engine module natively | **Required** |
-| **FFmpeg** | v5.0 or higher | Merges separate video and audio streams (1080p, 2K, 4K, 8K), embeds subtitles, extracts audio tracks (MP3/M4A), and converts containers | **Highly Recommended** (Critical for HD/UHD) |
-| **Web Browser** | Chrome / Firefox / Edge / Brave | Displays the Studio interface and supplies browser cookies for age-restricted content | Optional |
-
----
-
-### Step-by-Step Tool Installation Guide
-
-#### 1. Install Node.js
-* Download the **LTS** installer from the official portal: [https://nodejs.org](https://nodejs.org)
-* Verify installation:
-  ```bash
-  node -v
-  npm -v
-  ```
-
-#### 2. Install Python
-* Download the latest release from: [https://www.python.org/downloads/](https://www.python.org/downloads/)
-* **Important (Windows)**: Ensure the checkbox **"Add python.exe to PATH"** is selected during setup.
-* Verify installation:
-  ```bash
-  python --version
-  ```
-
-#### 3. Install FFmpeg (Automatic or Manual)
-* **Option A (Automatic via Windows Package Manager)**:
-  ```powershell
-  winget install Gyan.FFmpeg
-  ```
-* **Option B (Manual Static Binary)**:
-  1. Download the build archive from [Gyan.dev FFmpeg Builds](https://www.gyan.dev/ffmpeg/builds/).
-  2. Extract `ffmpeg.exe` and place it either in your system `PATH`, in the project root, or inside the `bin/` directory.
-* Verify installation:
-  ```bash
-  ffmpeg -version
-  ```
-
----
-
-## 3. Quick Start Guide
-
-### Option 1: 1-Click Startup (Recommended for Windows)
-* Double-click **`Chay_Studio.bat`** (or `Run_Studio.bat`).
-* The startup script executes an environment diagnostic scan, launches the Express backend, and automatically opens your default browser at **`http://localhost:3000`**.
-
-### Option 2: Command Line (CLI)
 ```bash
-# 1. Install Node.js dependencies (first-time only)
 npm install
-
-# 2. Start the application server
 npm start
-
-# 3. (Optional) Run the comprehensive 15-point automated test suite
-npm test
 ```
-Navigate to: **`http://localhost:3000`**
 
----
+Open [http://localhost:3000](http://localhost:3000).
 
-## 4. Key Features
+## Requirements
 
-* **2-Column Desktop Studio Layout**: Designed specifically for widescreen monitors to eliminate wasted horizontal whitespace and minimize vertical scrolling.
-* **15+ Formats Explorer with 3-State Sorting**: Full format breakdown (AV1, HEVC, AVC, VP9, Opus, AAC) with 3-state sorting (Default ➔ Descending ➔ Ascending) by ID, resolution, bitrate, and size.
-* **Sequential Download Queue**: Select multiple video/audio formats directly from the table and batch-download them sequentially.
-* **Real-time Server-Sent Events (SSE)**: Live streaming of progress metrics including large percentage indicators, download speed (`MiB/s`), remaining time (`ETA`), and transferred file size.
-* **Independent Subtitle Downloader**: Parses both authored and auto-generated subtitle tracks with Vietnamese language prioritization, instant `.srt` conversion (with standardized timestamps), `.vtt` export, and live subtitle cue preview.
-* **Direct HD Thumbnail Downloader**: High-resolution thumbnail extraction with a built-in reverse proxy that resolves HTTP 403 Forbidden errors on Bilibili and Douyin while filtering duplicates on YouTube playlists.
-* **Multi-threaded Acceleration & Anti-Throttling**: Built-in concurrent fragment downloading (`-N 8/16`) and HTTP chunk sizing (`--http-chunk-size 10M`).
-* **Safe Pause, Resume & Cancel**: Clean subprocess cancellation with seamless resume capabilities leveraging `.part` temporary files.
-* **Windows Explorer Native Folder Picker**: Dedicated FolderBrowserDialog integration for intuitive directory selection and instant (<10ms) directory opening.
-* **Multilingual Studio (i18n) & Automatic Translation**: 4 language interfaces (English, Vietnamese, Simplified Chinese, Japanese) with free Google Translate API integration.
-* **Dedicated Platform Resolvers**:
-  * **Douyin**: Direct `aid=6383` endpoint integration and `ttwid` cookie generation unlocking 4K UHD, 2K QHD, and 1080p 60fps streams.
-  * **TikTok**: Direct watermark-free HD video and MP3 audio extraction bypassing Anti-Bot WAF challenges.
+| Dependency | Recommended | Purpose |
+| --- | --- | --- |
+| Node.js | 18+ | Express server and Web UI |
+| Python | 3.9+ | Runs the bundled `core/yt_dlp` source package |
+| FFmpeg | 5+ | Merging, conversion, audio extraction, and subtitle embedding |
+| Browser | Edge, Chrome, Firefox, or Brave | Local application UI and optional browser cookies |
 
----
+The server resolves Python in this order:
 
-## 5. Project Directory Blueprint
+1. `EVERYVIDEO_PYTHON` environment variable.
+2. Project-local `.venv` or `venv`.
+3. `py.exe`, `python.exe`, or `python3.exe` on `PATH`.
+
+To use an explicit runtime in PowerShell:
+
+```powershell
+$env:EVERYVIDEO_PYTHON = "C:\Path\To\python.exe"
+npm start
+```
+
+EveryVideo launches Python, Windows Explorer, and the native folder picker as child processes. The server must run in an environment that permits child-process creation; restricted sandboxes can return `spawn EPERM`.
+
+## Features
+
+- Graphite Signal dark/light interface with a single coral interaction accent.
+- Desktop format workstation with a fully usable 390 px mobile layout.
+- Detailed format explorer with filtering, search, sorting, table/card modes, and multi-select.
+- Sequential download queue with SSE progress, speed, ETA, pause, resume, and cancel controls.
+- Subtitle discovery, preview, `.srt` conversion, and `.vtt` download.
+- HD thumbnail download with proxy fallback for protected image hosts.
+- Time-range downloads, output container selection, multi-fragment acceleration, and HTTP chunk controls.
+- Native Windows folder picker and verified Explorer launch feedback.
+- Vietnamese, English, Simplified Chinese, and Japanese UI.
+- Resilient multi-provider title translation.
+- Dedicated Douyin and TikTok metadata/download resolvers.
+
+## Graphite Signal UI
+
+The interface brand is **EveryVideo**. Engine attribution is intentionally omitted from the application chrome while the underlying extraction engine remains unchanged.
+
+The canonical design contract is [DESIGN.md](DESIGN.md). The implementation is isolated in `public/graphite-signal.css` so visual changes do not replace DOM hooks, API contracts, or download behavior.
+
+Accessibility and responsive behavior include:
+
+- Skip link and semantic tab/tabpanel relationships.
+- Keyboard tab navigation with Arrow, Home, and End keys.
+- Visible focus states and reduced-motion support.
+- No page-level horizontal overflow at 390 px.
+- Toast live regions and guarded error rendering.
+
+## Project Structure
 
 ```text
 EveryVideoDownloader/
-├── bin/                          # Binary utilities (Windows Folder Picker dialog)
-│   └── folder_picker.exe
-├── core/                         # Python Source Engine (1,800+ extractors & downloaders)
-│   ├── LICENSE                   # Official yt-dlp MIT License
-│   └── yt_dlp/                   # Official Python package
-├── docs/                         # Architecture, design specifications & release logs
-│   ├── DESIGN.md                 # UI/UX design tokens and layout specifications
-│   ├── RELEASE_NOTES.md          # Version changelog
-│   ├── YTDLP_CORE_ARCHITECTURE.md # Deep-dive technical engine analysis
-│   └── YTDLP_CORE_ARCHITECTURE_EN.md
-├── Download/                     # Default output directory for downloaded media
-│   └── .gitkeep
-├── public/                       # Frontend Web UI Assets
-│   ├── assets/
-│   │   └── design-tokens.css     # Design tokens and theme CSS variables
-│   ├── help.json
-│   ├── i18n.js                   # Multilingual localization dictionary (en, vi, zh, ja)
-│   ├── index.html                # 2-column studio layout, format table & queue
-│   ├── script.js                 # Event orchestrator, SSE client, sorting & queue
-│   └── style.css                 # Glassmorphism design system & Dark/Light mode
-├── tests/                        # Automated Test Suite (Run via "npm test")
-│   └── test_suite.js             # 15-point end-to-end automated verification runner
-├── .gitignore                    # Git rules ignoring temporary cache and media files
-├── Chay_Studio.bat               # 1-click launcher for Windows (Vietnamese)
-├── Run_Studio.bat                # 1-click launcher alias
-├── config.json                   # User runtime configuration storage
-├── package.json                  # Node.js project manifest and scripts
-├── package-lock.json             # Locked dependency tree
-├── README.md                     # Official documentation (English - this file)
-├── README_VI.md                  # Official documentation (Vietnamese)
-├── server.js                     # Express Backend Server (Port 3000)
-└── setup.js                      # Automated environment scanner and diagnostic tool
+├── bin/folder_picker.exe          # Native Windows folder picker
+├── core/yt_dlp/                   # Bundled Python source engine
+├── docs/
+│   ├── PROJECT_SUMMARY.md
+│   ├── RELEASE_NOTES.md
+│   ├── YTDLP_CORE_ARCHITECTURE.md
+│   └── ui-concepts/               # UI concept prompts and design notes
+├── public/
+│   ├── graphite-signal.css        # Current visual override layer
+│   ├── i18n.js
+│   ├── index.html
+│   ├── script.js
+│   └── style.css                  # Legacy component foundation
+├── tests/
+│   ├── server_contract_test.js
+│   ├── test_suite.js
+│   └── ui_contract_test.js
+├── DESIGN.md                      # Canonical design contract
+├── server.js
+└── ui-overhaul-plan.md
 ```
 
----
-
-## 6. Backend API Reference
+## API Overview
 
 | Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/config` | Retrieves current application configuration and download directory |
-| `POST` | `/api/config` | Persists updated output directory path to `config.json` |
-| `GET` | `/api/info` | Extracts full video metadata, formats, and subtitles in JSON via Python core |
-| `GET` | `/api/download` | Initiates media download and streams real-time progress events over SSE |
-| `GET` | `/api/cancel-download` | Safely terminates an active download subprocess |
-| `GET` | `/api/download-thumbnail` | Downloads HD video thumbnail directly or via yt-dlp fallback |
-| `GET` | `/api/download-subtitle` | Downloads converted `.srt` or raw `.vtt` subtitle files directly |
-| `GET` | `/api/preview-subtitle` | Retrieves the initial subtitle dialogue cues for modal preview |
-| `GET` | `/api/browse-folder` | Opens native Windows folder browser dialog |
-| `GET` | `/api/open-folder` | Opens target directory in Windows Explorer (<10ms) |
-| `GET` | `/api/proxy-image` | Reverse proxy for image requests bypassing HTTP 403 Forbidden |
-| `GET` | `/api/translate` | Translates video title via Google Translate API |
+| --- | --- | --- |
+| `GET` | `/api/config` | Read runtime configuration and the active download directory |
+| `POST` | `/api/config` | Persist download directory and advanced settings |
+| `GET` | `/api/info` | Extract metadata, formats, playlists, and subtitles |
+| `GET` | `/api/download` | Start a download and stream progress over SSE |
+| `GET` | `/api/cancel-download` | Stop an active download process |
+| `GET` | `/api/download-thumbnail` | Save an HD thumbnail |
+| `GET` | `/api/download-subtitle` | Save `.srt` or `.vtt` subtitles |
+| `GET` | `/api/preview-subtitle` | Return subtitle cue samples |
+| `GET` | `/api/browse-folder` | Open the native Windows folder picker |
+| `GET/POST` | `/api/open-folder` | Open a directory and report the actual Explorer spawn result |
+| `GET` | `/api/proxy-image` | Proxy protected remote images |
+| `GET` | `/api/translate` | Translate titles with provider fallback |
 
----
+Process launch errors are returned as JSON. `EPERM` and missing-Python errors no longer fall through to an Express HTML error page.
 
-## 7. License & Credits
+## Verification
 
-* Media extraction and downloading core is provided by the open-source **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** project (MIT License).
-* EveryVideoDownloader is developed and distributed under the **MIT License**.
+Run fast, non-destructive contract checks:
+
+```bash
+npm run test:contracts
+```
+
+These checks verify unique API routes, guarded process errors, unique DOM IDs, and every static JavaScript DOM hook.
+
+The comprehensive integration suite performs real network downloads and modifies runtime configuration:
+
+```bash
+npm test
+```
+
+Use it only in a disposable test environment.
+
+## Documentation
+
+- [Graphite Signal design contract](DESIGN.md)
+- [UI overhaul plan and implementation status](ui-overhaul-plan.md)
+- [Project summary](docs/PROJECT_SUMMARY.md)
+- [Release notes](docs/RELEASE_NOTES.md)
+- [Core architecture — English](docs/YTDLP_CORE_ARCHITECTURE_EN.md)
+- [Core architecture — Vietnamese](docs/YTDLP_CORE_ARCHITECTURE.md)
+
+## License and Credits
+
+The extraction and download core is provided by the open-source [yt-dlp](https://github.com/yt-dlp/yt-dlp) project under its license. EveryVideoDownloader is distributed under the MIT License.

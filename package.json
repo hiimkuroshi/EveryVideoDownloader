@@ -1,13 +1,14 @@
 {
   "name": "every-video-downloader",
   "version": "0.3.0",
-  "description": "Professional Desktop Web UI & Workstation powered by yt-dlp",
+  "description": "EveryVideo local media workstation with a Graphite Signal interface",
   "private": true,
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "setup": "node setup.js",
-    "test": "node tests/test_suite.js"
+    "test": "node tests/test_suite.js",
+    "test:contracts": "node tests/ui_contract_test.js && node tests/server_contract_test.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

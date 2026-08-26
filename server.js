@@ -24,14 +24,59 @@ const CORE_DIR = path.join(__dirname, 'core');
 const DOWNLOADS_DIR = path.join(__dirname, 'Download');
 const DEFAULT_DOWNLOAD_PATH = path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s');
 
-// Detect Python executable command
-const PYTHON_CMD = process.platform === 'win32' ? 'python' : 'python3';
+function findExecutableOnPath(fileNames) {
+  const pathEntries = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
+  for (const entry of pathEntries) {
+    for (const fileName of fileNames) {
+      const candidate = path.join(entry.replace(/^"|"$/g, ''), fileName);
+      if (fs.existsSync(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+function resolvePythonCommand() {
+  if (process.env.EVERYVIDEO_PYTHON) return process.env.EVERYVIDEO_PYTHON;
+
+  const localCandidates = process.platform === 'win32'
+    ? [
+        path.join(__dirname, 'python.exe'),
+        path.join(__dirname, '.venv', 'Scripts', 'python.exe'),
+        path.join(__dirname, 'venv', 'Scripts', 'python.exe'),
+      ]
+    : [
+        path.join(__dirname, '.venv', 'bin', 'python'),
+        path.join(__dirname, 'venv', 'bin', 'python'),
+      ];
+
+  const localPython = localCandidates.find(candidate => fs.existsSync(candidate));
+  if (localPython) return localPython;
+
+  const fromPath = process.platform === 'win32'
+    ? findExecutableOnPath(['py.exe', 'python.exe', 'python3.exe'])
+    : findExecutableOnPath(['python3', 'python']);
+
+  return fromPath || (process.platform === 'win32' ? 'py.exe' : 'python3');
+}
+
+const PYTHON_CMD = resolvePythonCommand();
+const PYTHON_PREFIX_ARGS = /^py(?:\.exe)?$/i.test(path.basename(PYTHON_CMD)) ? ['-3'] : [];
+
+function describeProcessError(error, processName) {
+  if (error?.code === 'EPERM') {
+    return `Không thể khởi chạy ${processName}: tiến trình server đang bị giới hạn quyền tạo tiến trình con (spawn EPERM).`;
+  }
+  if (error?.code === 'ENOENT') {
+    return `Không tìm thấy ${processName}. Hãy cài Python 3.9+ hoặc đặt EVERYVIDEO_PYTHON tới python.exe hợp lệ.`;
+  }
+  return error?.message || `Không thể khởi chạy ${processName}.`;
+}
 
 /**
  * Helper to spawn yt_dlp Python package
  */
 function spawnYtDlp(args, options = {}) {
-  const fullArgs = ['-u', '-m', 'yt_dlp', ...args];
+  const fullArgs = [...PYTHON_PREFIX_ARGS, '-u', '-m', 'yt_dlp', ...args];
   const env = { ...process.env, PYTHONUNBUFFERED: '1', PYTHONPATH: CORE_DIR, ...(options.env || {}) };
   return spawn(PYTHON_CMD, fullArgs, { ...options, env });
 }
@@ -44,9 +89,14 @@ function execFileYtDlp(args, options = {}, callback) {
     callback = options;
     options = {};
   }
-  const fullArgs = ['-u', '-m', 'yt_dlp', ...args];
+  const fullArgs = [...PYTHON_PREFIX_ARGS, '-u', '-m', 'yt_dlp', ...args];
   const env = { ...process.env, PYTHONUNBUFFERED: '1', PYTHONPATH: CORE_DIR, ...(options.env || {}) };
-  return execFile(PYTHON_CMD, fullArgs, { ...options, env }, callback);
+  try {
+    return execFile(PYTHON_CMD, fullArgs, { ...options, env }, callback);
+  } catch (error) {
+    queueMicrotask(() => callback(error, '', ''));
+    return null;
+  }
 }
 
 // Ensure Download folder exists
@@ -134,40 +184,6 @@ app.post('/api/config', (req, res) => {
   Object.assign(updates, otherSettings);
   const saved = savePersistentConfig(updates);
   return res.json({ success: true, config: saved });
-});
-
-// =============================================================================
-// GET /api/translate — Google Translate Free API proxy
-// =============================================================================
-app.get('/api/translate', async (req, res) => {
-  const { text, to = 'vi' } = req.query;
-  if (!text) {
-    return res.status(400).json({ error: 'Missing text parameter' });
-  }
-
-  try {
-    const targetUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(to)}&dt=t&q=${encodeURIComponent(text)}`;
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Google Translate responded with ${response.status}`);
-    }
-
-    const data = await response.json();
-    let translated = '';
-    if (Array.isArray(data) && Array.isArray(data[0])) {
-      translated = data[0].map(chunk => chunk[0] || '').join('');
-    }
-
-    return res.json({ original: text, translated: translated || text });
-  } catch (err) {
-    console.error('[/api/translate] Error:', err.message);
-    return res.status(500).json({ error: err.message, original: text, translated: text });
-  }
 });
 
 // =============================================================================
@@ -597,16 +613,28 @@ const FOLDER_PICKER_EXE = path.join(__dirname, 'bin', 'folder_picker.exe');
 app.get('/api/browse-folder', (req, res) => {
   const defaultDir = path.resolve(req.query.current || DOWNLOADS_DIR);
 
+  const sendPickerError = (error) => {
+    if (res.headersSent) return;
+    const message = describeProcessError(error, 'hộp thoại chọn thư mục');
+    console.error('[/api/browse-folder] Error:', message);
+    res.status(500).json({ success: false, cancelled: false, error: message });
+  };
+
   // 1. Primary: Native Windows 10/11 Explorer IFileOpenDialog (TopMost + UTF-8 + Direct Navigation)
   if (fs.existsSync(FOLDER_PICKER_EXE)) {
-    return execFile(FOLDER_PICKER_EXE, [defaultDir], { encoding: 'utf8', timeout: 180000 }, (err, stdout) => {
-      const selected = stdout ? stdout.trim().split(/\r?\n/).filter(Boolean).pop() : '';
-      if (selected && fs.existsSync(selected)) {
-        savePersistentConfig({ downloadFolder: selected });
-        return res.json({ success: true, path: selected });
-      }
-      return res.json({ success: false, path: null });
-    });
+    try {
+      return execFile(FOLDER_PICKER_EXE, [defaultDir], { encoding: 'utf8', timeout: 180000 }, (err, stdout) => {
+        if (err) return sendPickerError(err);
+        const selected = stdout ? stdout.trim().split(/\r?\n/).filter(Boolean).pop() : '';
+        if (selected && fs.existsSync(selected)) {
+          savePersistentConfig({ downloadFolder: selected });
+          return res.json({ success: true, cancelled: false, path: selected });
+        }
+        return res.json({ success: false, cancelled: true, path: null });
+      });
+    } catch (error) {
+      return sendPickerError(error);
+    }
   }
 
   // 2. Secondary Fallback: PowerShell Dialog with TopMost
@@ -633,17 +661,22 @@ $form.Dispose()
 `;
 
   const b64 = Buffer.from(psScript, 'utf16le').toString('base64');
-  execFile('powershell.exe', ['-NoProfile', '-STA', '-EncodedCommand', b64], { timeout: 180000 }, (err, stdout) => {
-    if (stdout && stdout.includes('CHOSEN:')) {
-      const match = stdout.match(/CHOSEN:(.*)/);
-      const selected = match ? match[1].trim() : '';
-      if (selected && fs.existsSync(selected)) {
-        savePersistentConfig({ downloadFolder: selected });
-        return res.json({ success: true, path: selected });
+  try {
+    execFile('powershell.exe', ['-NoProfile', '-STA', '-EncodedCommand', b64], { timeout: 180000 }, (err, stdout) => {
+      if (err) return sendPickerError(err);
+      if (stdout && stdout.includes('CHOSEN:')) {
+        const match = stdout.match(/CHOSEN:(.*)/);
+        const selected = match ? match[1].trim() : '';
+        if (selected && fs.existsSync(selected)) {
+          savePersistentConfig({ downloadFolder: selected });
+          return res.json({ success: true, cancelled: false, path: selected });
+        }
       }
-    }
-    return res.json({ success: false, path: null });
-  });
+      return res.json({ success: false, cancelled: true, path: null });
+    });
+  } catch (error) {
+    sendPickerError(error);
+  }
 });
 
 // =============================================================================
@@ -659,65 +692,47 @@ const handleOpenFolder = (req, res) => {
   if (!fs.existsSync(targetDir)) {
     try {
       fs.mkdirSync(targetDir, { recursive: true });
-    } catch (e) {}
+    } catch (error) {
+      return res.status(500).json({ success: false, error: `Không thể tạo thư mục: ${error.message}` });
+    }
   }
 
-  // 1. Immediately return HTTP response so browser UI never waits
-  res.json({ success: true, path: targetDir, message: 'Đã mở thư mục trong File Explorer.' });
+  const sendLaunchError = (error) => {
+    if (res.headersSent) return;
+    const message = describeProcessError(error, 'Windows File Explorer');
+    console.error('[/api/open-folder] Error:', message);
+    res.status(500).json({ success: false, path: targetDir, error: message });
+  };
 
-  // 2. Launch explorer directly via spawn with detached & unref (Instant, No cmd wrapper, No blocking)
-  try {
-    const child = spawn('explorer.exe', [targetDir], {
-      detached: true,
-      stdio: 'ignore'
-    });
-    child.unref();
-  } catch (err) {
-    console.error('[/api/open-folder] spawn error:', err);
+  const launch = (command, args, allowFallback) => {
+    let child;
     try {
-      const fallback = spawn('cmd.exe', ['/c', 'start', '', targetDir], {
+      child = spawn(command, args, {
         detached: true,
         stdio: 'ignore'
       });
-      fallback.unref();
-    } catch (e) {}
-  }
+    } catch (error) {
+      if (allowFallback) return launch('cmd.exe', ['/d', '/c', 'start', '', targetDir], false);
+      return sendLaunchError(error);
+    }
+
+    child.once('spawn', () => {
+      child.unref();
+      if (!res.headersSent) {
+        res.json({ success: true, path: targetDir, message: 'Đã mở thư mục trong File Explorer.' });
+      }
+    });
+    child.once('error', (error) => {
+      if (allowFallback) return launch('cmd.exe', ['/d', '/c', 'start', '', targetDir], false);
+      sendLaunchError(error);
+    });
+  };
+
+  launch('explorer.exe', [targetDir], true);
 };
 
 app.get('/api/open-folder', handleOpenFolder);
 app.post('/api/open-folder', handleOpenFolder);
-
-// =============================================================================
-// GET /api/translate — Multilingual Title Translation (vi, en, zh-CN, ja)
-// =============================================================================
-app.get('/api/translate', async (req, res) => {
-  const text = req.query.text;
-  const target = req.query.to || 'vi';
-  if (!text) return res.json({ translated: '' });
-
-  // Map 2-letter codes to Google Translate codes
-  const langMap = {
-    'vi': 'vi',
-    'en': 'en',
-    'zh': 'zh-CN',
-    'ja': 'ja'
-  };
-  const tl = langMap[target] || target;
-
-  try {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(tl)}&dt=t&q=${encodeURIComponent(text)}`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Translation failed');
-    const data = await response.json();
-    if (Array.isArray(data) && Array.isArray(data[0])) {
-      const translatedText = data[0].map(item => item[0]).filter(Boolean).join('');
-      return res.json({ translated: translatedText });
-    }
-    return res.json({ translated: text });
-  } catch (err) {
-    return res.json({ translated: text });
-  }
-});
 
 // Check if a URL belongs to Douyin
 function isDouyinUrl(url) {
@@ -1079,7 +1094,7 @@ app.get('/api/info', async (req, res) => {
 
   execFileYtDlp(args, { maxBuffer: 35 * 1024 * 1024 }, async (error, stdout, stderr) => {
     if (error) {
-      const message = stderr?.trim() || error.message;
+      const message = stderr?.trim() || describeProcessError(error, 'Python extractor');
       console.error('[/api/info] Error:', message);
 
       // Secondary fallback for Douyin / TikTok if initial check didn't catch it
@@ -1559,8 +1574,24 @@ app.get('/api/download', async (req, res) => {
 
   console.log(`[/api/download] [${downloadId}] Spawning Python yt_dlp with args:`, args.join(' '));
 
-  const child = spawnYtDlp(args);
+  let child;
+  try {
+    child = spawnYtDlp(args);
+  } catch (error) {
+    const message = describeProcessError(error, 'Python extractor');
+    console.error(`[/api/download] [${downloadId}] Spawn error:`, message);
+    sendEvent({ downloadId, error: message });
+    sendEvent({ downloadId, done: true, code: -1 });
+    return res.end();
+  }
   activeDownloads.set(downloadId, child);
+
+  child.once('error', (error) => {
+    const message = describeProcessError(error, 'Python extractor');
+    console.error(`[/api/download] [${downloadId}] Process error:`, message);
+    activeDownloads.delete(downloadId);
+    sendEvent({ downloadId, error: message });
+  });
 
   child.stdout.on('data', (data) => {
     const lines = data.toString().split(/\r?\n/).filter(Boolean);

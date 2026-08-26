@@ -1,3 +1,42 @@
+# Unreleased — Graphite Signal
+
+> Cập nhật: 26/08/2026
+>
+> Nhánh: `nhanh-2`
+
+## Added
+
+- Hệ thiết kế Graphite Signal với design contract tại `DESIGN.md` và lớp theme `public/graphite-signal.css`.
+- UI contract test kiểm tra ID, DOM hooks và các ràng buộc accessibility tĩnh.
+- Server contract test kiểm tra route trùng lặp và guard cho lỗi process/API.
+- Skip link, `h1`, keyboard tabs, focus-visible, live region và reduced-motion.
+
+## Changed
+
+- Làm mới nhận diện hiển thị thành **EveryVideo**; bỏ attribution engine khỏi giao diện người dùng.
+- Đại tu app shell, Studio, Queue, Advanced, Settings, progress, modal và toast theo cùng một hệ token.
+- Chuẩn hóa dark/light theme và bốn ngôn ngữ; bỏ font tải từ Google để giao diện hoạt động offline ổn định hơn.
+- Responsive desktop/tablet/mobile được viết lại, giữ nguyên các chức năng và DOM hook hiện có.
+- Python runtime được dò qua `EVERYVIDEO_PYTHON`, virtual environment cục bộ và các launcher trong `PATH`.
+- Route dịch tiêu đề hợp nhất thành một endpoint với provider fallback.
+
+## Fixed
+
+- `/api/info` không còn để lỗi spawn hoặc response HTML làm frontend thất bại khi parse JSON.
+- Lỗi `ENOENT`, `EACCES` và `EPERM` của child process được trả về dưới dạng JSON có thông điệp rõ ràng.
+- `/api/open-folder` chỉ báo thành công sau khi Explorer được khởi chạy; `/api/browse-folder` phân biệt cancel với launch failure.
+- Sửa các lỗi cú pháp CSS legacy và logic theme toggle/toast/tab navigation.
+
+## Verified
+
+- URL YouTube gây lỗi trước đó trả HTTP 200, metadata đúng và 49 format.
+- Dịch tiêu đề tiếng Việt và mở thư mục được kiểm thử thành công trên Windows.
+- UI contract: 148 ID duy nhất và 111 DOM hook hợp lệ.
+- Server contract: 11 route GET duy nhất và đầy đủ process/API guards.
+- Chromium không ghi nhận console error trong luồng phân tích đã kiểm thử.
+
+---
+
 # 📦 EveryVideoDownloader — Release 0.3.1
 
 > **Phiên bản:** `v0.3.1`  

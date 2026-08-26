@@ -1,6 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   EveryVideoDownloader — Design System (Powered by yt-dlp)
-   ═══════════════════════════════════════════════════════ */
+/* Legacy component styles. Graphite Signal overrides live in graphite-signal.css. */
 
 :root {
   --color-primary: #6366F1;
@@ -78,7 +76,6 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.14);
-}
   --shadow-glow: 0 0 18px rgba(79, 70, 229, 0.12);
 
   --scrollbar-track: #F1F5F9;
@@ -389,17 +386,6 @@ select option {
 .btn-analyze:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 22px rgba(244, 63, 94, 0.6);
-}
-
-.btn-analyze:active {
-  transform: translateY(0);
-}
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.btn-analyze:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.4);
 }
 
 .btn-analyze:active {
