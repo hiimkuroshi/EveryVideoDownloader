@@ -1,6 +1,6 @@
 {
   "name": "every-video-downloader",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "description": "Professional Desktop Web UI & Workstation powered by yt-dlp",
   "private": true,
   "main": "server.js",

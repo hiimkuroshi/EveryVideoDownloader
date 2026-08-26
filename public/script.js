@@ -61,8 +61,43 @@ fetch('/api/config')
       if (document.getElementById('quickDownloadFolder')) document.getElementById('quickDownloadFolder').value = cfg.downloadFolder;
       if (document.getElementById('downloadFolder')) document.getElementById('downloadFolder').value = cfg.downloadFolder;
     }
+    if (cfg.bilibiliAvoidP2p !== undefined && document.getElementById('bilibiliAvoidP2p')) {
+      document.getElementById('bilibiliAvoidP2p').checked = cfg.bilibiliAvoidP2p !== false;
+    }
+    if (cfg.bilibiliUposHost && document.getElementById('bilibiliUposHost')) {
+      document.getElementById('bilibiliUposHost').value = cfg.bilibiliUposHost;
+    }
   })
   .catch(() => {});
+
+// Bilibili CDN Anti-P2P Settings event bindings
+document.getElementById('bilibiliAvoidP2p')?.addEventListener('change', (e) => {
+    const statusEl = document.getElementById('bilibiliAvoidP2pStatus');
+    if (statusEl) {
+        if (e.target.checked) {
+            statusEl.textContent = typeof t === 'function' ? t('biliAvoidP2pActive') : '🛡️ Đang Bật (Tự động bypass CDN nghẽn)';
+            statusEl.style.color = 'var(--color-success, #10b981)';
+        } else {
+            statusEl.textContent = typeof t === 'function' ? t('biliAvoidP2pInactive') : '⚠️ Đang Tắt (Có thể dính node P2P chậm)';
+            statusEl.style.color = 'var(--color-warning, #f59e0b)';
+        }
+    }
+    localStorage.setItem('bilibiliAvoidP2p', e.target.checked ? 'true' : 'false');
+    fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bilibiliAvoidP2p: e.target.checked })
+    }).catch(() => {});
+});
+
+document.getElementById('bilibiliUposHost')?.addEventListener('change', (e) => {
+    localStorage.setItem('bilibiliUposHost', e.target.value);
+    fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bilibiliUposHost: e.target.value })
+    }).catch(() => {});
+});
 
 // Sync and save user-selected download directory across sessions
 function syncAndPersistDownloadFolder(folderPath) {
@@ -389,6 +424,14 @@ $('checkBtn').addEventListener('click', async () => {
         const qp = new URLSearchParams({ url });
         if (browser !== 'none') qp.append('browser', browser);
 
+        // Bilibili Anti-P2P CDN & UPOS Server selection
+        const biliAvoidP2p = $('bilibiliAvoidP2p')?.checked ?? true;
+        const biliUposHost = val('bilibiliUposHost') || 'auto';
+        qp.append('bilibili_avoid_p2p', biliAvoidP2p ? 'true' : 'false');
+        if (biliUposHost !== 'auto' && biliUposHost !== 'default') {
+            qp.append('bilibili_upos_host', biliUposHost);
+        }
+
         const res = await fetch(`/api/info?${qp}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Lỗi khi tải thông tin video.');
@@ -431,6 +474,34 @@ $('url').addEventListener('input', (e) => {
     }
 });
 
+// ── Custom File Name State & Helpers ───────────────────────────
+let currentOriginalTitle = '';
+let currentTranslatedTitle = '';
+
+function cleanFileNameString(str) {
+    if (!str) return '';
+    return str
+        .replace(/[\\/:*?"<>|]/g, '_')
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function updateCustomFileNameExt() {
+    const extBadge = $('customFileNameExt');
+    if (!extBadge) return;
+    
+    // Check if audio format is selected
+    const audioFmt = val('audioFormat');
+    if (audioFmt && audioFmt !== 'none') {
+        extBadge.textContent = '.' + audioFmt;
+        return;
+    }
+
+    const mergeFmt = val('quickMergeFormat') || val('mergeOutputFormat') || 'mkv';
+    extBadge.textContent = mergeFmt ? '.' + mergeFmt : '.mkv';
+}
+
 // ── Render Video Hero Card ───────────────────────────
 function renderVideoHero(data) {
     const card = $('videoHeroCard');
@@ -443,6 +514,14 @@ function renderVideoHero(data) {
     const subCountEl = $('videoSubCount');
 
     currentThumbnailUrl = data.thumbnail || '';
+    currentOriginalTitle = data.title || '';
+    currentTranslatedTitle = '';
+
+    // Set custom file name input default value to current video title
+    if ($('customFileNameInput')) {
+        $('customFileNameInput').value = data.title || '';
+    }
+    updateCustomFileNameExt();
 
     // Proxy image with fallback
     if (currentThumbnailUrl) {
@@ -474,12 +553,38 @@ $('videoSubCount')?.addEventListener('click', () => {
     if (subPill) subPill.click();
 });
 
-// ── Multilingual Video Title Translation (Google Translate) ───
-async function translateVideoTitle(rawTitle) {
+// Custom Filename Action Buttons
+$('useOriginalNameBtn')?.addEventListener('click', () => {
+    if (currentOriginalTitle) {
+        if ($('customFileNameInput')) $('customFileNameInput').value = currentOriginalTitle;
+        showToast('Đã áp dụng tiêu đề gốc của video!', 'info');
+    }
+});
+
+$('useTranslatedNameBtn')?.addEventListener('click', () => {
+    if (currentTranslatedTitle || currentOriginalTitle) {
+        if ($('customFileNameInput')) $('customFileNameInput').value = currentTranslatedTitle || currentOriginalTitle;
+        showToast('Đã áp dụng tiêu đề đã dịch!', 'info');
+    }
+});
+
+$('cleanFileNameBtn')?.addEventListener('click', () => {
+    const currentVal = $('customFileNameInput')?.value || '';
+    const cleaned = cleanFileNameString(currentVal);
+    if ($('customFileNameInput')) $('customFileNameInput').value = cleaned;
+    showToast('Đã làm sạch ký tự đặc biệt và emoji!', 'success');
+});
+
+$('quickMergeFormat')?.addEventListener('change', updateCustomFileNameExt);
+$('mergeOutputFormat')?.addEventListener('change', updateCustomFileNameExt);
+$('audioFormat')?.addEventListener('change', updateCustomFileNameExt);
+
+// ── Multilingual Video Title Translation (Multi-Provider API) ───
+async function translateVideoTitle(rawTitle, targetLang = null) {
     const transText = $('videoTranslatedTitle');
     if (!rawTitle || !transText) return;
 
-    const lang = (typeof currentAppLanguage !== 'undefined' ? currentAppLanguage : localStorage.getItem('app_language')) || 'vi';
+    const lang = targetLang || (typeof currentAppLanguage !== 'undefined' ? currentAppLanguage : localStorage.getItem('app_language')) || 'vi';
     const langNames = {
         vi: 'Tiếng Việt',
         en: 'English',
@@ -490,7 +595,7 @@ async function translateVideoTitle(rawTitle) {
     
     const transLabelEl = document.querySelector('#videoTranslatedBox .trans-label span');
     if (transLabelEl) {
-        transLabelEl.textContent = `${targetLabel} (Google Translate):`;
+        transLabelEl.textContent = (typeof t === 'function' && t('transTitleLabel')) ? t('transTitleLabel') : `${targetLabel} (Google Translate):`;
     }
 
     transText.textContent = typeof t === 'function' ? t('translatingText') : 'Đang dịch tiêu đề...';
@@ -498,6 +603,7 @@ async function translateVideoTitle(rawTitle) {
     // If English and already standard ascii English, keep directly
     if (lang === 'en' && /^[\x00-\x7F]*$/.test(rawTitle)) {
         transText.textContent = rawTitle;
+        currentTranslatedTitle = rawTitle;
         return;
     }
 
@@ -506,13 +612,21 @@ async function translateVideoTitle(rawTitle) {
         const data = await res.json();
         if (data.translated) {
             transText.textContent = data.translated;
+            currentTranslatedTitle = data.translated;
         } else {
             transText.textContent = rawTitle;
+            currentTranslatedTitle = rawTitle;
         }
     } catch (err) {
+        console.warn('[translateVideoTitle] Error:', err);
         transText.textContent = rawTitle;
+        currentTranslatedTitle = rawTitle;
     }
 }
+
+// Global alias for compatibility
+window.translateVideoTitle = translateVideoTitle;
+window.translateTitle = translateVideoTitle;
 
 // ── Single Thumbnail Download Action ─────────────────
 $('dlThumbBtn')?.addEventListener('click', async (e) => {
@@ -528,13 +642,14 @@ $('dlThumbBtn')?.addEventListener('click', async (e) => {
     btn.innerHTML = `<span style="display:inline-block; animation:spin 0.6s linear infinite;">⏳</span> <span>Đang lưu...</span>`;
 
     const targetFolder = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
+    const targetTitle = val('customFileNameInput') || currentVideoData?.title || 'video';
     showToast('⏳ Đang tải ảnh thumbnail HD của video...', 'info');
 
     try {
         const qp = new URLSearchParams({
             url: currentUrl,
             thumbUrl: currentThumbnailUrl || '',
-            title: currentVideoData?.title || 'video',
+            title: targetTitle,
             browser: currentBrowser,
             output: targetFolder
         });
@@ -987,9 +1102,11 @@ function renderPresetCards() {
 // ── Set Final Format & Update Live Code Preview ───────
 function setFinalFormat(formatString, summaryLabel) {
     selectedFormatValue = formatString;
-    $('formatPreviewCode').textContent = `-f "${formatString}"`;
+    const timeSection = getTimeRangeSection();
+    const sectionFlag = timeSection ? ` --download-sections "${timeSection}"` : '';
+    $('formatPreviewCode').textContent = `-f "${formatString}"${sectionFlag}`;
     $('customFormatInput').value = formatString;
-    $('downloadBtnText').textContent = 'Bắt Đầu Tải Xuống';
+    $('downloadBtnText').textContent = typeof t === 'function' ? t('startDownloadBtn') : 'Bắt Đầu Tải Xuống';
 }
 
 // ── Filter Toolbar Event Listeners ────────────────────
@@ -1261,7 +1378,7 @@ function renderSubtitlesTable() {
 async function downloadSubtitleDirect(subItem, format = 'srt') {
     if (!subItem) return;
     const targetFolder = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
-    const videoTitle = currentVideoData?.title || 'video';
+    const videoTitle = val('customFileNameInput') || currentVideoData?.title || 'video';
 
     showToast(`⏳ Đang tải phụ đề [${subItem.langName}] dạng .${format.toUpperCase()}...`, 'info');
 
@@ -1412,6 +1529,71 @@ bindTwoWaySync('quickConcurrentFragments', 'concurrentFragments');
 bindTwoWaySync('quickHttpChunkSize', 'httpChunkSize');
 bindTwoWaySync('quickDownloadFolder', 'downloadFolder');
 
+// ── Time Range / Download Section Handlers ───────────
+function getTimeRangeSection() {
+    const start = (val('timeRangeStart') || val('advTimeRangeStart') || '').trim();
+    const end = (val('timeRangeEnd') || val('advTimeRangeEnd') || '').trim();
+    if (!start && !end) return '';
+    const s = start || '00:00';
+    const e = end || 'inf';
+    return `*${s}-${e}`;
+}
+
+function updateTimeRangeStatusBadge() {
+    const start = (val('timeRangeStart') || val('advTimeRangeStart') || '').trim();
+    const end = (val('timeRangeEnd') || val('advTimeRangeEnd') || '').trim();
+    const badge = $('timeRangeStatusBadge');
+    const clearBtn = $('clearTimeRangeBtn');
+    if (!badge) return;
+
+    if (!start && !end) {
+        badge.textContent = typeof t === 'function' ? t('timeRangeAll') : 'Toàn bộ video';
+        badge.classList.remove('active');
+        if (clearBtn) clearBtn.classList.add('hidden');
+    } else {
+        const customPrefix = typeof t === 'function' ? t('timeRangeCustom') : 'Cắt: ';
+        badge.textContent = `${customPrefix}${start || '00:00'} - ${end || 'Hết'}`;
+        badge.classList.add('active');
+        if (clearBtn) clearBtn.classList.remove('hidden');
+    }
+
+    if (selectedFormatValue && $('formatPreviewCode')) {
+        const timeSection = getTimeRangeSection();
+        const sectionFlag = timeSection ? ` --download-sections "${timeSection}"` : '';
+        $('formatPreviewCode').textContent = `-f "${selectedFormatValue}"${sectionFlag}`;
+    }
+}
+
+function syncTimeRangeInputs(sourceStartId, sourceEndId, targetStartId, targetEndId) {
+    const s = val(sourceStartId);
+    const e = val(sourceEndId);
+    if ($(targetStartId) && $(targetStartId).value !== s) $(targetStartId).value = s;
+    if ($(targetEndId) && $(targetEndId).value !== e) $(targetEndId).value = e;
+    updateTimeRangeStatusBadge();
+}
+
+$('timeRangeStart')?.addEventListener('input', () => {
+    syncTimeRangeInputs('timeRangeStart', 'timeRangeEnd', 'advTimeRangeStart', 'advTimeRangeEnd');
+});
+$('timeRangeEnd')?.addEventListener('input', () => {
+    syncTimeRangeInputs('timeRangeStart', 'timeRangeEnd', 'advTimeRangeStart', 'advTimeRangeEnd');
+});
+$('advTimeRangeStart')?.addEventListener('input', () => {
+    syncTimeRangeInputs('advTimeRangeStart', 'advTimeRangeEnd', 'timeRangeStart', 'timeRangeEnd');
+});
+$('advTimeRangeEnd')?.addEventListener('input', () => {
+    syncTimeRangeInputs('advTimeRangeStart', 'advTimeRangeEnd', 'timeRangeStart', 'timeRangeEnd');
+});
+
+$('clearTimeRangeBtn')?.addEventListener('click', () => {
+    if ($('timeRangeStart')) $('timeRangeStart').value = '';
+    if ($('timeRangeEnd')) $('timeRangeEnd').value = '';
+    if ($('advTimeRangeStart')) $('advTimeRangeStart').value = '';
+    if ($('advTimeRangeEnd')) $('advTimeRangeEnd').value = '';
+    updateTimeRangeStatusBadge();
+    showToast('Đã đặt lại: Tải toàn bộ video', 'info');
+});
+
 // ── Toggle Log Console ───────────────────────────────
 $('toggleLogsBtn')?.addEventListener('click', () => {
     $('logsContainer')?.classList.toggle('hidden');
@@ -1502,12 +1684,16 @@ function startDirectDownload(customParams = null) {
         convert_thumbnails:   val('convertThumbnails') !== 'none' ? val('convertThumbnails') : '',
         sponsorblock_mark:    val('sponsorblockMark'),
         extractor_retries:    val('extractorRetries'),
-        concurrent_fragments: val('quickConcurrentFragments') || val('concurrentFragments') || '8',
-        http_chunk_size:      val('quickHttpChunkSize') || val('httpChunkSize') || '10M',
+        concurrent_fragments: val('quickConcurrentFragments') || val('concurrentFragments') || '1',
+        http_chunk_size:      (val('quickHttpChunkSize') || val('httpChunkSize')) !== 'none' ? (val('quickHttpChunkSize') || val('httpChunkSize') || '') : '',
         audio_format:         val('audioFormat'),
         audio_quality:        val('audioQuality'),
         recode_video:         val('recodeVideo'),
         merge_output_format:  val('quickMergeFormat') || val('mergeOutputFormat') || 'mkv',
+        custom_filename:      val('customFileNameInput')?.trim() || '',
+        bilibili_avoid_p2p:   $('bilibiliAvoidP2p')?.checked ? 'true' : 'false',
+        bilibili_upos_host:    val('bilibiliUposHost') || 'auto',
+        download_sections:    (customParams?.download_sections !== undefined) ? customParams.download_sections : getTimeRangeSection(),
     };
 
     if (customParams) {
@@ -1541,9 +1727,9 @@ function startDirectDownload(customParams = null) {
     logs.innerHTML = '';
     bar.style.width = '0%';
     percentCounter.textContent = '0.0%';
-    statusText.textContent = 'Đang kết nối máy chủ...';
     badge.textContent = 'Downloading';
-    badge.className = 'status-badge active';
+    badge.className = 'status-badge processing';
+    statusText.textContent = 'Đang kết nối và tải video...';
     
     pauseResumeBtn.disabled = false;
     pauseResumeBtnText.textContent = 'Tạm Dừng';
@@ -1624,14 +1810,38 @@ function startDirectDownload(customParams = null) {
 
                 const sizeMatch = line.match(/of\s+~?([0-9\.]+[A-Za-z]+)/);
                 if (sizeMatch) $('metricSize').textContent = `📦 Kích thước: ${sizeMatch[1]}`;
+            } else if (line.includes('frame=') && line.includes('time=')) {
+                // Parse FFmpeg real-time stream/slicing progress
+                const timeMatch = line.match(/time=([0-9:.]+)/);
+                const speedMatch = line.match(/speed=\s*([0-9.]+x)/);
+                const sizeMatch = line.match(/size=\s*([0-9A-Za-z]+)/);
+                const frameMatch = line.match(/frame=\s*(\d+)/);
+
+                const timeStr = timeMatch ? timeMatch[1] : '';
+                const speedStr = speedMatch ? speedMatch[1] : '';
+                const sizeStr = sizeMatch ? sizeMatch[1] : '';
+                const frameStr = frameMatch ? frameMatch[1] : '';
+
+                statusText.textContent = `✂️ Đang cắt & stream video: ${timeStr} (Frame: ${frameStr})`;
+                if (speedStr) $('metricSpeed').textContent = `⚡ Tốc độ: ${speedStr}`;
+                if (sizeStr) $('metricSize').textContent = `📦 Đã tải: ${sizeStr}`;
+                $('metricEta').textContent = '⏱️ Đang stream';
+                badge.textContent = 'Trimming';
+                badge.className = 'status-badge active';
+                if (bar.style.width === '0%') {
+                    bar.style.width = '50%';
+                    percentCounter.textContent = '...';
+                }
             } else if (line.includes('[ExtractAudio]')) {
                 statusText.textContent = 'Đang trích xuất audio...';
                 badge.textContent = 'Extracting';
-            } else if (line.includes('[Merger]')) {
-                statusText.textContent = 'Đang ghép video và audio (FFmpeg)...';
+            } else if (line.includes('[Merger]') || line.includes('[ffmpeg]') || line.includes('[Fixup]') || line.includes('[VideoRemuxer]')) {
+                statusText.textContent = '⚙️ Đang ghép Video & Audio (FFmpeg Muxing)...';
+                $('metricSpeed').textContent = '⚡ Đang ghi ổ đĩa';
+                $('metricEta').textContent = '⏱️ Đang hoàn tất';
                 badge.textContent = 'Merging';
-                bar.style.width = '95%';
-                percentCounter.textContent = '95.0%';
+                bar.style.width = '98%';
+                percentCounter.textContent = '98.0%';
             } else if (line.includes('[EmbedSubtitle]')) {
                 statusText.textContent = 'Đang nhúng phụ đề...';
             } else if (line.includes('[EmbedThumbnail]')) {
@@ -1726,13 +1936,14 @@ $('cancelBtn')?.addEventListener('click', async () => {
 $('addSelectedToQueueBtn')?.addEventListener('click', () => {
     if (selectedFormatSet.size === 0) return;
 
+    const customTitle = val('customFileNameInput') || currentVideoData?.title || 'Video';
     let addedCount = 0;
     selectedFormatSet.forEach(fmtId => {
         const item = parsedFormats.find(f => f.id === fmtId);
         if (item) {
             addSingleItemToQueue({
                 url: currentUrl,
-                title: currentVideoData?.title || 'Video',
+                title: customTitle,
                 format: item.id,
                 formatLabel: `${item.resolution} (ID ${item.id})`,
                 ext: item.ext,
@@ -1751,12 +1962,14 @@ $('addSelectedToQueueBtn')?.addEventListener('click', () => {
 });
 
 function addSingleItemToQueue(item) {
+    const timeSection = item.downloadSections !== undefined ? item.downloadSections : getTimeRangeSection();
     const queueItem = {
         id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         url: item.url,
         title: item.title,
         format: item.format,
-        formatLabel: item.formatLabel,
+        formatLabel: item.formatLabel + (timeSection ? ` [✂️ ${timeSection}]` : ''),
+        downloadSections: timeSection || '',
         ext: item.ext,
         size: item.size,
         status: 'waiting', // 'waiting', 'downloading', 'done', 'error'
@@ -1861,9 +2074,15 @@ async function processNextQueueItem() {
     currentUrl = nextItem.url;
     selectedFormatValue = nextItem.format;
     $('url').value = nextItem.url;
+    if ($('customFileNameInput')) $('customFileNameInput').value = nextItem.title;
     setFinalFormat(nextItem.format, nextItem.formatLabel);
 
-    startDirectDownload();
+    startDirectDownload({
+        url: nextItem.url,
+        format: nextItem.format,
+        custom_filename: nextItem.title,
+        download_sections: nextItem.downloadSections || ''
+    });
 
     // Monitor completion to trigger next
     const checkInterval = setInterval(() => {
@@ -1910,3 +2129,15 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 350);
     }, 5000);
 }
+
+// ── Hook into i18n Language Switcher ─────────────────
+window.onLanguageChanged = function(lang) {
+    updateTimeRangeStatusBadge();
+    if (currentVideoData?.title) {
+        translateTitle(currentVideoData.title, lang);
+    }
+};
+
+// Initial badge update
+updateTimeRangeStatusBadge();
+

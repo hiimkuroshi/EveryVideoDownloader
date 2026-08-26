@@ -858,6 +858,103 @@ select option {
   color: #1E293B;
 }
 
+/* Custom File Name Box */
+.custom-filename-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filename-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.filename-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.filename-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-name-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.btn-name-action:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.filename-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.custom-filename-input {
+  width: 100%;
+  padding: 8px 65px 8px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  font-size: 0.84rem;
+  font-weight: 500;
+  font-family: inherit;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.custom-filename-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.filename-ext-badge {
+  position: absolute;
+  right: 8px;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  pointer-events: none;
+}
+
 /* Empty State Card */
 .empty-guide-card {
   padding: 28px 20px;
@@ -980,6 +1077,127 @@ select option {
 .compact-input-folder.full-width {
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Time Range / Video Trim Block */
+.time-range-block {
+  margin-top: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+
+.time-range-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.time-range-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--fg-muted);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  transition: all var(--transition-fast);
+}
+
+.time-range-badge.active {
+  background: rgba(99, 102, 241, 0.18);
+  color: #818CF8;
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+[data-theme='light'] .time-range-badge.active {
+  background: #EEF2FF;
+  color: #4F46E5;
+  border-color: #C7D2FE;
+}
+
+.btn-time-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-time-clear:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+}
+
+.time-range-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.time-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  transition: border-color var(--transition-fast);
+}
+
+.time-input-group:focus-within {
+  border-color: var(--color-primary);
+}
+
+.time-input-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.compact-time-input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--fg);
+  padding: 0;
+}
+
+.compact-time-input::placeholder {
+  color: var(--fg-placeholder);
+  font-weight: 400;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+}
+
+.time-separator {
+  color: var(--fg-muted);
+  font-size: 0.78rem;
+  font-weight: bold;
+  flex-shrink: 0;
 }
 
 .field-item {

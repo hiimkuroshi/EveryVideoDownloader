@@ -46,7 +46,7 @@ from .utils import (
 from .utils._utils import _YDLLogger
 from .utils.networking import normalize_url
 
-CHROMIUM_BASED_BROWSERS = {'brave', 'chrome', 'chromium', 'edge', 'opera', 'vivaldi', 'whale'}
+CHROMIUM_BASED_BROWSERS = {'brave', 'chrome', 'chromium', 'coccoc', 'edge', 'opera', 'vivaldi', 'whale'}
 SUPPORTED_BROWSERS = CHROMIUM_BASED_BROWSERS | {'firefox', 'safari'}
 
 
@@ -240,6 +240,7 @@ def _get_chromium_based_browser_settings(browser_name):
             'brave': os.path.join(appdata_local, R'BraveSoftware\Brave-Browser\User Data'),
             'chrome': os.path.join(appdata_local, R'Google\Chrome\User Data'),
             'chromium': os.path.join(appdata_local, R'Chromium\User Data'),
+            'coccoc': os.path.join(appdata_local, R'CocCoc\Browser\User Data'),
             'edge': os.path.join(appdata_local, R'Microsoft\Edge\User Data'),
             'opera': os.path.join(appdata_roaming, R'Opera Software\Opera Stable'),
             'vivaldi': os.path.join(appdata_local, R'Vivaldi\User Data'),
@@ -252,6 +253,7 @@ def _get_chromium_based_browser_settings(browser_name):
             'brave': os.path.join(appdata, 'BraveSoftware/Brave-Browser'),
             'chrome': os.path.join(appdata, 'Google/Chrome'),
             'chromium': os.path.join(appdata, 'Chromium'),
+            'coccoc': os.path.join(appdata, 'CocCoc'),
             'edge': os.path.join(appdata, 'Microsoft Edge'),
             'opera': os.path.join(appdata, 'com.operasoftware.Opera'),
             'vivaldi': os.path.join(appdata, 'Vivaldi'),
@@ -264,6 +266,7 @@ def _get_chromium_based_browser_settings(browser_name):
             'brave': os.path.join(config, 'BraveSoftware/Brave-Browser'),
             'chrome': os.path.join(config, 'google-chrome'),
             'chromium': os.path.join(config, 'chromium'),
+            'coccoc': os.path.join(config, 'coccoc'),
             'edge': os.path.join(config, 'microsoft-edge'),
             'opera': os.path.join(config, 'opera'),
             'vivaldi': os.path.join(config, 'vivaldi'),
@@ -276,6 +279,7 @@ def _get_chromium_based_browser_settings(browser_name):
         'brave': 'Brave',
         'chrome': 'Chrome',
         'chromium': 'Chromium',
+        'coccoc': 'CocCoc' if sys.platform == 'darwin' else 'Chromium',
         'edge': 'Microsoft Edge' if sys.platform == 'darwin' else 'Chromium',
         'opera': 'Opera' if sys.platform == 'darwin' else 'Chromium',
         'vivaldi': 'Vivaldi' if sys.platform == 'darwin' else 'Chrome',
@@ -1112,7 +1116,39 @@ def _config_home():
 def _open_database_copy(database_path, tmpdir):
     # cannot open sqlite databases if they are already in use (e.g. by the browser)
     database_copy_path = os.path.join(tmpdir, 'temporary.sqlite')
-    shutil.copy(database_path, database_copy_path)
+    try:
+        shutil.copy(database_path, database_copy_path)
+    except (PermissionError, OSError):
+        if os.name == 'nt':
+            try:
+                import ctypes
+                from ctypes import wintypes
+                GENERIC_READ = 0x80000000
+                FILE_SHARE_READ = 0x00000001
+                FILE_SHARE_WRITE = 0x00000002
+                FILE_SHARE_DELETE = 0x00000004
+                OPEN_EXISTING = 3
+                FILE_ATTRIBUTE_NORMAL = 0x80
+                handle = ctypes.windll.kernel32.CreateFileW(
+                    str(database_path), GENERIC_READ,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    None, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, None
+                )
+                if handle not in (-1, 0xFFFFFFFF, 0xFFFFFFFFFFFFFFFF):
+                    try:
+                        size = ctypes.windll.kernel32.GetFileSize(handle, None)
+                        if size > 0:
+                            buf = ctypes.create_string_buffer(size)
+                            bytes_read = wintypes.DWORD()
+                            ctypes.windll.kernel32.ReadFile(handle, buf, size, ctypes.byref(bytes_read), None)
+                            with open(database_copy_path, 'wb') as out_f:
+                                out_f.write(buf.raw[:bytes_read.value])
+                    finally:
+                        ctypes.windll.kernel32.CloseHandle(handle)
+            except Exception:
+                pass
+        if not os.path.exists(database_copy_path) or os.path.getsize(database_copy_path) == 0:
+            raise
     conn = sqlite3.connect(database_copy_path)
     return conn.cursor()
 

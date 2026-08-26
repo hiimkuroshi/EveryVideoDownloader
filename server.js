@@ -17,7 +17,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // -- Portable Dynamic Paths (Relative to this folder) -------------------------
 const CORE_DIR = path.join(__dirname, 'core');
@@ -31,8 +31,8 @@ const PYTHON_CMD = process.platform === 'win32' ? 'python' : 'python3';
  * Helper to spawn yt_dlp Python package
  */
 function spawnYtDlp(args, options = {}) {
-  const fullArgs = ['-m', 'yt_dlp', ...args];
-  const env = { ...process.env, PYTHONPATH: CORE_DIR, ...(options.env || {}) };
+  const fullArgs = ['-u', '-m', 'yt_dlp', ...args];
+  const env = { ...process.env, PYTHONUNBUFFERED: '1', PYTHONPATH: CORE_DIR, ...(options.env || {}) };
   return spawn(PYTHON_CMD, fullArgs, { ...options, env });
 }
 
@@ -44,8 +44,8 @@ function execFileYtDlp(args, options = {}, callback) {
     callback = options;
     options = {};
   }
-  const fullArgs = ['-m', 'yt_dlp', ...args];
-  const env = { ...process.env, PYTHONPATH: CORE_DIR, ...(options.env || {}) };
+  const fullArgs = ['-u', '-m', 'yt_dlp', ...args];
+  const env = { ...process.env, PYTHONUNBUFFERED: '1', PYTHONPATH: CORE_DIR, ...(options.env || {}) };
   return execFile(PYTHON_CMD, fullArgs, { ...options, env }, callback);
 }
 
@@ -71,13 +71,22 @@ function loadPersistentConfig() {
       const raw = fs.readFileSync(CONFIG_PATH, 'utf8');
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
-        return parsed;
+        return {
+          downloadFolder: DOWNLOADS_DIR,
+          bilibiliAvoidP2p: true,
+          bilibiliUposHost: 'auto',
+          ...parsed,
+        };
       }
     }
   } catch (err) {
     console.warn('[Config] Error reading config.json:', err.message);
   }
-  return { downloadFolder: DOWNLOADS_DIR };
+  return {
+    downloadFolder: DOWNLOADS_DIR,
+    bilibiliAvoidP2p: true,
+    bilibiliUposHost: 'auto',
+  };
 }
 
 function savePersistentConfig(updates) {
@@ -493,6 +502,91 @@ app.get('/api/preview-subtitle', async (req, res) => {
     console.error('[/api/preview-subtitle] Error:', err.message);
     return res.status(500).json({ error: err.message });
   }
+});
+
+// =============================================================================
+// GET /api/translate — Multi-Provider Video Title Translation
+// =============================================================================
+app.get('/api/translate', async (req, res) => {
+  const text = (req.query.text || '').trim();
+  const targetLang = (req.query.to || 'vi').toLowerCase();
+
+  if (!text) {
+    return res.status(400).json({ error: 'Missing text query parameter' });
+  }
+
+  const langMap = {
+    'vi': 'vi',
+    'en': 'en',
+    'zh': 'zh-CN',
+    'zh-cn': 'zh-CN',
+    'zh-tw': 'zh-TW',
+    'ja': 'ja',
+    'ko': 'ko',
+  };
+  const tl = langMap[targetLang] || targetLang;
+
+  // 1. Primary: Google dict-chrome-ex
+  try {
+    const url = `https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+      }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data) && data[0]) {
+        const trans = Array.isArray(data[0]) ? data[0][0] : data[0];
+        if (trans && typeof trans === 'string') {
+          return res.json({ success: true, original: text, translated: trans, lang: targetLang });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[/api/translate] Provider 1 failed:', e.message);
+  }
+
+  // 2. Secondary: Google Mobile Web API
+  try {
+    const url = `https://translate.google.com/m?sl=auto&tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+      }
+    });
+    if (response.ok) {
+      const html = await response.text();
+      const match = html.match(/class="result-container">([^<]+)<\/div>/);
+      if (match && match[1]) {
+        const trans = match[1]
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>');
+        return res.json({ success: true, original: text, translated: trans, lang: targetLang });
+      }
+    }
+  } catch (e) {
+    console.warn('[/api/translate] Provider 2 failed:', e.message);
+  }
+
+  // 3. Fallback: MyMemory API
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=autodetect|${encodeURIComponent(tl)}`;
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      if (data?.responseData?.translatedText) {
+        return res.json({ success: true, original: text, translated: data.responseData.translatedText, lang: targetLang });
+      }
+    }
+  } catch (e) {
+    console.warn('[/api/translate] Provider 3 failed:', e.message);
+  }
+
+  return res.json({ success: true, original: text, translated: text, lang: targetLang });
 });
 
 // =============================================================================
@@ -926,7 +1020,7 @@ app.get('/api/cancel-download', (req, res) => {
 // GET /api/info — Fetch video or playlist metadata as JSON
 // =============================================================================
 app.get('/api/info', async (req, res) => {
-  const { url, browser, playlist } = req.query;
+  const { url, browser, playlist, bilibili_upos_host, bilibili_avoid_p2p } = req.query;
 
   if (!url) {
     return res.status(400).json({ error: 'Missing required query parameter: url' });
@@ -958,6 +1052,8 @@ app.get('/api/info', async (req, res) => {
 
   if (browser && browser !== 'none') {
     args.push('--cookies-from-browser', browser);
+  } else if (fs.existsSync(path.join(__dirname, 'cookies.txt'))) {
+    args.push('--cookies', path.join(__dirname, 'cookies.txt'));
   }
 
   if (LOCAL_FFMPEG) {
@@ -966,6 +1062,18 @@ app.get('/api/info', async (req, res) => {
 
   // Use Node.js runtime as portable JS engine for yt-dlp
   args.push('--js-runtimes', 'node');
+
+  // Bilibili Anti-P2P CDN & Custom UPOS host
+  const biliExtractorArgs = [];
+  if (bilibili_avoid_p2p && (bilibili_avoid_p2p === 'false' || bilibili_avoid_p2p === 'allow_p2p')) {
+    biliExtractorArgs.push('avoid_p2p=false');
+  }
+  if (bilibili_upos_host && bilibili_upos_host !== 'auto' && bilibili_upos_host !== 'default' && bilibili_upos_host !== 'none') {
+    biliExtractorArgs.push(`upos_host=${bilibili_upos_host}`);
+  }
+  if (biliExtractorArgs.length > 0) {
+    args.push('--extractor-args', `bilibili:${biliExtractorArgs.join(';')}`);
+  }
 
   args.push(url);
 
@@ -1037,6 +1145,10 @@ app.get('/api/download', async (req, res) => {
     sleep_interval,
     max_sleep_interval,
     download_id,
+    custom_filename,
+    bilibili_upos_host,
+    bilibili_avoid_p2p,
+    download_sections,
   } = req.query;
 
   if (!url) {
@@ -1056,7 +1168,10 @@ app.get('/api/download', async (req, res) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
-  sendEvent({ downloadId, started: true });
+  sendEvent({ downloadId, started: true, custom_filename: custom_filename || null });
+  if (custom_filename && custom_filename.trim()) {
+    sendEvent({ downloadId, output: `[filename] Tên file lưu: ${custom_filename.trim()}` });
+  }
 
   // 1. Direct high-speed download for Douyin (4K, 2K, 1080p, 720p, MP3)
   if (isDouyinUrl(url)) {
@@ -1082,20 +1197,19 @@ app.get('/api/download', async (req, res) => {
         const directStreamUrl = chosen?.url;
         if (!directStreamUrl) throw new Error('No stream URL found for selected Douyin format');
 
-        const safeTitle = (douyinData.title || 'douyin_video')
+        const rawTitle = (custom_filename && custom_filename.trim()) ? custom_filename.trim() : (douyinData.title || 'douyin_video');
+        const safeTitle = rawTitle
           .replace(/[\\/:*?"<>|]/g, '_')
           .replace(/\s+/g, ' ')
           .trim()
-          .slice(0, 120) || 'douyin_video';
+          .slice(0, 150) || 'douyin_video';
 
         const targetDir = path.resolve(output || DOWNLOADS_DIR);
         if (!fs.existsSync(targetDir)) {
           fs.mkdirSync(targetDir, { recursive: true });
         }
 
-        const fileName = output_template 
-          ? output_template.replace('%(title)s', safeTitle).replace('%(ext)s', ext)
-          : `${safeTitle}.${ext}`;
+        const fileName = `${safeTitle}.${ext}`;
         const filePath = path.join(targetDir, fileName);
 
         console.log(`[/api/download] [${downloadId}] Downloading direct Douyin (${chosen.resolution}) to: ${filePath}`);
@@ -1112,7 +1226,7 @@ app.get('/api/download', async (req, res) => {
         const videoRes = await fetch(directStreamUrl, {
           signal: abortController.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/128.0.0.0',
             'Referer': 'https://www.douyin.com/',
             'Cookie': cookie
           }
@@ -1127,19 +1241,31 @@ app.get('/api/download', async (req, res) => {
         let receivedBytes = 0;
         let startTime = Date.now();
         let lastReport = 0;
+        let windowStart = Date.now();
+        let windowBytes = 0;
+        let rollingSpeed = 0;
 
         while (true) {
-          const { done, value } = await reader.read();
+          const readPromise = reader.read();
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Douyin stream stalled (timeout 15s)')), 15000));
+          const { done, value } = await Promise.race([readPromise, timeoutPromise]);
           if (done) break;
 
           fileStream.write(Buffer.from(value));
           receivedBytes += value.length;
+          windowBytes += value.length;
 
           const now = Date.now();
+          const winElapsed = (now - windowStart) / 1000;
+          if (winElapsed >= 0.4) {
+            rollingSpeed = windowBytes / winElapsed;
+            windowBytes = 0;
+            windowStart = now;
+          }
+
           if (now - lastReport > 200 || receivedBytes === totalBytes) {
             lastReport = now;
-            const elapsed = (now - startTime) / 1000 || 0.001;
-            const speed = receivedBytes / elapsed;
+            const speed = rollingSpeed || (receivedBytes / ((now - startTime) / 1000 || 0.001));
             const speedStr = (speed / 1048576).toFixed(2) + 'MiB/s';
             const pct = totalBytes > 0 ? ((receivedBytes / totalBytes) * 100).toFixed(1) : '50.0';
             const remainingBytes = Math.max(0, totalBytes - receivedBytes);
@@ -1149,14 +1275,18 @@ app.get('/api/download', async (req, res) => {
             const etaStr = `${String(etaMin).padStart(2, '0')}:${String(etaRem).padStart(2, '0')}`;
             const totalStr = totalBytes > 0 ? (totalBytes / 1048576).toFixed(2) + 'MiB' : 'Unknown';
 
-            sendEvent({ downloadId, output: `[download]  ${pct}% of ~${totalStr} at ${speedStr} ETA ${etaStr}` });
+            sendEvent({
+              downloadId,
+              output: `[download]  ${pct}% of ~${totalStr} at  ${speedStr} ETA ${etaStr}`
+            });
           }
         }
 
         fileStream.end();
-        sendEvent({ downloadId, output: `[download] 100% of ${fileName} completed.` });
+        console.log(`[/api/download] [${downloadId}] Douyin download finished successfully: ${filePath}`);
+        sendEvent({ downloadId, output: `100% of ${filePath}` });
+        sendEvent({ downloadId, done: true, code: 0, file: filePath });
         activeDownloads.delete(downloadId);
-        sendEvent({ downloadId, done: true, code: 0 });
         return res.end();
       }
     } catch (dyErr) {
@@ -1171,41 +1301,33 @@ app.get('/api/download', async (req, res) => {
     }
   }
 
-  // 2. Direct fast download for TikTok to bypass bot challenge & WAF
+  // 2. Direct high-speed download for TikTok (No watermark HD & Audio MP3)
   if (isTikTokUrl(url)) {
     try {
-      const ttMetaRes = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-      });
-      const ttData = await ttMetaRes.json();
-      if (ttData.code === 0 && ttData.data) {
-        const d = ttData.data;
-        let directStreamUrl = d.play;
-        let ext = 'mp4';
+      const tiktokData = await fetchTikTokDirectMetadata(url);
+      if (tiktokData && tiktokData.formats?.length > 0) {
+        const isAudio = format === 'tiktok_audio' || format === 'audio-only' || audio_format;
+        const chosen = isAudio 
+          ? (tiktokData.formats.find(f => f.format_id === 'tiktok_audio') || tiktokData.formats[0])
+          : (tiktokData.formats.find(f => f.format_id === 'tiktok_nowm') || tiktokData.formats[0]);
 
-        if (format === 'audio-only' || format === 'ba' || format === 'bestaudio' || audio_format) {
-          directStreamUrl = d.music || d.play;
-          ext = 'mp3';
-        } else if (format === 'hd' && d.hdplay) {
-          directStreamUrl = d.hdplay;
-        } else if (format === 'watermark' && d.wmplay) {
-          directStreamUrl = d.wmplay;
-        }
+        const ext = isAudio ? 'mp3' : 'mp4';
+        const directUrl = chosen.url;
+        if (!directUrl) throw new Error('No stream URL found for selected TikTok format');
 
-        const safeTitle = (d.title || 'tiktok_video')
+        const rawTitle = (custom_filename && custom_filename.trim()) ? custom_filename.trim() : (tiktokData.title || 'tiktok_video');
+        const safeTitle = rawTitle
           .replace(/[\\/:*?"<>|]/g, '_')
           .replace(/\s+/g, ' ')
           .trim()
-          .slice(0, 120) || 'tiktok_video';
+          .slice(0, 150) || 'tiktok_video';
 
         const targetDir = path.resolve(output || DOWNLOADS_DIR);
         if (!fs.existsSync(targetDir)) {
           fs.mkdirSync(targetDir, { recursive: true });
         }
 
-        const fileName = output_template 
-          ? output_template.replace('%(title)s', safeTitle).replace('%(ext)s', ext)
-          : `${safeTitle}.${ext}`;
+        const fileName = `${safeTitle}.${ext}`;
         const filePath = path.join(targetDir, fileName);
 
         console.log(`[/api/download] [${downloadId}] Downloading direct TikTok to: ${filePath}`);
@@ -1217,10 +1339,10 @@ app.get('/api/download', async (req, res) => {
           killed: false,
         });
 
-        const videoRes = await fetch(directStreamUrl, {
+        const videoRes = await fetch(directUrl, {
           signal: abortController.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/128.0.0.0',
             'Referer': 'https://www.tiktok.com/'
           }
         });
@@ -1234,19 +1356,31 @@ app.get('/api/download', async (req, res) => {
         let receivedBytes = 0;
         let startTime = Date.now();
         let lastReport = 0;
+        let windowStart = Date.now();
+        let windowBytes = 0;
+        let rollingSpeed = 0;
 
         while (true) {
-          const { done, value } = await reader.read();
+          const readPromise = reader.read();
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TikTok stream stalled (timeout 15s)')), 15000));
+          const { done, value } = await Promise.race([readPromise, timeoutPromise]);
           if (done) break;
 
           fileStream.write(Buffer.from(value));
           receivedBytes += value.length;
+          windowBytes += value.length;
 
           const now = Date.now();
-          if (now - lastReport > 200 || receivedBytes === totalBytes) {
+          const winElapsed = (now - windowStart) / 1000;
+          if (winElapsed >= 0.4) {
+            rollingSpeed = windowBytes / winElapsed;
+            windowBytes = 0;
+            windowStart = now;
+          }
+
+          if (now - lastReport > 200 || (totalBytes > 0 && receivedBytes === totalBytes)) {
             lastReport = now;
-            const elapsed = (now - startTime) / 1000 || 0.001;
-            const speed = receivedBytes / elapsed;
+            const speed = rollingSpeed || (receivedBytes / ((now - startTime) / 1000 || 0.001));
             const speedStr = (speed / 1048576).toFixed(2) + 'MiB/s';
             const pct = totalBytes > 0 ? ((receivedBytes / totalBytes) * 100).toFixed(1) : '50.0';
             const remainingBytes = Math.max(0, totalBytes - receivedBytes);
@@ -1256,14 +1390,18 @@ app.get('/api/download', async (req, res) => {
             const etaStr = `${String(etaMin).padStart(2, '0')}:${String(etaRem).padStart(2, '0')}`;
             const totalStr = totalBytes > 0 ? (totalBytes / 1048576).toFixed(2) + 'MiB' : 'Unknown';
 
-            sendEvent({ downloadId, output: `[download]  ${pct}% of ~${totalStr} at ${speedStr} ETA ${etaStr}` });
+            sendEvent({
+              downloadId,
+              output: `[download]  ${pct}% of ~${totalStr} at  ${speedStr} ETA ${etaStr}`
+            });
           }
         }
 
         fileStream.end();
-        sendEvent({ downloadId, output: `[download] 100% of ${fileName} completed.` });
+        console.log(`[/api/download] [${downloadId}] TikTok download finished successfully: ${filePath}`);
+        sendEvent({ downloadId, output: `100% of ${filePath}` });
+        sendEvent({ downloadId, done: true, code: 0, file: filePath });
         activeDownloads.delete(downloadId);
-        sendEvent({ downloadId, done: true, code: 0 });
         return res.end();
       }
     } catch (ttErr) {
@@ -1283,9 +1421,11 @@ app.get('/api/download', async (req, res) => {
   // Format selection
   args.push('-f', format || 'bv*+ba/b');
 
-  // Browser cookies
+  // Browser cookies (or local cookies.txt file)
   if (browser && browser !== 'none') {
     args.push('--cookies-from-browser', browser);
+  } else if (fs.existsSync(path.join(__dirname, 'cookies.txt'))) {
+    args.push('--cookies', path.join(__dirname, 'cookies.txt'));
   }
 
   // Playlist handling
@@ -1325,13 +1465,25 @@ app.get('/api/download', async (req, res) => {
   if (username) args.push('-u', username);
   if (password) args.push('-p', password);
 
+  // Custom output filename template resolution
+  let effectiveOutputTemplate = output_template;
+  if (custom_filename && custom_filename.trim()) {
+    let cleanName = custom_filename.trim().replace(/[\\/:*?"<>|]/g, '_');
+    if (!cleanName.includes('%(ext)s')) {
+      cleanName = cleanName.replace(/\.[a-zA-Z0-9]{2,4}$/, '');
+      effectiveOutputTemplate = `${cleanName}.%(ext)s`;
+    } else {
+      effectiveOutputTemplate = cleanName;
+    }
+  }
+
   // Output destination
-  if (output && output_template) {
-    args.push('-o', path.join(output, output_template));
+  if (output && effectiveOutputTemplate) {
+    args.push('-o', path.join(output, effectiveOutputTemplate));
   } else if (output) {
     args.push('-o', path.join(output, '%(title)s.%(ext)s'));
-  } else if (output_template) {
-    args.push('-o', output_template);
+  } else if (effectiveOutputTemplate) {
+    args.push('-o', effectiveOutputTemplate);
   } else {
     args.push('-o', DEFAULT_DOWNLOAD_PATH);
   }
@@ -1361,12 +1513,25 @@ app.get('/api/download', async (req, res) => {
   if (sub_lang) args.push('--sub-lang', sub_lang);
   if (sub_format) args.push('--sub-format', sub_format);
 
+  // Anti-stall, network resiliency and adaptive buffer flags
+  args.push('--socket-timeout', '30');
+  args.push('--retries', '20');
+  args.push('--fragment-retries', '50');
+  args.push('--retry-sleep', 'fragment:exp=1:10');
+  args.push('--file-access-retries', '5');
+
   // Acceleration options
   if (concurrent_fragments) {
     args.push('--concurrent-fragments', concurrent_fragments);
   }
   if (http_chunk_size && http_chunk_size !== 'none' && http_chunk_size !== 'default') {
     args.push('--http-chunk-size', http_chunk_size);
+  }
+
+  // Time Range / Download Sections (Trim specific video slice)
+  if (download_sections && download_sections.trim()) {
+    args.push('--download-sections', download_sections.trim());
+    args.push('--force-keyframes-at-cuts');
   }
 
   // Local FFmpeg location if present
@@ -1376,6 +1541,18 @@ app.get('/api/download', async (req, res) => {
 
   // Use Node.js runtime as portable JS engine for yt-dlp
   args.push('--js-runtimes', 'node');
+
+  // Bilibili Anti-P2P CDN & Custom UPOS host
+  const biliExtractorArgs = [];
+  if (bilibili_avoid_p2p && (bilibili_avoid_p2p === 'false' || bilibili_avoid_p2p === 'allow_p2p')) {
+    biliExtractorArgs.push('avoid_p2p=false');
+  }
+  if (bilibili_upos_host && bilibili_upos_host !== 'auto' && bilibili_upos_host !== 'default' && bilibili_upos_host !== 'none') {
+    biliExtractorArgs.push(`upos_host=${bilibili_upos_host}`);
+  }
+  if (biliExtractorArgs.length > 0) {
+    args.push('--extractor-args', `bilibili:${biliExtractorArgs.join(';')}`);
+  }
 
   // Target URL
   args.push(url);
@@ -1395,7 +1572,12 @@ app.get('/api/download', async (req, res) => {
   child.stderr.on('data', (data) => {
     const lines = data.toString().split(/\r?\n/).filter(Boolean);
     for (const line of lines) {
-      sendEvent({ downloadId, error: line });
+      const isFfmpegProgress = /frame=\s*\d+|size=\s*\d+|time=\s*\d+|bitrate=\s*|speed=\s*|Opening |Metadata:|Stream #|Output #|encoder\s*:/i.test(line);
+      if (isFfmpegProgress) {
+        sendEvent({ downloadId, output: line });
+      } else {
+        sendEvent({ downloadId, error: line });
+      }
     }
   });
 

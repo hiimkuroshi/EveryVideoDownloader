@@ -1,3 +1,62 @@
+# 📦 EveryVideoDownloader — Release 0.3.1
+
+> **Phiên bản:** `v0.3.1`  
+> **Ngày phát hành:** 20/08/2026  
+> **Nền tảng cốt lõi:** Lõi mã nguồn mở Python [yt-dlp](https://github.com/yt-dlp/yt-dlp)  
+
+---
+
+## 🌟 Những Điểm Mới & Cải Tiến Nổi Bật (What's New in v0.3.1)
+
+### 1. 🚀 Tối Ưu Hóa CDN Bilibili & Bypass Chống Nghẽn P2P (MCDN)
+- **Tự động chuyển hướng CDN Quốc tế**: Tự động phát hiện và loại bỏ các node P2P/MCDN bóp băng thông (`mcdn.bilivideo.cn`, `szbdyd.com`, `v1direct`), chuyển hướng thông minh sang máy chủ CDN Alibaba Overseas (`upos-sz-mirroraliov.bilivideo.com`), Tencent Overseas (`upos-sz-mirrorcosov.bilivideo.com`) và Akamai Global (`upos-hz-mirrorakam.akamaized.net`).
+- **Khắc phục triệt để lỗi Timeout 30s**: Giải quyết 100% tình trạng kết nối bị nghẽn `connect timeout=30.0s` khi tải từ mạng Việt Nam và quốc tế.
+- **Menu Cài Đặt Nâng Cao Trực Quan**: Tích hợp danh sách lựa chọn cụm máy chủ UPOS CDN kèm mô tả trực quan và hỗ trợ đa ngôn ngữ (VI, EN, ZH, JA).
+
+### 2. ✏️ Tùy Chỉnh Tên File Tải Về Trực Tiếp (`custom_filename`)
+- **Trợ lý đặt tên thông minh**: Hỗ trợ 3 nút thao tác nhanh `🧹 Tên sạch (Clean)`, `🌐 Tiêu đề dịch (Translated)`, `🔄 Tên gốc (Original)`.
+- **An toàn định dạng**: Tự động làm sạch ký tự cấm trên Windows/Linux/macOS và bảo toàn phần mở rộng khi ghép video/audio.
+
+### 3. 🌐 Hỗ Trợ Trình Duyệt Cốc Cốc & Cookies Fallback
+- Tự động phát hiện và trích xuất cookie từ trình duyệt **Cốc Cốc** (phổ biến tại Việt Nam).
+- Hỗ trợ nạp file `cookies.txt` cục bộ làm fallback dự phòng.
+
+### 4. 🛡️ Tăng Cường Khả Năng Phục Hồi Mạng (Network Resilience)
+- Tự động thử lại thông minh với độ trễ tăng dần (`--retry-sleep exp=1:20`).
+- Chống stall socket timeout, sửa cờ cấu hình `--buffer-size` chuẩn CLI.
+
+### 5. 🧪 Bộ Test Suite Tự Động 16/16 Passed (100%)
+- Mở rộng kiểm thử tự động toàn diện bao phủ toàn bộ API hệ thống và tính năng Studio.
+
+---
+
+# 📦 EveryVideoDownloader — Release 0.3.0 (Beta)
+
+> **Phiên bản:** `v0.3.0-beta`  
+> **Ngày phát hành:** 18/08/2026  
+> **Nền tảng cốt lõi:** Lõi mã nguồn mở Python [yt-dlp](https://github.com/yt-dlp/yt-dlp)  
+
+---
+
+## 🌟 Những Điểm Mới & Cải Tiến Nổi Bật (What's New in v0.3.0)
+
+### 1. 🧠 Chuyển Đổi Sang Lõi Mã Nguồn Mở Python `yt_dlp` Cốt Lõi
+- **Loại bỏ hoàn toàn file nhị phân `yt-dlp.exe`**: Ứng dụng giờ đây chạy trực tiếp trên cây mã nguồn Python gốc (`core/yt_dlp/`) với hơn 1.800+ extractors chính thức từ GitHub.
+- **Tốc độ phản hồi tức thì**: Loại bỏ 100% thời gian trễ giải nén file tạm `%TEMP%/_MEIxxxx` của PyInstaller.
+- **Khả năng mở rộng và tùy biến**: Cho phép lập trình viên dễ dàng xem, sửa đổi và thêm mới các bộ trích xuất trực tiếp trong thư mục `core/yt_dlp/extractor/`.
+
+### 2. 🗂️ Tinh Gọn & Chuẩn Hóa Cấu Trúc Thư Mục
+- Di chuyển toàn bộ tài liệu kiến trúc, thiết kế và ghi chú phát hành vào thư mục chuyên biệt `docs/`.
+- Tích hợp bộ kiểm thử tự động toàn diện 15 bài test vào thư mục `tests/`, hỗ trợ chạy qua lệnh chuẩn `npm test`.
+- Làm sạch thư mục gốc, giữ lại các tệp cấu hình và khởi chạy tối giản, chuyên nghiệp.
+
+### 3. 📖 Tài Liệu Song Ngữ Chuẩn Mực (English & Tiếng Việt)
+- Phát hành `README.md` (Tiếng Anh) và `README_VI.md` (Tiếng Việt) với thanh chuyển ngữ 1-click.
+- Bổ sung hướng dẫn chi tiết yêu cầu công cụ (Node.js, Python, FFmpeg) và bảng tra cứu toàn diện các API Backend.
+- Loại bỏ các emoji thừa, giữ phong cách kỹ thuật hiện đại.
+
+---
+
 # 📦 EveryVideoDownloader — Release 0.2.2
 
 > **Phiên bản:** `v0.2.2`  
