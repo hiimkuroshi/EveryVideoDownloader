@@ -107,6 +107,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Render and other hosts use this endpoint for service health checks.
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // =============================================================================
 // GET & POST /api/config — Get / Update dynamic & persistent server config
 // =============================================================================
