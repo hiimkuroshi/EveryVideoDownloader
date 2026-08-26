@@ -1,11 +1,14 @@
-/* ═══════════════════════════════════════════════════════
-   EveryVideoDownloader — Workstation Client Script (V5)
-   Powered by yt-dlp
-   ═══════════════════════════════════════════════════════ */
+/* EveryVideo — Workstation Client Script */
 
 // ── Theme Management ──────────────────────────────────
 const themeToggle = document.getElementById('themeToggle');
 const htmlEl = document.documentElement;
+const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
+function syncThemeColor() {
+    const isLight = htmlEl.getAttribute('data-theme') === 'light';
+    themeColorMeta?.setAttribute('content', isLight ? '#F7F8FA' : '#0A0E15');
+}
 
 (function initTheme() {
     const saved = localStorage.getItem('theme');
@@ -14,7 +17,15 @@ const htmlEl = document.documentElement;
     } else if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
         htmlEl.setAttribute('data-theme', 'light');
     }
+    syncThemeColor();
 })();
+
+themeToggle?.addEventListener('click', () => {
+    const nextTheme = htmlEl.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    htmlEl.setAttribute('data-theme', nextTheme);
+    localStorage.setItem('theme', nextTheme);
+    syncThemeColor();
+});
 
 // ── Language (i18n) Management ────────────────────────
 const appLangSelect = document.getElementById('appLanguageSelect');
@@ -123,17 +134,35 @@ function syncAndPersistDownloadFolder(folderPath) {
 }
 
 // ── Tab Navigation ───────────────────────────────────
-const tabBtns   = document.querySelectorAll('.tab-btn');
+const tabBtns   = [...document.querySelectorAll('.tab-btn')];
 const tabPanels = document.querySelectorAll('.tab-panel');
 
-tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-        tabBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
-        tabPanels.forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        btn.setAttribute('aria-selected', 'true');
-        const target = document.getElementById(btn.dataset.target);
-        if (target) target.classList.add('active');
+function activateTab(btn, moveFocus = false) {
+    tabBtns.forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+        b.tabIndex = -1;
+    });
+    tabPanels.forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    btn.tabIndex = 0;
+    const target = document.getElementById(btn.dataset.target);
+    if (target) target.classList.add('active');
+    if (moveFocus) btn.focus();
+}
+
+tabBtns.forEach((btn, index) => {
+    btn.addEventListener('click', () => activateTab(btn));
+    btn.addEventListener('keydown', event => {
+        let nextIndex = null;
+        if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabBtns.length;
+        if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabBtns.length) % tabBtns.length;
+        if (event.key === 'Home') nextIndex = 0;
+        if (event.key === 'End') nextIndex = tabBtns.length - 1;
+        if (nextIndex === null) return;
+        event.preventDefault();
+        activateTab(tabBtns[nextIndex], true);
     });
 });
 
@@ -324,10 +353,22 @@ let activeEventSource = null;
 let isDownloadPaused = false;
 
 // ── Open Storage Folder in Windows Explorer (Instant <10ms) ───
-function openStorageFolder(customPath = null) {
-    const targetFolder = customPath || val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
-    showToast(`📂 Đang mở thư mục lưu trữ:\n${targetFolder}`, 'info');
-    fetch(`/api/open-folder?path=${encodeURIComponent(targetFolder)}`).catch(() => {});
+async function openStorageFolder(customPath = null) {
+    const targetFolder = customPath || val('quickDownloadFolder') || val('downloadFolder') || 'D:\\EveryVideo\\Downloads';
+    showToast(`Đang mở thư mục lưu trữ:\n${targetFolder}`, 'info');
+    try {
+        const res = await fetch(`/api/open-folder?path=${encodeURIComponent(targetFolder)}`);
+        const contentType = res.headers.get('content-type') || '';
+        const data = contentType.includes('application/json')
+            ? await res.json()
+            : { error: await res.text() };
+        if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Không thể mở Windows File Explorer.');
+        }
+        showToast(`Đã mở thư mục:\n${data.path || targetFolder}`, 'success');
+    } catch (error) {
+        showToast(error.message || 'Không thể mở Windows File Explorer.', 'error');
+    }
 }
 
 $('openStorageFolderBtn')?.addEventListener('click', (e) => {
@@ -348,18 +389,24 @@ $('openFolderBtn')?.addEventListener('click', (e) => {
 // ── Directory Picker Handlers (Windows STA Native) ───
 async function triggerFolderBrowser(targetInputId) {
     try {
-        showToast('📂 Đang mở hộp thoại chọn thư mục Windows...', 'info');
-        const currentPath = val(targetInputId) || val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
+        showToast('Đang mở hộp thoại chọn thư mục Windows...', 'info');
+        const currentPath = val(targetInputId) || val('quickDownloadFolder') || val('downloadFolder') || 'D:\\EveryVideo\\Downloads';
         const res = await fetch(`/api/browse-folder?current=${encodeURIComponent(currentPath)}`);
-        const data = await res.json();
+        const contentType = res.headers.get('content-type') || '';
+        const data = contentType.includes('application/json')
+            ? await res.json()
+            : { error: await res.text() };
+        if (!res.ok) throw new Error(data.error || 'Không thể mở hộp thoại chọn thư mục Windows.');
         if (data.success && data.path) {
             syncAndPersistDownloadFolder(data.path);
-            showToast(`✅ Đã lưu thư mục mặc định mới:\n${data.path}`, 'success');
-        } else {
+            showToast(`Đã lưu thư mục mặc định mới:\n${data.path}`, 'success');
+        } else if (data.cancelled) {
             showToast('Đã hủy chọn thư mục.', 'info');
+        } else {
+            throw new Error(data.error || 'Không thể đổi thư mục.');
         }
     } catch (err) {
-        showToast('Không thể mở hộp thoại chọn thư mục Windows', 'error');
+        showToast(err.message || 'Không thể mở hộp thoại chọn thư mục Windows.', 'error');
     }
 }
 
@@ -433,7 +480,10 @@ $('checkBtn').addEventListener('click', async () => {
         }
 
         const res = await fetch(`/api/info?${qp}`);
-        const data = await res.json();
+        const contentType = res.headers.get('content-type') || '';
+        const data = contentType.includes('application/json')
+            ? await res.json()
+            : { error: (await res.text()).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() };
         if (!res.ok) throw new Error(data.error || 'Lỗi khi tải thông tin video.');
 
         currentVideoData = data;
@@ -452,7 +502,7 @@ $('checkBtn').addEventListener('click', async () => {
         updateDownloadButtonState();
 
         const subMsg = parsedSubtitles.length > 0 ? ` và ${parsedSubtitles.length} phụ đề` : '';
-        showToast(`🎉 Phân tích thành công! Đã tìm thấy ${data.formats?.length || 0} formats${subMsg}.`, 'success');
+        showToast(`Phân tích thành công! Đã tìm thấy ${data.formats?.length || 0} formats${subMsg}.`, 'success');
     } catch (err) {
         showToast(err.message, 'error');
         updateDownloadButtonState();
@@ -641,7 +691,7 @@ $('dlThumbBtn')?.addEventListener('click', async (e) => {
     btn.disabled = true;
     btn.innerHTML = `<span style="display:inline-block; animation:spin 0.6s linear infinite;">⏳</span> <span>Đang lưu...</span>`;
 
-    const targetFolder = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
+    const targetFolder = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\EveryVideo\\Downloads';
     const targetTitle = val('customFileNameInput') || currentVideoData?.title || 'video';
     showToast('⏳ Đang tải ảnh thumbnail HD của video...', 'info');
 
@@ -1377,7 +1427,7 @@ function renderSubtitlesTable() {
 // ── Direct Subtitle Downloader ────────────────────────
 async function downloadSubtitleDirect(subItem, format = 'srt') {
     if (!subItem) return;
-    const targetFolder = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
+    const targetFolder = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\EveryVideo\\Downloads';
     const videoTitle = val('customFileNameInput') || currentVideoData?.title || 'video';
 
     showToast(`⏳ Đang tải phụ đề [${subItem.langName}] dạng .${format.toUpperCase()}...`, 'info');
@@ -1657,7 +1707,7 @@ function startDirectDownload(customParams = null) {
         return;
     }
 
-    const currentSaveDir = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\yt-dlp\\Download';
+    const currentSaveDir = val('quickDownloadFolder') || val('downloadFolder') || 'D:\\EveryVideo\\Downloads';
 
     const params = {
         url: currentUrl,
@@ -2115,12 +2165,21 @@ function showToast(message, type = 'info') {
 
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
     
-    let icon = 'ℹ️';
-    if (type === 'success') icon = '🎉';
-    if (type === 'error') icon = '❌';
+    let icon = 'i';
+    if (type === 'success') icon = '✓';
+    if (type === 'error') icon = '!';
 
-    toast.innerHTML = `<span style="font-size:1.2rem; line-height:1;">${icon}</span> <div style="flex:1; white-space:pre-line;">${message}</div>`;
+    const iconEl = document.createElement('span');
+    iconEl.className = 'toast-icon';
+    iconEl.setAttribute('aria-hidden', 'true');
+    iconEl.textContent = icon;
+    const messageEl = document.createElement('div');
+    messageEl.className = 'toast-message';
+    messageEl.textContent = message;
+    toast.append(iconEl, messageEl);
     document.body.appendChild(toast);
 
     requestAnimationFrame(() => toast.classList.add('show'));

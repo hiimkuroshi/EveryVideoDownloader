@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EveryVideoDownloader — Media Downloader Workstation (Powered by yt-dlp)</title>
-    <meta name="description" content="EveryVideoDownloader - Professional desktop workstation powered by yt-dlp with format sorting, download queue, resume/pause, folder picker, and multi-threading acceleration">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>EveryVideo — Download Studio</title>
+    <meta name="description" content="EveryVideo is a focused download studio for inspecting formats, managing a queue, and controlling advanced media options.">
+    <meta name="theme-color" content="#0A0E15">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="graphite-signal.css">
 </head>
 <body>
+
+<a class="skip-link" href="#main">Bỏ qua đến nội dung chính</a>
+<h1 class="sr-only">EveryVideo Download Studio</h1>
 
 <div class="studio-app">
     <!-- ═══════════════ TOP NAVIGATION BAR ═══════════════ -->
@@ -20,8 +24,7 @@
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
                 <div class="brand-text">
-                    <span class="brand-title">Every<span class="brand-highlight">Video</span>Downloader</span>
-                    <span class="brand-sub">POWERED BY YT-DLP</span>
+                    <span class="brand-title">Every<span class="brand-highlight">Video</span></span>
                 </div>
             </div>
             <!-- Dynamic Platform Badge in Topbar -->
@@ -81,19 +84,19 @@
     <div class="studio-subnav-bar">
         <div class="subnav-container">
             <nav class="nav-tabs" role="tablist">
-                <button class="tab-btn active" data-target="tab-workstation" role="tab" aria-selected="true" title="Bàn làm việc chính">
+                <button id="tabBtnStudio" class="tab-btn active" data-target="tab-workstation" role="tab" aria-selected="true" aria-controls="tab-workstation" tabindex="0" title="Bàn làm việc chính">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                     <span data-i18n="tabStudio">Studio</span>
                 </button>
-                <button class="tab-btn" data-target="tab-queue" role="tab" aria-selected="false" title="Hàng chờ tải xuống">
+                <button id="tabBtnQueue" class="tab-btn" data-target="tab-queue" role="tab" aria-selected="false" aria-controls="tab-queue" tabindex="-1" title="Hàng chờ tải xuống">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                     <span data-i18n="tabQueue">Hàng Chờ</span> (<span id="topQueueCount">0</span>)
                 </button>
-                <button class="tab-btn" data-target="tab-advanced" role="tab" aria-selected="false" title="Tùy chọn nâng cao">
+                <button id="tabBtnAdvanced" class="tab-btn" data-target="tab-advanced" role="tab" aria-selected="false" aria-controls="tab-advanced" tabindex="-1" title="Tùy chọn nâng cao">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     <span data-i18n="tabAdvanced">Nâng Cao</span>
                 </button>
-                <button class="tab-btn" data-target="tab-settings" role="tab" aria-selected="false" title="Cài đặt hệ thống">
+                <button id="tabBtnSettings" class="tab-btn" data-target="tab-settings" role="tab" aria-selected="false" aria-controls="tab-settings" tabindex="-1" title="Cài đặt hệ thống">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
                     <span data-i18n="tabSettings">Cài Đặt</span>
                 </button>
@@ -102,7 +105,8 @@
     </div>
 
     <!-- ═══════════════ MAIN STUDIO WORKSPACE (TAB 1) ═══════════════ -->
-    <main id="tab-workstation" class="tab-panel active">
+    <span id="main" class="sr-only" tabindex="-1">Nội dung chính</span>
+    <main id="tab-workstation" class="tab-panel active" role="tabpanel" aria-labelledby="tabBtnStudio">
         <!-- Loading State Overlay -->
         <div id="loadingInfo" class="loading-backdrop hidden">
             <div class="loading-card">
@@ -274,7 +278,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <input type="text" id="quickDownloadFolder" value="D:\yt-dlp\Download" class="compact-input-folder full-width" title="Đường dẫn lưu file">
+                            <input type="text" id="quickDownloadFolder" value="D:\EveryVideo\Downloads" class="compact-input-folder full-width" title="Đường dẫn lưu file">
                         </div>
 
                         <!-- Video Time Range / Download Section Block (Trim Specific Part) -->
@@ -425,10 +429,10 @@
                         <div class="toolbar-left">
                             <div class="filter-pills-bar" id="typeFilterPills">
                                 <button type="button" class="filter-pill active" data-filter="all"><span data-i18n="filterAll">Tất Cả</span> (<span id="countAll">0</span>)</button>
-                                <button type="button" class="filter-pill" data-filter="video"><span data-i18n="filterVideo">🎬 Video Only</span> (<span id="countVideo">0</span>)</button>
-                                <button type="button" class="filter-pill" data-filter="audio"><span data-i18n="filterAudio">🎵 Audio Only</span> (<span id="countAudio">0</span>)</button>
-                                <button type="button" class="filter-pill" data-filter="combo"><span data-i18n="filterCombo">🎥 Combo</span> (<span id="countCombo">0</span>)</button>
-                                <button type="button" class="filter-pill filter-pill-sub" data-filter="subtitles"><span data-i18n="filterSubs">💬 Phụ Đề</span> (<span id="countSub">0</span>)</button>
+                                <button type="button" class="filter-pill" data-filter="video"><span data-i18n="filterVideo">Video Only</span> (<span id="countVideo">0</span>)</button>
+                                <button type="button" class="filter-pill" data-filter="audio"><span data-i18n="filterAudio">Audio Only</span> (<span id="countAudio">0</span>)</button>
+                                <button type="button" class="filter-pill" data-filter="combo"><span data-i18n="filterCombo">Combo</span> (<span id="countCombo">0</span>)</button>
+                                <button type="button" class="filter-pill filter-pill-sub" data-filter="subtitles"><span data-i18n="filterSubs">Phụ Đề</span> (<span id="countSub">0</span>)</button>
                             </div>
                         </div>
 
@@ -647,11 +651,11 @@
     </main>
 
     <!-- ═══════════════ TAB 2: DOWNLOAD QUEUE ═══════════════ -->
-    <section id="tab-queue" class="tab-panel">
+    <section id="tab-queue" class="tab-panel" role="tabpanel" aria-labelledby="tabBtnQueue">
         <div class="card queue-manager-wrap">
             <div class="queue-header-bar">
                 <div class="queue-title-area">
-                    <h3 data-i18n="queueTitle">📋 Danh Sách Hàng Chờ Tải Xuống</h3>
+                    <h3 data-i18n="queueTitle">Danh Sách Hàng Chờ Tải Xuống</h3>
                     <p data-i18n="queueDesc">Các tác vụ trong hàng chờ sẽ được tải tuần tự tự động.</p>
                 </div>
                 <div class="queue-actions-btns">
@@ -676,9 +680,9 @@
     </section>
 
     <!-- ═══════════════ TAB 3: ADVANCED & TUNING ═══════════════ -->
-    <section id="tab-advanced" class="tab-panel">
+    <section id="tab-advanced" class="tab-panel" role="tabpanel" aria-labelledby="tabBtnAdvanced">
         <div class="card settings-card-wrap">
-            <h3 class="section-title" data-i18n="advSpeedTitle">⚡ Tăng Tốc Tải & Kết Nối Mạng (Speed & Network)</h3>
+            <h3 class="section-title" data-i18n="advSpeedTitle">Tăng Tốc Tải & Kết Nối Mạng (Speed & Network)</h3>
             <div class="form-row">
                 <div class="form-group">
                     <label for="concurrentFragments" class="label-with-tip">
@@ -731,7 +735,7 @@
             </div>
 
             <hr class="divider">
-            <h3 class="section-title" data-i18n="advBiliCdnTitle">🚀 Tối Ưu CDN Bilibili & Chống Nghẽn P2P (Bilibili Anti-P2P & UPOS Selector)</h3>
+            <h3 class="section-title" data-i18n="advBiliCdnTitle">Tối Ưu CDN Bilibili & Chống Nghẽn P2P (Bilibili Anti-P2P & UPOS Selector)</h3>
             <div class="form-row">
                 <div class="form-group">
                     <label class="label-with-tip" style="cursor: pointer;">
@@ -773,7 +777,7 @@
             </div>
 
             <hr class="divider">
-            <h3 class="section-title" data-i18n="advPostTitle">🎬 Định Dạng & Hậu Kỳ (Post-Processing)</h3>
+            <h3 class="section-title" data-i18n="advPostTitle">Định Dạng & Hậu Kỳ (Post-Processing)</h3>
             <div class="form-row">
                 <div class="form-group">
                     <label for="mergeOutputFormat" data-i18n="containerLabel">Định dạng container khi gộp (--merge-output-format)</label>
@@ -781,7 +785,7 @@
                         <option value="mkv" selected>⭐ MKV (Chất lượng gốc cao nhất)</option>
                         <option value="mp4">📱 MP4 (Tương thích mọi thiết bị)</option>
                         <option value="webm">🌐 WEBM (Chuẩn Web)</option>
-                        <option value="">🔄 Tự động (Mặc định yt-dlp)</option>
+                        <option value="">Tự động (Mặc định hệ thống)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -821,7 +825,7 @@
             </div>
 
             <hr class="divider">
-            <h3 class="section-title" data-i18n="advTimeRangeTitle">✂️ Cắt Khoảng Thời Gian Tải (Time Range / Download Sections)</h3>
+            <h3 class="section-title" data-i18n="advTimeRangeTitle">Cắt Khoảng Thời Gian Tải (Time Range / Download Sections)</h3>
             <div class="form-row">
                 <div class="form-group">
                     <label for="advTimeRangeStart" data-i18n="advTimeRangeStartLabel">Thời gian bắt đầu (Start Time - vd: 00:30:00 hoặc 30:00)</label>
@@ -835,7 +839,7 @@
             <p style="font-size: 0.8rem; color: var(--fg-muted); margin-top: -6px;" data-i18n="advTimeRangeTip">Để trống cả 2 ô để tải toàn bộ video (Mặc định)</p>
 
             <hr class="divider">
-            <h3 class="section-title" data-i18n="advSecurityTitle">🛡️ Hành Vi & Bảo Mật</h3>
+            <h3 class="section-title" data-i18n="advSecurityTitle">Hành Vi & Bảo Mật</h3>
             <div class="form-row">
                 <div class="form-group">
                     <label for="username" data-i18n="advUsernameLabel">Tên đăng nhập (Username / Email)</label>
@@ -868,10 +872,10 @@
     </section>
 
     <!-- ═══════════════ TAB 4: SETTINGS ═══════════════ -->
-    <section id="tab-settings" class="tab-panel">
+    <section id="tab-settings" class="tab-panel" role="tabpanel" aria-labelledby="tabBtnSettings">
         <div class="card settings-card-wrap">
             <!-- Language Setting Block -->
-            <h3 class="section-title" data-i18n="settingsLangTitle">🌍 Ngôn Ngữ Giao Diện (Interface Language)</h3>
+            <h3 class="section-title" data-i18n="settingsLangTitle">Ngôn Ngữ Giao Diện (Interface Language)</h3>
             <div class="form-group">
                 <label for="settingsLanguageSelect" data-i18n="settingsLangLabel">Chọn ngôn ngữ hiển thị:</label>
                 <select id="settingsLanguageSelect" class="compact-select full-width">
@@ -883,11 +887,11 @@
             </div>
 
             <hr class="divider">
-            <h3 class="section-title" data-i18n="settingsPathTitle">📁 Đường Dẫn & Mẫu Tên File</h3>
+            <h3 class="section-title" data-i18n="settingsPathTitle">Đường Dẫn & Mẫu Tên File</h3>
             <div class="form-group">
                 <label for="downloadFolder" data-i18n="settingsFolderLabel">Thư mục lưu video tải về</label>
                 <div class="folder-picker-input-group">
-                    <input type="text" id="downloadFolder" value="D:\yt-dlp\Download">
+                    <input type="text" id="downloadFolder" value="D:\EveryVideo\Downloads">
                     <button type="button" id="openFolderBtnSettings" class="btn-open-folder" title="Mở ngay thư mục trong Windows Explorer">
                         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                         <span data-i18n="openFolderBtn">Mở Thư Mục</span>
@@ -904,7 +908,7 @@
             </div>
 
             <hr class="divider">
-            <h3 class="section-title" data-i18n="settingsProxyTitle">🌐 Mạng & Proxy</h3>
+            <h3 class="section-title" data-i18n="settingsProxyTitle">Mạng & Proxy</h3>
             <div class="form-group">
                 <label for="proxy" data-i18n="settingsProxyLabel">Địa chỉ Proxy</label>
                 <input type="text" id="proxy" placeholder="http://user:pass@host:port hoặc socks5://127.0.0.1:1080">
