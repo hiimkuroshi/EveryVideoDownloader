@@ -4,16 +4,30 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync, execSync } = require('child_process');
+const { resolveAria2Command } = require('./lib/download-acceleration');
 
 const ROOT_DIR = __dirname;
 const CORE_DIR = path.join(ROOT_DIR, 'core');
 const YTDLP_MODULE = path.join(CORE_DIR, 'yt_dlp');
-const FFMPEG_EXE = path.join(ROOT_DIR, 'ffmpeg.exe');
+const FFMPEG_DIR_CANDIDATES = [
+  ROOT_DIR,
+  path.join(ROOT_DIR, 'bin'),
+  path.join(ROOT_DIR, '.runtime', 'ffmpeg'),
+];
 const DOWNLOAD_DIR = path.join(ROOT_DIR, 'Download');
 
 // Check Python executable
 function checkPythonSystem() {
+  const localPython = path.join(ROOT_DIR, '.runtime', 'python', 'python.exe');
+  if (fs.existsSync(localPython)) {
+    try {
+      const out = execFileSync(localPython, ['--version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      return out.trim();
+    } catch (e) {
+      return null;
+    }
+  }
   try {
     const out = execSync('python --version', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     return out.trim();
@@ -81,11 +95,22 @@ async function downloadFile(url, destPath, label) {
 
 function checkFfmpegSystem() {
   try {
-    if (fs.existsSync(FFMPEG_EXE)) return true;
+    if (FFMPEG_DIR_CANDIDATES.some((dir) => fs.existsSync(path.join(dir, 'ffmpeg.exe')))) return true;
     execSync('where ffmpeg', { stdio: 'ignore' });
     return true;
   } catch (e) {
     return false;
+  }
+}
+
+function checkAria2System() {
+  const executable = resolveAria2Command({ rootDir: ROOT_DIR });
+  if (!executable) return null;
+  try {
+    const version = execFileSync(executable, ['--version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return { executable, version: version.split(/\r?\n/)[0].trim() };
+  } catch {
+    return { executable, version: 'aria2c detected (version unavailable)' };
   }
 }
 
@@ -159,6 +184,13 @@ async function runSetup() {
       console.log(`   ${C.red}❌ Lỗi cài đặt npm: ${err.message}${C.reset}`);
       allReady = false;
     }
+  }
+
+  const aria2 = checkAria2System();
+  if (aria2) {
+    console.log(`   ${C.green}✅ aria2: ${aria2.version}${C.reset}`);
+  } else {
+    console.log(`   ${C.dim}ℹ️ aria2 chưa có. Engine Auto sẽ dùng native; đặt aria2c.exe trong bin/ để bật multi-range.${C.reset}`);
   }
 
   console.log(`\n${C.bright}${C.magenta}======================================================================${C.reset}`);

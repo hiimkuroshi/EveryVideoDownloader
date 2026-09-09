@@ -28,6 +28,9 @@ assert.match(html, /href=["']#main["'][^>]*>Bỏ qua/, 'Missing skip link');
 assert.match(html, /href=["']graphite-signal\.css["']/, 'Graphite Signal stylesheet is not linked');
 assert.doesNotMatch(html, /powered\s+by\s+yt-dlp/i, 'Legacy engine attribution is still visible');
 assert.doesNotMatch(i18n, /powered\s+by\s+yt-dlp/i, 'Legacy engine attribution remains in translations');
-assert.equal(uniqueIds.size, 148, 'Unexpected DOM hook count; check accidental ID removal/addition');
+for (const id of ['bilibiliDownloadEngine', 'bilibiliAria2Connections', 'bilibiliAria2Status']) {
+    assert.ok(uniqueIds.has(id), `Missing Bilibili acceleration control: ${id}`);
+}
+assert.equal(uniqueIds.size, 151, 'Unexpected DOM hook count; check accidental ID removal/addition');
 
 console.log(`UI contract passed: ${uniqueIds.size} unique IDs, ${staticScriptIds.size} script hooks.`);

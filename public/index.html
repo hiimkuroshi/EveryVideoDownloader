@@ -686,11 +686,11 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="concurrentFragments" class="label-with-tip">
-                        <span data-i18n="threadsLabel">Số luồng tải phân mảnh song song (-N)</span>
+                        <span data-i18n="threadsLabel">Luồng tải phân mảnh song song (-N)</span>
                         <div class="tip-wrap">
                             <svg class="tip-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                             <div class="tip-box">
-                                Số luồng tải đồng thời các phân đoạn video DASH/HLS. Mức 8 hoặc 16 giúp tăng tốc 4x–8x lần.
+                                Chỉ áp dụng cho fragment DASH/HLS. Video Bilibili .m4s direct cần Connections/file bên dưới.
                             </div>
                         </div>
                     </label>
@@ -707,7 +707,7 @@
                         <div class="tip-wrap">
                             <svg class="tip-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                             <div class="tip-box">
-                                Chia file thành các khối Range HTTP. Giúp bypass thuật toán bóp tốc độ của YouTube và chống đứt kết nối.
+                                Chia file thành các Range request tuần tự. Khi aria2 active, tùy chọn này không được dùng.
                             </div>
                         </div>
                     </label>
@@ -720,6 +720,37 @@
                         <option value="20M">🚀 20 MB (Mạng tốc độ cao)</option>
                         <option value="50M">🔥 50 MB</option>
                         <option value="100M">⚡ 100 MB</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="bilibiliDownloadEngine" class="label-with-tip">
+                        <span data-i18n="biliDownloadEngineLabel">Downloader Bilibili</span>
+                        <div class="tip-wrap">
+                            <svg class="tip-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            <div class="tip-box" data-i18n="biliDownloadEngineTip">aria2 tạo nhiều HTTP Range connection cho file .m4s; manifest vẫn dùng native.</div>
+                        </div>
+                    </label>
+                    <select id="bilibiliDownloadEngine">
+                        <option value="auto" data-i18n="biliDownloadEngineAuto">⚡ Auto (aria2 nếu có, fallback native)</option>
+                        <option value="native" data-i18n="biliDownloadEngineNative">🧩 Native yt-dlp</option>
+                        <option value="aria2c" data-i18n="biliDownloadEngineAria2">🚀 aria2 multi-range</option>
+                    </select>
+                    <span id="bilibiliAria2Status" class="meta-note" data-i18n="biliAria2Checking">Đang kiểm tra aria2...</span>
+                </div>
+                <div class="form-group">
+                    <label for="bilibiliAria2Connections" class="label-with-tip">
+                        <span data-i18n="biliAria2ConnectionsLabel">Connections mỗi file</span>
+                        <div class="tip-wrap">
+                            <svg class="tip-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            <div class="tip-box" data-i18n="biliAria2ConnectionsTip">Số Range connection cho một file. Bắt đầu với 8; quá nhiều có thể gây 403/429.</div>
+                        </div>
+                    </label>
+                    <select id="bilibiliAria2Connections">
+                        <option value="4">🛡️ 4 (Ổn định)</option>
+                        <option value="8" selected>⚡ 8 (Khuyến nghị)</option>
+                        <option value="16">🔥 16 (Thử nghiệm)</option>
                     </select>
                 </div>
             </div>
@@ -758,14 +789,15 @@
                         <div class="tip-wrap">
                             <svg class="tip-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                             <div class="tip-box" data-i18n="biliUposHostTip">
-                                Chọn máy chủ CDN UPOS để tải video Bilibili. Alibaba Cloud CDN (mirrorali) thường cho tốc độ tải cao và ổn định nhất tại Việt Nam & Quốc tế.
+                                Chọn máy chủ CDN UPOS để tải video Bilibili. Benchmark hiện tại ưu tiên Tencent Overseas (mirrorcosov); tốc độ thực tế còn phụ thuộc video, ISP và thời điểm.
                             </div>
                         </div>
                     </label>
                     <select id="bilibiliUposHost">
-                        <option value="auto" selected data-i18n="biliUposAuto">⚡ Tự động (Ưu tiên CDN Quốc tế Alibaba / Tencent)</option>
-                        <option value="upos-sz-mirroraliov.bilivideo.com" data-i18n="biliUposAliOv">🌏 Alibaba Overseas CDN (upos-sz-mirroraliov) — Tốc độ cao nhất & Ổn định tại VN</option>
-                        <option value="upos-sz-mirrorcosov.bilivideo.com" data-i18n="biliUposCosOv">🌐 Tencent Overseas CDN (upos-sz-mirrorcosov) — Tối ưu Quốc tế</option>
+                        <option value="auto" data-i18n="biliUposAuto">⚡ Tự động (Ưu tiên CDN Quốc tế Alibaba / Tencent)</option>
+                        <option value="fastest" data-i18n="biliUposFastest">🧪 Fastest (Đo các backup URL thật trước khi tải)</option>
+                        <option value="upos-sz-mirroraliov.bilivideo.com" data-i18n="biliUposAliOv">🌏 Alibaba Overseas CDN (upos-sz-mirroraliov) — Candidate thủ công</option>
+                        <option value="upos-sz-mirrorcosov.bilivideo.com" selected data-i18n="biliUposCosOv">🌐 Tencent Overseas CDN (upos-sz-mirrorcosov) — Tối ưu Quốc tế</option>
                         <option value="upos-hz-mirrorakam.akamaized.net" data-i18n="biliUposAkam">⚡ Akamai Global CDN (upos-hz-mirrorakam) — Băng thông toàn cầu</option>
                         <option value="upos-sz-mirrorali.bilivideo.com" data-i18n="biliUposAli">🚀 Alibaba Cloud Nội địa TQ (upos-sz-mirrorali)</option>
                         <option value="upos-sz-mirrorcos.bilivideo.com" data-i18n="biliUposCos">🛡️ Tencent Cloud Nội địa TQ (upos-sz-mirrorcos)</option>
@@ -853,7 +885,7 @@
             <div class="switches-grid">
                 <label class="toggle-group-item">
                     <span data-i18n="advGeoBypass">Bỏ qua giới hạn địa lý (Geo Bypass)</span>
-                    <input type="checkbox" id="geoBypass">
+                    <input type="checkbox" id="geoBypass" checked>
                 </label>
                 <label class="toggle-group-item">
                     <span data-i18n="advForceIpv4">Bắt buộc kết nối IPv4</span>
