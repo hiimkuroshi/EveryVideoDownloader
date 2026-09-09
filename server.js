@@ -7,6 +7,13 @@ const cors = require('cors');
 const { spawn, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const {
+  buildDownloadAcceleration,
+  isBilibiliUrl,
+  normalizeConnections,
+  normalizeEngine,
+  resolveAria2Command,
+} = require('./lib/download-acceleration');
 
 // Protect process from unexpected crashes
 process.on('uncaughtException', (err) => {
@@ -43,6 +50,7 @@ function resolvePythonCommand() {
         path.join(__dirname, 'python.exe'),
         path.join(__dirname, '.venv', 'Scripts', 'python.exe'),
         path.join(__dirname, 'venv', 'Scripts', 'python.exe'),
+        path.join(__dirname, '.runtime', 'python', 'python.exe'),
       ]
     : [
         path.join(__dirname, '.venv', 'bin', 'python'),
@@ -104,10 +112,15 @@ if (!fs.existsSync(DOWNLOADS_DIR)) {
   fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
 }
 
-// Check if local ffmpeg exists in root folder or bin
-const LOCAL_FFMPEG = fs.existsSync(path.join(__dirname, 'ffmpeg.exe'))
-  ? __dirname
-  : (fs.existsSync(path.join(__dirname, 'bin', 'ffmpeg.exe')) ? path.join(__dirname, 'bin') : null);
+// Check if local ffmpeg exists in root, bin, or the project-local portable runtime.
+const FFMPEG_DIR_CANDIDATES = [
+  __dirname,
+  path.join(__dirname, 'bin'),
+  path.join(__dirname, '.runtime', 'ffmpeg'),
+];
+const LOCAL_FFMPEG = FFMPEG_DIR_CANDIDATES.find((dir) => fs.existsSync(path.join(dir, 'ffmpeg.exe'))) || null;
+const BILIBILI_BROWSER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36';
+const BILIBILI_REFERER = 'https://www.bilibili.com/';
 
 // Active download child processes store for cancel/pause support
 const activeDownloads = new Map();
@@ -124,7 +137,9 @@ function loadPersistentConfig() {
         return {
           downloadFolder: DOWNLOADS_DIR,
           bilibiliAvoidP2p: true,
-          bilibiliUposHost: 'auto',
+          bilibiliUposHost: 'upos-sz-mirrorcosov.bilivideo.com',
+          bilibiliDownloadEngine: 'auto',
+          bilibiliAria2Connections: 8,
           ...parsed,
         };
       }
@@ -135,7 +150,9 @@ function loadPersistentConfig() {
   return {
     downloadFolder: DOWNLOADS_DIR,
     bilibiliAvoidP2p: true,
-    bilibiliUposHost: 'auto',
+    bilibiliUposHost: 'upos-sz-mirrorcosov.bilivideo.com',
+    bilibiliDownloadEngine: 'auto',
+    bilibiliAria2Connections: 8,
   };
 }
 
@@ -168,14 +185,22 @@ app.get('/health', (req, res) => {
 app.get('/api/config', (req, res) => {
   const cfg = loadPersistentConfig();
   res.json({
+    ...cfg,
     downloadFolder: cfg.downloadFolder || DOWNLOADS_DIR,
     hasLocalFfmpeg: !!LOCAL_FFMPEG,
-    ...cfg,
+    hasAria2c: !!resolveAria2Command(),
+    bilibiliDownloadEngine: normalizeEngine(cfg.bilibiliDownloadEngine),
+    bilibiliAria2Connections: normalizeConnections(cfg.bilibiliAria2Connections),
   });
 });
 
 app.post('/api/config', (req, res) => {
-  const { downloadFolder, ...otherSettings } = req.body || {};
+  const {
+    downloadFolder,
+    bilibiliDownloadEngine,
+    bilibiliAria2Connections,
+    ...otherSettings
+  } = req.body || {};
   const updates = {};
 
   if (downloadFolder && typeof downloadFolder === 'string') {
@@ -184,6 +209,13 @@ app.post('/api/config', (req, res) => {
     if (!fs.existsSync(norm)) {
       try { fs.mkdirSync(norm, { recursive: true }); } catch (e) {}
     }
+  }
+
+  if (bilibiliDownloadEngine !== undefined) {
+    updates.bilibiliDownloadEngine = normalizeEngine(bilibiliDownloadEngine);
+  }
+  if (bilibiliAria2Connections !== undefined) {
+    updates.bilibiliAria2Connections = normalizeConnections(bilibiliAria2Connections);
   }
 
   Object.assign(updates, otherSettings);
@@ -281,8 +313,8 @@ app.get('/api/download-thumbnail', async (req, res) => {
 
   // 2. Fallback to yt-dlp Extraction
   const args = ['--write-thumbnail', '--skip-download', '--no-playlist'];
-  if (fs.existsSync(LOCAL_FFMPEG)) {
-    args.push('--ffmpeg-location', __dirname);
+  if (LOCAL_FFMPEG) {
+    args.push('--ffmpeg-location', LOCAL_FFMPEG);
     args.push('--convert-thumbnails', 'jpg');
   }
   if (browser && browser !== 'none') {
@@ -1080,6 +1112,11 @@ app.get('/api/info', async (req, res) => {
     args.push('--ffmpeg-location', LOCAL_FFMPEG);
   }
 
+  if (isBilibiliUrl(url)) {
+    args.push('--user-agent', BILIBILI_BROWSER_USER_AGENT);
+    args.push('--add-header', `Referer: ${BILIBILI_REFERER}`);
+  }
+
   // Use Node.js runtime as portable JS engine for yt-dlp
   args.push('--js-runtimes', 'node');
 
@@ -1088,7 +1125,9 @@ app.get('/api/info', async (req, res) => {
   if (bilibili_avoid_p2p && (bilibili_avoid_p2p === 'false' || bilibili_avoid_p2p === 'allow_p2p')) {
     biliExtractorArgs.push('avoid_p2p=false');
   }
-  if (bilibili_upos_host && bilibili_upos_host !== 'auto' && bilibili_upos_host !== 'default' && bilibili_upos_host !== 'none') {
+  if (bilibili_upos_host === 'fastest') {
+    biliExtractorArgs.push('cdn_strategy=fastest');
+  } else if (bilibili_upos_host && bilibili_upos_host !== 'auto' && bilibili_upos_host !== 'default' && bilibili_upos_host !== 'none') {
     biliExtractorArgs.push(`upos_host=${bilibili_upos_host}`);
   }
   if (biliExtractorArgs.length > 0) {
@@ -1168,6 +1207,8 @@ app.get('/api/download', async (req, res) => {
     custom_filename,
     bilibili_upos_host,
     bilibili_avoid_p2p,
+    bilibili_download_engine,
+    bilibili_aria2_connections,
     download_sections,
   } = req.query;
 
@@ -1188,7 +1229,27 @@ app.get('/api/download', async (req, res) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
+  const persistentConfig = loadPersistentConfig();
+  const acceleration = buildDownloadAcceleration({
+    url,
+    engine: bilibili_download_engine || persistentConfig.bilibiliDownloadEngine,
+    connections: bilibili_aria2_connections || persistentConfig.bilibiliAria2Connections,
+    httpChunkSize: http_chunk_size,
+  });
+
   sendEvent({ downloadId, started: true, custom_filename: custom_filename || null });
+  if (acceleration.error) {
+    sendEvent({ downloadId, error: acceleration.error });
+    sendEvent({ downloadId, done: true, code: -2 });
+    return res.end();
+  }
+  sendEvent({
+    downloadId,
+    diagnostic: 'download-engine',
+    engine: acceleration.actualEngine,
+    connections: acceleration.actualEngine === 'aria2c' ? acceleration.connections : null,
+    chunkIgnored: acceleration.chunkIgnored,
+  });
   if (custom_filename && custom_filename.trim()) {
     sendEvent({ downloadId, output: `[filename] Tên file lưu: ${custom_filename.trim()}` });
   }
@@ -1540,12 +1601,9 @@ app.get('/api/download', async (req, res) => {
   args.push('--retry-sleep', 'fragment:exp=1:10');
   args.push('--file-access-retries', '5');
 
-  // Acceleration options
+  // Native fragment/chunk options. Direct Bilibili HTTP(S) acceleration is appended per attempt below.
   if (concurrent_fragments) {
     args.push('--concurrent-fragments', concurrent_fragments);
-  }
-  if (http_chunk_size && http_chunk_size !== 'none' && http_chunk_size !== 'default') {
-    args.push('--http-chunk-size', http_chunk_size);
   }
 
   // Time Range / Download Sections (Trim specific video slice)
@@ -1563,80 +1621,122 @@ app.get('/api/download', async (req, res) => {
   args.push('--js-runtimes', 'node');
 
   // Bilibili Anti-P2P CDN & Custom UPOS host
+  if (isBilibiliUrl(url)) {
+    if (!user_agent) args.push('--user-agent', BILIBILI_BROWSER_USER_AGENT);
+    args.push('--add-header', `Referer: ${BILIBILI_REFERER}`);
+  }
   const biliExtractorArgs = [];
   if (bilibili_avoid_p2p && (bilibili_avoid_p2p === 'false' || bilibili_avoid_p2p === 'allow_p2p')) {
     biliExtractorArgs.push('avoid_p2p=false');
   }
-  if (bilibili_upos_host && bilibili_upos_host !== 'auto' && bilibili_upos_host !== 'default' && bilibili_upos_host !== 'none') {
+  if (bilibili_upos_host === 'fastest') {
+    biliExtractorArgs.push('cdn_strategy=fastest');
+  } else if (bilibili_upos_host && bilibili_upos_host !== 'auto' && bilibili_upos_host !== 'default' && bilibili_upos_host !== 'none') {
     biliExtractorArgs.push(`upos_host=${bilibili_upos_host}`);
   }
   if (biliExtractorArgs.length > 0) {
     args.push('--extractor-args', `bilibili:${biliExtractorArgs.join(';')}`);
   }
 
-  // Target URL
-  args.push(url);
-
-  console.log(`[/api/download] [${downloadId}] Spawning Python yt_dlp with args:`, args.join(' '));
-
-  let child;
-  try {
-    child = spawnYtDlp(args);
-  } catch (error) {
-    const message = describeProcessError(error, 'Python extractor');
-    console.error(`[/api/download] [${downloadId}] Spawn error:`, message);
-    sendEvent({ downloadId, error: message });
-    sendEvent({ downloadId, done: true, code: -1 });
-    return res.end();
-  }
-  activeDownloads.set(downloadId, child);
-
-  child.once('error', (error) => {
-    const message = describeProcessError(error, 'Python extractor');
-    console.error(`[/api/download] [${downloadId}] Process error:`, message);
-    activeDownloads.delete(downloadId);
-    sendEvent({ downloadId, error: message });
-  });
-
-  child.stdout.on('data', (data) => {
-    const lines = data.toString().split(/\r?\n/).filter(Boolean);
-    for (const line of lines) {
-      sendEvent({ downloadId, output: line });
+  const baseArgs = [...args];
+  const buildAttemptArgs = (engine) => {
+    const attemptArgs = [...baseArgs];
+    if (engine === 'aria2c') {
+      attemptArgs.push(...acceleration.args);
+    } else if (http_chunk_size && http_chunk_size !== 'none' && http_chunk_size !== 'default') {
+      attemptArgs.push('--http-chunk-size', http_chunk_size);
     }
-  });
+    attemptArgs.push(url);
+    return attemptArgs;
+  };
 
-  child.stderr.on('data', (data) => {
-    const lines = data.toString().split(/\r?\n/).filter(Boolean);
-    for (const line of lines) {
-      const isFfmpegProgress = /frame=\s*\d+|size=\s*\d+|time=\s*\d+|bitrate=\s*|speed=\s*|Opening |Metadata:|Stream #|Output #|encoder\s*:/i.test(line);
-      if (isFfmpegProgress) {
-        sendEvent({ downloadId, output: line });
-      } else {
-        sendEvent({ downloadId, error: line });
-      }
-    }
-  });
+  let currentChild = null;
+  let currentEngine = acceleration.actualEngine;
+  let cancelled = false;
+  let completed = false;
+  let stderrBuffer = '';
 
-  child.on('close', (code) => {
-    console.log(`[/api/download] [${downloadId}] yt-dlp exited with code ${code}`);
+  const shouldFallback = (code, errorText) => acceleration.requestedEngine === 'auto'
+    && currentEngine === 'aria2c'
+    && code !== 0
+    && /aria2c|external downloader|downloader.*(?:failed|error)|exit code/i.test(errorText);
+
+  const finishDownload = (code) => {
+    if (completed) return;
+    completed = true;
     activeDownloads.delete(downloadId);
     sendEvent({ downloadId, done: true, code });
     res.end();
-  });
+  };
+
+  const spawnAttempt = (engine) => {
+    currentEngine = engine;
+    stderrBuffer = '';
+    const attemptArgs = buildAttemptArgs(engine);
+    console.log(`[/api/download] [${downloadId}] ${engine} args:`, attemptArgs.join(' '));
+    try {
+      currentChild = spawnYtDlp(attemptArgs);
+    } catch (error) {
+      const message = describeProcessError(error, 'Python extractor');
+      if (engine === 'aria2c' && acceleration.requestedEngine === 'auto' && !cancelled) {
+        sendEvent({ downloadId, diagnostic: 'fallback', from: 'aria2c', to: 'native', reason: message });
+        return spawnAttempt('native');
+      }
+      sendEvent({ downloadId, error: message });
+      return finishDownload(-1);
+    }
+
+    activeDownloads.set(downloadId, currentChild);
+    const sendProcessLine = (line, channel = 'output') => {
+      const cdnMatch = line.match(/^\[Bilibili\] CDN fastest host:\s*([a-z0-9.:-]+)$/i);
+      if (cdnMatch) {
+        sendEvent({ downloadId, diagnostic: 'cdn', host: cdnMatch[1].toLowerCase() });
+      }
+      sendEvent({ downloadId, [channel]: line });
+    };
+    currentChild.once('error', (error) => {
+      const message = describeProcessError(error, 'Python extractor');
+      stderrBuffer += ` ${message}`;
+      sendEvent({ downloadId, error: message });
+    });
+    currentChild.stdout.on('data', (data) => {
+      for (const line of data.toString().split(/\r?\n/).filter(Boolean)) {
+        sendProcessLine(line);
+      }
+    });
+    currentChild.stderr.on('data', (data) => {
+      const text = data.toString();
+      stderrBuffer = `${stderrBuffer} ${text}`.slice(-16000);
+      for (const line of text.split(/\r?\n/).filter(Boolean)) {
+        const isFfmpegProgress = /frame=\s*\d+|size=\s*\d+|time=\s*\d+|bitrate=\s*|speed=\s*|Opening |Metadata:|Stream #|Output #|encoder\s*:/i.test(line)
+          || /^\[Bilibili\]/i.test(line);
+        sendProcessLine(line, isFfmpegProgress ? 'output' : 'error');
+      }
+    });
+    currentChild.on('close', (code) => {
+      if (cancelled || completed) return;
+      if (shouldFallback(code, stderrBuffer)) {
+        activeDownloads.delete(downloadId);
+        sendEvent({ downloadId, diagnostic: 'fallback', from: 'aria2c', to: 'native', reason: 'external downloader failed' });
+        return spawnAttempt('native');
+      }
+      console.log(`[/api/download] [${downloadId}] yt-dlp exited with code ${code}`);
+      finishDownload(code);
+    });
+  };
+
+  spawnAttempt(acceleration.actualEngine);
 
   req.on('close', () => {
-    if (activeDownloads.has(downloadId)) {
-      const task = activeDownloads.get(downloadId);
-      if (task) {
-        if (typeof task.kill === 'function' && !task.killed) {
-          task.kill('SIGTERM');
-        } else if (typeof task.abort === 'function') {
-          task.abort();
-        }
-        console.log(`[/api/download] [${downloadId}] Client disconnected — cleaned up task`);
-      }
-      activeDownloads.delete(downloadId);
+    cancelled = true;
+    if (!activeDownloads.has(downloadId)) return;
+    const task = activeDownloads.get(downloadId);
+    if (task) {
+      if (typeof task.kill === 'function' && !task.killed) task.kill('SIGTERM');
+      else if (typeof task.abort === 'function') task.abort();
+      console.log(`[/api/download] [${downloadId}] Client disconnected — cleaned up task`);
     }
+    activeDownloads.delete(downloadId);
   });
 });
 

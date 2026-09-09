@@ -57,6 +57,34 @@ appLangSelect?.addEventListener('change', (e) => setAppLanguage(e.target.value))
 settingsLangSelect?.addEventListener('change', (e) => setAppLanguage(e.target.value));
 
 // ── Dynamic & Persistent Configuration Synchronization ──────────
+let hasAria2c = false;
+
+function syncBilibiliAccelerationControls() {
+    const engine = document.getElementById('bilibiliDownloadEngine');
+    const connections = document.getElementById('bilibiliAria2Connections');
+    const chunk = document.getElementById('httpChunkSize');
+    const status = document.getElementById('bilibiliAria2Status');
+    const aria2Option = engine?.querySelector('option[value="aria2c"]');
+    if (!engine) return;
+
+    if (aria2Option) aria2Option.disabled = !hasAria2c;
+    if (!hasAria2c && engine.value === 'aria2c') engine.value = 'auto';
+    if (connections) connections.disabled = engine.value === 'native';
+    if (chunk) chunk.disabled = engine.value === 'aria2c';
+    if (status) {
+        const key = hasAria2c ? 'biliAria2Ready' : 'biliAria2Unavailable';
+        status.textContent = typeof t === 'function' ? t(key) : (hasAria2c ? '✅ aria2 sẵn sàng' : 'ℹ️ Chưa có aria2 — Auto dùng native');
+    }
+}
+
+function persistBilibiliSpeedSetting(key, value) {
+    fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: value })
+    }).catch(() => {});
+}
+
 const cachedSavedFolder = localStorage.getItem('userDownloadFolder');
 if (cachedSavedFolder) {
     if (document.getElementById('quickDownloadFolder')) document.getElementById('quickDownloadFolder').value = cachedSavedFolder;
@@ -78,6 +106,14 @@ fetch('/api/config')
     if (cfg.bilibiliUposHost && document.getElementById('bilibiliUposHost')) {
       document.getElementById('bilibiliUposHost').value = cfg.bilibiliUposHost;
     }
+    if (cfg.bilibiliDownloadEngine && document.getElementById('bilibiliDownloadEngine')) {
+      document.getElementById('bilibiliDownloadEngine').value = cfg.bilibiliDownloadEngine;
+    }
+    if (cfg.bilibiliAria2Connections && document.getElementById('bilibiliAria2Connections')) {
+      document.getElementById('bilibiliAria2Connections').value = String(cfg.bilibiliAria2Connections);
+    }
+    hasAria2c = cfg.hasAria2c === true;
+    syncBilibiliAccelerationControls();
   })
   .catch(() => {});
 
@@ -107,7 +143,20 @@ document.getElementById('bilibiliUposHost')?.addEventListener('change', (e) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bilibiliUposHost: e.target.value })
-    }).catch(() => {});
+  }).catch(() => {});
+});
+
+document.getElementById('bilibiliDownloadEngine')?.addEventListener('change', (e) => {
+    if (e.target.value === 'aria2c' && !hasAria2c) {
+        e.target.value = 'auto';
+        return;
+    }
+    persistBilibiliSpeedSetting('bilibiliDownloadEngine', e.target.value);
+    syncBilibiliAccelerationControls();
+});
+
+document.getElementById('bilibiliAria2Connections')?.addEventListener('change', (e) => {
+    persistBilibiliSpeedSetting('bilibiliAria2Connections', e.target.value);
 });
 
 // Sync and save user-selected download directory across sessions
@@ -473,7 +522,7 @@ $('checkBtn').addEventListener('click', async () => {
 
         // Bilibili Anti-P2P CDN & UPOS Server selection
         const biliAvoidP2p = $('bilibiliAvoidP2p')?.checked ?? true;
-        const biliUposHost = val('bilibiliUposHost') || 'auto';
+        const biliUposHost = val('bilibiliUposHost') || 'upos-sz-mirrorcosov.bilivideo.com';
         qp.append('bilibili_avoid_p2p', biliAvoidP2p ? 'true' : 'false');
         if (biliUposHost !== 'auto' && biliUposHost !== 'default') {
             qp.append('bilibili_upos_host', biliUposHost);
@@ -1676,7 +1725,11 @@ function startDirectDownload(customParams = null) {
                     format: item.id,
                     formatLabel: `${item.resolution} (ID ${item.id})`,
                     ext: item.ext,
-                    size: item.size
+                    size: item.size,
+                    downloadEngine: val('bilibiliDownloadEngine') || 'auto',
+                    aria2Connections: val('bilibiliAria2Connections') || '8',
+                    uposHost: val('bilibiliUposHost') || 'upos-sz-mirrorcosov.bilivideo.com',
+                    avoidP2p: $('bilibiliAvoidP2p')?.checked !== false,
                 });
                 addedCount++;
             }
@@ -1742,7 +1795,9 @@ function startDirectDownload(customParams = null) {
         merge_output_format:  val('quickMergeFormat') || val('mergeOutputFormat') || 'mkv',
         custom_filename:      val('customFileNameInput')?.trim() || '',
         bilibili_avoid_p2p:   $('bilibiliAvoidP2p')?.checked ? 'true' : 'false',
-        bilibili_upos_host:    val('bilibiliUposHost') || 'auto',
+        bilibili_upos_host:    val('bilibiliUposHost') || 'upos-sz-mirrorcosov.bilivideo.com',
+        bilibili_download_engine: val('bilibiliDownloadEngine') || 'auto',
+        bilibili_aria2_connections: val('bilibiliAria2Connections') || '8',
         download_sections:    (customParams?.download_sections !== undefined) ? customParams.download_sections : getTimeRangeSection(),
     };
 
@@ -1798,6 +1853,23 @@ function startDirectDownload(customParams = null) {
 
         if (data.downloadId) {
             activeDownloadId = data.downloadId;
+        }
+
+        if (data.diagnostic === 'download-engine') {
+            const chunkNote = data.chunkIgnored
+                ? (typeof t === 'function' ? t('biliAria2ChunkIgnored') : 'aria2 đang tự chia Range; chunk native được bỏ qua')
+                : '';
+            const connectionNote = data.connections ? ` · ${data.connections} connections` : '';
+            appendLog(`[ENGINE] ${data.engine}${connectionNote}${chunkNote ? ` · ${chunkNote}` : ''}`);
+            return;
+        }
+        if (data.diagnostic === 'fallback') {
+            appendLog(`[ENGINE] fallback ${data.from} → ${data.to}: ${data.reason}`);
+            return;
+        }
+        if (data.diagnostic === 'cdn') {
+            appendLog(`[CDN] ${data.host}`);
+            return;
         }
 
         if (data.done) {
@@ -1997,7 +2069,11 @@ $('addSelectedToQueueBtn')?.addEventListener('click', () => {
                 format: item.id,
                 formatLabel: `${item.resolution} (ID ${item.id})`,
                 ext: item.ext,
-                size: item.size
+                size: item.size,
+                downloadEngine: val('bilibiliDownloadEngine') || 'auto',
+                aria2Connections: val('bilibiliAria2Connections') || '8',
+                    uposHost: val('bilibiliUposHost') || 'upos-sz-mirrorcosov.bilivideo.com',
+                avoidP2p: $('bilibiliAvoidP2p')?.checked !== false,
             });
             addedCount++;
         }
@@ -2022,6 +2098,10 @@ function addSingleItemToQueue(item) {
         downloadSections: timeSection || '',
         ext: item.ext,
         size: item.size,
+        downloadEngine: item.downloadEngine,
+        aria2Connections: item.aria2Connections,
+        uposHost: item.uposHost,
+        avoidP2p: item.avoidP2p,
         status: 'waiting', // 'waiting', 'downloading', 'done', 'error'
     };
 
@@ -2131,7 +2211,11 @@ async function processNextQueueItem() {
         url: nextItem.url,
         format: nextItem.format,
         custom_filename: nextItem.title,
-        download_sections: nextItem.downloadSections || ''
+        download_sections: nextItem.downloadSections || '',
+        bilibili_download_engine: nextItem.downloadEngine || 'auto',
+        bilibili_aria2_connections: nextItem.aria2Connections || '8',
+        bilibili_upos_host: nextItem.uposHost || 'upos-sz-mirrorcosov.bilivideo.com',
+        bilibili_avoid_p2p: nextItem.avoidP2p === false ? 'false' : 'true'
     });
 
     // Monitor completion to trigger next

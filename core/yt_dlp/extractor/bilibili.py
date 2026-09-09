@@ -13,6 +13,7 @@ import uuid
 
 from .common import InfoExtractor, SearchInfoExtractor
 from ..dependencies import Cryptodome
+from ..networking import Request
 from ..networking.exceptions import HTTPError
 from ..utils import (
     ExtractorError,
@@ -50,6 +51,9 @@ class BilibiliBaseIE(InfoExtractor):
     _HEADERS = {'Referer': 'https://www.bilibili.com/'}
     _FORMAT_ID_RE = re.compile(r'-(\d+)\.m4s\?')
     _WBI_KEY_CACHE_TIMEOUT = 30  # exact expire timeout is unclear, use 30s for one session
+    _CDN_PROBE_BYTES = 2 * 1024 * 1024
+    _CDN_PROBE_TIMEOUT = 4
+    _CDN_PROBE_LIMIT = 4
     _wbi_key_cache = {}
 
     @property
@@ -71,8 +75,16 @@ class BilibiliBaseIE(InfoExtractor):
     def _is_p2p_host(url_or_host):
         if not url_or_host:
             return False
-        h = str(url_or_host).lower()
-        return any(k in h for k in ('mcdn', 'szbdyd', 'pcdn', 'xy', ':8082', ':8000', 'v1direct'))
+        try:
+            parsed = urllib.parse.urlparse(str(url_or_host))
+            host = (parsed.hostname or parsed.path or '').lower().strip('.')
+            port = parsed.port
+        except ValueError:
+            return False
+        host_markers = ('mcdn', 'szbdyd', 'pcdn', 'v1direct')
+        return bool(any(marker in host for marker in host_markers)
+                    or re.search(r'(^|[.-])xy([.-]|$)', host)
+                    or port in (8000, 8082))
 
     @staticmethod
     def _replace_upos_host(url, target_host):
@@ -103,27 +115,96 @@ class BilibiliBaseIE(InfoExtractor):
         except Exception:
             return default
 
+    @staticmethod
+    def _stream_candidates(media_dict):
+        base_url = traverse_obj(media_dict, (('baseUrl', 'base_url', 'url'), {url_or_none}), get_all=False)
+        backup_urls = traverse_obj(media_dict, (('backupUrl', 'backup_url'), ..., {url_or_none})) or []
+        if isinstance(backup_urls, str):
+            backup_urls = [backup_urls]
+        candidates = []
+        for candidate in [base_url, *backup_urls]:
+            if candidate and candidate not in candidates:
+                candidates.append(candidate)
+        return candidates
+
+    @staticmethod
+    def _candidate_host(url):
+        try:
+            return (urllib.parse.urlparse(url).hostname or '').lower().strip('.')
+        except ValueError:
+            return ''
+
+    def _probe_cdn_candidate(self, url):
+        started = time.monotonic()
+        response = None
+        try:
+            response = self._request_webpage(
+                Request(url, headers={'Range': f'bytes=0-{self._CDN_PROBE_BYTES - 1}',
+                                      'Accept-Encoding': 'identity', **self._HEADERS},
+                        extensions={'timeout': self._CDN_PROBE_TIMEOUT}),
+                None, note=False, errnote=False, fatal=False)
+            if not response or response.status not in (200, 206):
+                return None
+            sample = response.read(self._CDN_PROBE_BYTES)
+            elapsed = max(time.monotonic() - started, 0.001)
+            if not sample:
+                return None
+            return len(sample) / elapsed
+        except Exception:
+            return None
+        finally:
+            if response:
+                response.close()
+
+    def _prepare_fastest_cdn(self, play_info, avoid_p2p):
+        if self._get_extractor_arg('cdn_strategy', 'auto') != 'fastest':
+            return
+        videos = traverse_obj(play_info, ('dash', 'video', ..., {dict}))
+        audios = traverse_obj(play_info, ('dash', (None, 'dolby'), 'audio', ..., {dict}))
+        legacy = traverse_obj(play_info, ('durl', ..., {dict}))
+        representative = (videos or audios or legacy or [None])[0]
+        candidates = [url for url in self._stream_candidates(representative or {})
+                      if not (avoid_p2p and self._is_p2p_host(url))]
+        ranked = []
+        for candidate in candidates[:self._CDN_PROBE_LIMIT]:
+            throughput = self._probe_cdn_candidate(candidate)
+            if throughput:
+                ranked.append((throughput, self._candidate_host(candidate)))
+        self._bili_fastest_host = max(ranked, default=(0, ''))[1]
+        if self._bili_fastest_host:
+            self.to_screen(f'[Bilibili] CDN fastest host: {self._bili_fastest_host}')
+        else:
+            self.to_screen('[Bilibili] CDN fastest probe unavailable; using auto selection')
+
     def _optimize_stream_url(self, media_dict):
         raw_avoid = self._get_extractor_arg('avoid_p2p', 'true')
         avoid_p2p = str(raw_avoid).lower() not in ('false', '0', 'no', 'off', 'allow_p2p')
         custom_upos_host = self._get_extractor_arg('upos_host', None)
 
-        base_url = traverse_obj(media_dict, 'baseUrl', 'base_url', 'url')
+        base_url = traverse_obj(media_dict, (('baseUrl', 'base_url', 'url'), {url_or_none}), get_all=False)
         if not base_url:
             return None
 
-        backup_urls = traverse_obj(media_dict, (('backupUrl', 'backup_url'), ...)) or []
-        if isinstance(backup_urls, str):
-            backup_urls = [backup_urls]
-
-        candidates = [u for u in [base_url, *backup_urls] if u and isinstance(u, str)]
+        candidates = self._stream_candidates(media_dict)
 
         # 1. Custom explicit UPOS host overrides all
         if custom_upos_host and custom_upos_host not in ('auto', 'default', 'none', 'allow_p2p'):
             return self._replace_upos_host(base_url, custom_upos_host)
 
+        preferred_host = getattr(self, '_bili_fastest_host', '')
+        if preferred_host:
+            fastest_url = next((candidate for candidate in candidates
+                                if self._candidate_host(candidate) == preferred_host
+                                and (not avoid_p2p or not self._is_p2p_host(candidate))), None)
+            if fastest_url:
+                selected_url = fastest_url
+            else:
+                selected_url = None
+        else:
+            selected_url = None
+
         # 2. Anti-P2P mode (default enabled)
-        if avoid_p2p:
+        if selected_url is None and avoid_p2p:
             if self._is_p2p_host(base_url):
                 # Search backup_urls for a non-P2P mirror
                 clean_cand = next((u for u in candidates if not self._is_p2p_host(u)), None)
@@ -134,7 +215,7 @@ class BilibiliBaseIE(InfoExtractor):
                     selected_url = self._replace_upos_host(base_url, 'upos-sz-mirroraliov.bilivideo.com')
             else:
                 selected_url = base_url
-        else:
+        elif selected_url is None:
             selected_url = base_url
 
         # Upgrade http to https for non-P2P URLs
@@ -144,6 +225,10 @@ class BilibiliBaseIE(InfoExtractor):
         return selected_url
 
     def extract_formats(self, play_info):
+        raw_avoid = self._get_extractor_arg('avoid_p2p', 'true')
+        avoid_p2p = str(raw_avoid).lower() not in ('false', '0', 'no', 'off', 'allow_p2p')
+        self._bili_fastest_host = ''
+        self._prepare_fastest_cdn(play_info, avoid_p2p)
         format_names = {
             r['quality']: traverse_obj(r, 'new_description', 'display_desc')
             for r in traverse_obj(play_info, ('support_formats', lambda _, v: v['quality']))

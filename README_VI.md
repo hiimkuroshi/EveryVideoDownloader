@@ -26,12 +26,13 @@ Sau đó mở [http://localhost:3000](http://localhost:3000).
 | Node.js | 18+ | Chạy Express server và Web UI |
 | Python | 3.9+ | Chạy gói mã nguồn `core/yt_dlp` đi kèm |
 | FFmpeg | 5+ | Ghép, chuyển đổi, trích xuất audio và nhúng phụ đề |
+| aria2c | Tùy chọn | Tăng tốc multi-range HTTP(S) cho file Bilibili `.m4s` direct |
 | Trình duyệt | Edge, Chrome, Firefox hoặc Brave | Hiển thị ứng dụng và cung cấp cookie tùy chọn |
 
 Server tìm Python theo thứ tự:
 
 1. Biến môi trường `EVERYVIDEO_PYTHON`.
-2. `.venv` hoặc `venv` nằm trong dự án.
+2. `.runtime/python/python.exe` (runtime portable) hoặc `.venv`/`venv` nằm trong dự án.
 3. `py.exe`, `python.exe` hoặc `python3.exe` trong `PATH`.
 
 Chỉ định Python cụ thể trong PowerShell:
@@ -52,6 +53,8 @@ EveryVideo cần tạo tiến trình con để chạy Python, Windows Explorer v
 - Phát hiện, xem trước, chuyển đổi `.srt` và tải `.vtt` phụ đề.
 - Tải thumbnail HD kèm proxy fallback cho host ảnh bị giới hạn.
 - Cắt khoảng thời gian, chọn container, tải đa phân mảnh và HTTP chunk.
+- Tăng tốc stream direct Bilibili với engine `Auto`, `Native` và `aria2c` tùy chọn (4/8/16 connection).
+- Workspace hiện dùng candidate Tencent Overseas `upos-sz-mirrorcosov` làm mặc định theo benchmark; `auto` và `fastest` vẫn có để A/B và rollback.
 - Folder picker native và phản hồi dựa trên kết quả Explorer spawn thực tế.
 - Giao diện Tiếng Việt, English, 简体中文 và 日本語.
 - Dịch tiêu đề qua nhiều provider có fallback.
@@ -90,8 +93,11 @@ EveryVideoDownloader/
 │   └── style.css                  # Nền component legacy
 ├── tests/
 │   ├── server_contract_test.js
+│   ├── download_acceleration_test.js
+│   ├── test_bilibili_speed.py
 │   ├── test_suite.js
 │   └── ui_contract_test.js
+├── lib/download-acceleration.js   # Builder engine/capability Bilibili
 ├── DESIGN.md                      # Design contract chính thức
 ├── server.js
 └── ui-overhaul-plan.md
@@ -116,6 +122,18 @@ EveryVideoDownloader/
 
 Lỗi khởi chạy process luôn được trả về JSON. Lỗi `EPERM` hoặc thiếu Python không còn rơi xuống trang lỗi HTML mặc định của Express.
 
+### Điều khiển tốc độ Bilibili
+
+Ba cơ chế dưới đây áp dụng cho các đường tải khác nhau:
+
+- `--concurrent-fragments` điều khiển fragment DASH/HLS song song; không tạo tám connection cho một URL `.m4s` direct.
+- `--http-chunk-size` tạo các Range request tuần tự bằng downloader native.
+- `aria2c` tạo nhiều Range connection cho media HTTP(S) direct. Ở chế độ `Auto`, EveryVideo dùng aria2 khi có và fallback native một lần nếu external downloader lỗi. Manifest DASH/HLS vẫn dùng downloader native.
+
+EveryVideo cũng tự nhận diện binary portable tại `.runtime/aria2/aria2c.exe` và `.runtime/ffmpeg/ffmpeg.exe`. Nếu không có, hãy đặt `aria2c.exe` trong `bin/`, đặt `EVERYVIDEO_ARIA2C` tới executable hoặc cài trong `PATH`. Thiếu aria2 vẫn an toàn: `Auto` tiếp tục bằng native, còn chọn `aria2c` trực tiếp sẽ báo lỗi SSE rõ ràng. UI có profile 4/8/16 connection và tự tắt HTTP chunk khi aria2 active.
+
+Tùy chọn CDN `fastest` probe tối đa bốn URL base/backup exact do Bilibili trả về, mỗi probe 2 MiB với timeout 4 giây. Nếu probe lỗi, extractor quay về chọn anti-P2P hiện tại; diagnostic không ghi signed URL hay query token.
+
 ## Kiểm thử
 
 Chạy bộ contract test nhanh và không thay đổi dữ liệu:
@@ -125,6 +143,18 @@ npm run test:contracts
 ```
 
 Bộ test kiểm tra route API duy nhất, lỗi process được bảo vệ, DOM ID không trùng và toàn bộ DOM hook tĩnh của JavaScript còn tồn tại.
+
+Chạy thêm unit test option builder không dùng mạng:
+
+```bash
+npm run test:unit
+```
+
+Python test selector/probe Bilibili tự dùng runtime portable trong dự án nếu có, hoặc Python đã cài trên máy:
+
+```bash
+npm run test:python
+```
 
 Bộ integration test đầy đủ có tải dữ liệu mạng thật và thay đổi cấu hình runtime:
 

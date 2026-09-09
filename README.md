@@ -26,12 +26,13 @@ Open [http://localhost:3000](http://localhost:3000).
 | Node.js | 18+ | Express server and Web UI |
 | Python | 3.9+ | Runs the bundled `core/yt_dlp` source package |
 | FFmpeg | 5+ | Merging, conversion, audio extraction, and subtitle embedding |
+| aria2c | Optional | Multi-range HTTP(S) acceleration for direct Bilibili `.m4s` files |
 | Browser | Edge, Chrome, Firefox, or Brave | Local application UI and optional browser cookies |
 
 The server resolves Python in this order:
 
 1. `EVERYVIDEO_PYTHON` environment variable.
-2. Project-local `.venv` or `venv`.
+2. Project-local `.runtime/python/python.exe` (portable runtime) or `.venv`/`venv`.
 3. `py.exe`, `python.exe`, or `python3.exe` on `PATH`.
 
 To use an explicit runtime in PowerShell:
@@ -52,6 +53,8 @@ EveryVideo launches Python, Windows Explorer, and the native folder picker as ch
 - Subtitle discovery, preview, `.srt` conversion, and `.vtt` download.
 - HD thumbnail download with proxy fallback for protected image hosts.
 - Time-range downloads, output container selection, multi-fragment acceleration, and HTTP chunk controls.
+- Bilibili direct-stream acceleration with `Auto`, `Native`, and optional `aria2c` engines (4/8/16 connections).
+- Bilibili uses the benchmarked Tencent Overseas CDN candidate `upos-sz-mirrorcosov` by default in this workspace; `auto` and `fastest` remain available for A/B testing and rollback.
 - Native Windows folder picker and verified Explorer launch feedback.
 - Vietnamese, English, Simplified Chinese, and Japanese UI.
 - Resilient multi-provider title translation.
@@ -90,8 +93,11 @@ EveryVideoDownloader/
 │   └── style.css                  # Legacy component foundation
 ├── tests/
 │   ├── server_contract_test.js
+│   ├── download_acceleration_test.js
+│   ├── test_bilibili_speed.py
 │   ├── test_suite.js
 │   └── ui_contract_test.js
+├── lib/download-acceleration.js   # Bilibili engine/capability option builder
 ├── DESIGN.md                      # Canonical design contract
 ├── server.js
 └── ui-overhaul-plan.md
@@ -116,6 +122,18 @@ EveryVideoDownloader/
 
 Process launch errors are returned as JSON. `EPERM` and missing-Python errors no longer fall through to an Express HTML error page.
 
+### Bilibili speed controls
+
+The Bilibili settings separate three mechanisms that affect different download paths:
+
+- `--concurrent-fragments` controls parallel DASH/HLS fragments; it does not create eight connections for one direct `.m4s` URL.
+- `--http-chunk-size` performs sequential Range requests in the native downloader.
+- `aria2c` uses multiple Range connections for direct HTTP(S) media. In `Auto`, EveryVideo uses it when available and falls back to native once if the external downloader fails. DASH/HLS manifests stay on the native fragment downloader.
+
+EveryVideo also detects project-local portable binaries at `.runtime/aria2/aria2c.exe` and `.runtime/ffmpeg/ffmpeg.exe`. Otherwise, place `aria2c.exe` in `bin/`, set `EVERYVIDEO_ARIA2C`, or use a system `PATH` install. A missing aria2 binary is safe: `Auto` continues with native downloads, while explicit `aria2c` reports a clear SSE error. The UI exposes 4/8/16 connection profiles and disables native chunk size while aria2 is active.
+
+The `fastest` CDN option performs up to four small Range probes (2 MiB, 4-second timeout) against exact base/backup URLs returned by Bilibili. Probe failures fall back to the existing anti-P2P selection; signed URLs and query strings are not written to diagnostics.
+
 ## Verification
 
 Run fast, non-destructive contract checks:
@@ -125,6 +143,18 @@ npm run test:contracts
 ```
 
 These checks verify unique API routes, guarded process errors, unique DOM IDs, and every static JavaScript DOM hook.
+
+Run the no-network downloader option tests as well:
+
+```bash
+npm run test:unit
+```
+
+The Python Bilibili selector/probe tests use the project-local portable runtime when present, or another installed Python runtime:
+
+```bash
+npm run test:python
+```
 
 The comprehensive integration suite performs real network downloads and modifies runtime configuration:
 

@@ -8,7 +8,10 @@
     "start": "node server.js",
     "setup": "node setup.js",
     "test": "node tests/test_suite.js",
-    "test:contracts": "node tests/ui_contract_test.js && node tests/server_contract_test.js"
+    "test:contracts": "node tests/ui_contract_test.js && node tests/server_contract_test.js",
+    "test:unit": "node tests/download_acceleration_test.js",
+    "test:python": "node scripts/run-python-tests.js",
+    "benchmark:bilibili": "node scripts/benchmark-bilibili.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
