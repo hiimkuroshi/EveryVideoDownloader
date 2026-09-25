@@ -11,6 +11,7 @@
     "test:contracts": "node tests/ui_contract_test.js && node tests/server_contract_test.js",
     "test:unit": "node tests/download_acceleration_test.js",
     "test:python": "node scripts/run-python-tests.js",
+    "test:progress": "node tests/download_progress_test.js",
     "benchmark:bilibili": "node scripts/benchmark-bilibili.js"
   },
   "dependencies": {

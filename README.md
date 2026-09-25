@@ -54,7 +54,7 @@ EveryVideo launches Python, Windows Explorer, and the native folder picker as ch
 - HD thumbnail download with proxy fallback for protected image hosts.
 - Time-range downloads, output container selection, multi-fragment acceleration, and HTTP chunk controls.
 - Bilibili direct-stream acceleration with `Auto`, `Native`, and optional `aria2c` engines (4/8/16 connections).
-- Bilibili uses the benchmarked Tencent Overseas CDN candidate `upos-sz-mirrorcosov` by default in this workspace; `auto` and `fastest` remain available for A/B testing and rollback.
+- Bilibili uses Huawei Overseas `upos-sz-mirrorhwo1` by default in this workspace after a 656 MiB long-file benchmark showed `mirrorcosov` throttling to ~0.6 MiB/s after ~200 MiB while `mirrorhwo1` sustained multi-MiB/s throughput through completion; `auto`, `fastest`, and the other mirrors remain available for A/B testing and rollback.
 - Native Windows folder picker and verified Explorer launch feedback.
 - Vietnamese, English, Simplified Chinese, and Japanese UI.
 - Resilient multi-provider title translation.
@@ -132,7 +132,7 @@ The Bilibili settings separate three mechanisms that affect different download p
 
 EveryVideo also detects project-local portable binaries at `.runtime/aria2/aria2c.exe` and `.runtime/ffmpeg/ffmpeg.exe`. Otherwise, place `aria2c.exe` in `bin/`, set `EVERYVIDEO_ARIA2C`, or use a system `PATH` install. A missing aria2 binary is safe: `Auto` continues with native downloads, while explicit `aria2c` reports a clear SSE error. The UI exposes 4/8/16 connection profiles and disables native chunk size while aria2 is active.
 
-The `fastest` CDN option performs up to four small Range probes (2 MiB, 4-second timeout) against exact base/backup URLs returned by Bilibili. Probe failures fall back to the existing anti-P2P selection; signed URLs and query strings are not written to diagnostics.
+The `fastest` CDN option performs up to four small Range probes (2 MiB, 4-second timeout) against exact base/backup URLs returned by Bilibili. This is useful for short transfers, but a small probe cannot detect long-transfer token-bucket throttling; the local default therefore uses the long-file-tested `mirrorhwo1`. Probe failures fall back to the existing anti-P2P selection; signed URLs and query strings are not written to diagnostics.
 
 ## Verification
 

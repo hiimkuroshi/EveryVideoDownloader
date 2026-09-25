@@ -35,7 +35,7 @@ Trọng tâm hiện tại của dự án là **Bilibili**, đặc biệt là đ�
 | Tiến độ tải | Server-Sent Events (SSE) |
 | Hậu kỳ | FFmpeg để ghép, chuyển đổi, cắt và nhúng metadata/phụ đề |
 | Kiểm thử nhanh | Contract tests đang qua; xem [[07 - Testing]] |
-| Tăng tốc Bilibili | Default Auto + aria2 x8 + `upos-sz-mirrorcosov`; Native/aria2c và `fastest` vẫn có để A/B; benchmark ma trận BV1opg36pEPf đã lưu |
+| Tăng tốc Bilibili | Default Auto + aria2 x8 + `upos-sz-mirrorhwo1`; Native/aria2c và `fastest` vẫn có để A/B; benchmark file dài 656 MiB ngày 2026-09-20 cho thấy `mirrorcosov` throttle sau ~200 MiB |
 
 > [!warning] Phạm vi kiểm chứng
 > Việc đọc mã và chạy contract tests không chứng minh tải Bilibili ngoài mạng đang hoạt động. Các tuyên bố về tốc độ CDN trong tài liệu release cũ cần được xem là lịch sử cho tới khi có benchmark tái lập.

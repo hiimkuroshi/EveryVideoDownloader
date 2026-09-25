@@ -187,9 +187,15 @@ class BilibiliBaseIE(InfoExtractor):
 
         candidates = self._stream_candidates(media_dict)
 
-        # 1. Custom explicit UPOS host overrides all
+        # 1. Custom explicit UPOS host overrides all. Prefer an exact URL
+        # returned by Bilibili for that host so CDN-specific query/signature
+        # parameters are preserved. Only rewrite the base URL when Bilibili
+        # did not return the requested host as a candidate.
         if custom_upos_host and custom_upos_host not in ('auto', 'default', 'none', 'allow_p2p'):
-            return self._replace_upos_host(base_url, custom_upos_host)
+            exact_url = next((candidate for candidate in candidates
+                              if self._candidate_host(candidate) == custom_upos_host
+                              and (not avoid_p2p or not self._is_p2p_host(candidate))), None)
+            return exact_url or self._replace_upos_host(base_url, custom_upos_host)
 
         preferred_host = getattr(self, '_bili_fastest_host', '')
         if preferred_host:

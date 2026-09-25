@@ -19,11 +19,12 @@ class FakeResponse(io.BytesIO):
 
 
 class BilibiliSpeedTests(unittest.TestCase):
-    def make_ie(self, strategy='auto', avoid_p2p='true'):
+    def make_ie(self, strategy='auto', avoid_p2p='true', upos_host=None):
         ie = BilibiliBaseIE.__new__(BilibiliBaseIE)
         ie._get_extractor_arg = lambda key, default=None: {
             'cdn_strategy': strategy,
             'avoid_p2p': avoid_p2p,
+            'upos_host': upos_host,
         }.get(key, default)
         ie.to_screen = lambda *_args, **_kwargs: None
         return ie
@@ -52,6 +53,26 @@ class BilibiliSpeedTests(unittest.TestCase):
         }
         ie._bili_fastest_host = 'fast.example'
         self.assertEqual(ie._optimize_stream_url(media), 'https://fast.example/video.m4s')
+
+    def test_manual_upos_prefers_exact_returned_candidate(self):
+        ie = self.make_ie(upos_host='cdn.example')
+        media = {
+            'baseUrl': 'https://origin.example/video.m4s?os=origin&token=base',
+            'backupUrl': ['https://cdn.example/video.m4s?os=cdn&token=signed'],
+        }
+        self.assertEqual(
+            ie._optimize_stream_url(media),
+            'https://cdn.example/video.m4s?os=cdn&token=signed')
+
+    def test_manual_upos_rewrites_only_when_exact_candidate_missing(self):
+        ie = self.make_ie(upos_host='cdn.example')
+        media = {
+            'baseUrl': 'http://origin.example/video.m4s?token=base',
+            'backupUrl': ['https://other.example/video.m4s?token=other'],
+        }
+        self.assertEqual(
+            ie._optimize_stream_url(media),
+            'https://cdn.example/video.m4s?token=base')
 
     def test_probe_accepts_partial_content_and_closes_response(self):
         ie = self.make_ie()

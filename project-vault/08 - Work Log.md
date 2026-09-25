@@ -8,10 +8,36 @@ tags:
 type: reference
 status: active
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-09-25
 ---
 
 # Work Log
+
+## 2026-09-25 — Sửa thanh loading khi tải bằng aria2
+
+- Tái hiện lỗi: aria2 phát progress dạng `[#... 25% ...]` qua `stdout` với `\r`, còn frontend chỉ parse dòng yt-dlp `[download] ...%`, nên thanh loading đứng yên trong lúc file vẫn tải.
+- Thêm `lib/download-progress.js` để buffer dữ liệu theo chunk, chuẩn hóa CR/LF và parse aria2 progress; backend gửi SSE `progress`, frontend cập nhật phần trăm, tốc độ, ETA và dung lượng.
+- Thêm `tests/download_progress_test.js` và script `npm run test:progress`.
+- Verification pass: syntax checks, progress test, UI/server contracts và download acceleration unit test.
+
+## 2026-09-20 — Tái hiện throttle ~200 MiB và đổi default sang Huawei Overseas
+
+- Tái hiện đúng triệu chứng trên `BV1D2hPzxEWe`, format `30080`, tổng khoảng 656 MiB: `mirrorcosov + aria2 x8` chạy ~59–77 MiB/s lúc đầu, còn ~72 MiB/s ở 203 MiB rồi rơi dần xuống ~600 KiB/s tại 209 MiB; `CN:8` vẫn giữ, nên không phải aria2 mất connection hay bottleneck disk/CPU.
+- `--lowest-speed-limit=256K` không sửa được: aria2 đóng dần connection `CN:8 → 1` rồi lỗi code 5. Restart cùng CDN chỉ tạo burst ngắn rồi lại về ~0.6–0.9 MiB/s. Đổi sang Akamai cũng không phục hồi bền vững.
+- Resume cùng file bằng `upos-sz-mirrorhwo1.bilivideo.com` phục hồi rõ: từ phần file >347 MiB tăng lên 8.5–29 MiB/s và hoàn tất stream 656 MiB. Đây là bằng chứng local cho throttling/token bucket theo CDN/edge và là lý do đổi default local sang `mirrorhwo1`.
+- Runtime/UI/server fallback được đổi thành `Auto + aria2 x8 + mirrorhwo1`, Anti-P2P bật; `fastest`, `mirrorcosov`, `mirroraliov`, Akamai và các lựa chọn khác vẫn giữ để rollback/A-B.
+- Phát hiện `/api/cancel-download` trên Windows có thể kill Python nhưng để aria2 child chạy ngầm; sửa route dùng `taskkill /t /f` theo PID để dừng toàn process tree. Ba aria2 orphan từ probe đã được dừng trước khi benchmark tiếp.
+- Smoke sau restart: `mirrorhwo1 + aria2 x8` từ đầu stream vẫn đạt ~23 MiB/s ở 247 MiB; gọi `/api/cancel-download` kết thúc SSE và không còn process `aria2c`, xác nhận cả default CDN mới lẫn process-tree cancel hoạt động.
+
+## 2026-09-20 — Chẩn đoán Bilibili chậm và sửa URL CDN thủ công
+
+- Xác nhận runtime khi báo chậm: `fastest + aria2c x8`, aria2 1.37.0 sẵn sàng. Live benchmark `aria2 x8 + auto CDN` ~0.653 MiB/s rồi code 29; x4 ~0.658 MiB/s và cùng lỗi.
+- Cùng video/format, `fastest + aria2 x8` pass FFprobe ở 36.16 MiB/s video / 12.12 MiB/s audio và chọn `mirrorcosov`; manual `mirrorcosov` trước sửa chỉ 4.43 MiB/s video.
+- Tìm thấy manual UPOS đang rewrite hostname của base URL. Sửa extractor để ưu tiên exact base/backup candidate cùng host, chỉ rewrite khi Bilibili không trả candidate đó; thêm 2 unit test regression.
+- Benchmark hậu sửa: `mirrorcosov + aria2 x8` trên cùng video/format đạt `31.77 MiB/s` và pass, tăng mạnh so với `4.43 MiB/s` trước sửa.
+- Nới regex diagnostic CDN để nhận log có prefix và vẫn chỉ phát host, không phát signed URL.
+- Đổi persistent engine từ explicit `aria2c` sang `auto` để có fallback native khi aria2 lỗi; giữ CDN `fastest` theo benchmark live hiện tại.
+- Verification: Python Bilibili tests 11/11 pass; UI/server contracts pass; `node --check server.js` và `git diff --check` pass. Resolver manual `mirrorcosov` sau sửa trả `os=cosovbv` cho video/audio.
 
 ## 2026-09-09 — Benchmark ma trận và cập nhật default
 

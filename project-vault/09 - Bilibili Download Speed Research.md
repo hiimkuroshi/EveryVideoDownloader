@@ -194,7 +194,7 @@ Mỗi run phải phân tích lại để lấy signed URL còn hạn. Để prob
 - Chọn profile có median throughput cao nhất nhưng không tăng đáng kể lỗi/fallback.
 - Nếu x8 chỉ hơn x4 dưới 10%, ưu tiên x4 để giảm tải CDN.
 - Nếu aria2 không hơn native trên ít nhất 3 video/2 thời điểm, không bật mặc định; chuyển trọng tâm sang CDN/route.
-- Nếu một host nhanh không ổn định, dùng nó như candidate có TTL ngắn, không hard-code thành mặc định toàn cầu. Riêng benchmark BV1opg36pEPf cho thấy `mirrorcosov` pass 3/3 và median cao nhất trong các candidate đã pass; default local đã đổi sang host này và vẫn cho phép rollback về `auto`.
+- Nếu một host nhanh không ổn định, dùng nó như candidate có TTL ngắn, không hard-code thành mặc định toàn cầu. Benchmark ngắn BV1opg36pEPf từng chọn `mirrorcosov`, nhưng benchmark file dài ngày 2026-09-20 chứng minh host này có thể throttle mạnh sau ~200 MiB; default local hiện dùng `mirrorhwo1` và vẫn cho phép rollback/A-B.
 
 ## 6. Lộ trình triển khai đề xuất
 
@@ -205,7 +205,7 @@ Mỗi run phải phân tích lại để lấy signed URL còn hạn. Để prob
 3. Thêm downloader mode `Native / aria2 / Auto` và “connections per file” 4/8/16.
 4. Dùng aria2 chỉ cho HTTP(S) direct; manifest giữ native.
 5. Khi aria2 bật, bỏ `--http-chunk-size`; implementation hiện fallback một lần aria2 → native trong Auto, chưa tự hạ profile 16 → 8 → 4.
-6. Đã chạy ma trận một video và lặp ứng viên; default local tạm chọn `mirrorcosov`, vẫn cần đa video trước khi phát hành cứng.
+6. Đã chạy ma trận ngắn và benchmark file dài; default local hiện chọn `mirrorhwo1` vì ổn định hơn sau mốc 200 MiB. Vẫn cần đa video/đa thời điểm trước khi coi đây là kết luận toàn mạng.
 
 ### P1 — CDN benchmark tự động
 
@@ -222,6 +222,26 @@ Chỉ làm khi P0/P1 cho thấy lợi ích đủ lớn nhưng wrapper aria2 khô
 
 > [!decision] Đề xuất
 > Không tăng `concurrent_fragments` hoặc `http_chunk_size` thêm nữa. Thử nghiệm tiếp theo nên là aria2 multi-range trên URL `.m4s` direct và benchmark base/backup CDN. Chưa nên thay yt-dlp bằng một downloader Bilibili khác vì các dự án nổi bật đã archive/dừng bảo trì hoặc chưa hoàn thiện multi-thread; giá trị chính của chúng là pattern kiến trúc.
+
+## 8. Tái kiểm tra 2026-09-20 — CDN/Range regression
+
+- Runtime lúc người dùng báo chậm đang là `fastest + aria2c x8`; `aria2c` portable 1.37.0 và FFmpeg đều được nhận diện.
+- Cùng video đối chứng `BV1opg36pEPf`, format `30080+30280`, `aria2 x8 + auto CDN` chỉ đạt khoảng `0.653 MiB/s` rồi lỗi `aria2c exited with code 29`; hạ xuống x4 vẫn khoảng `0.658 MiB/s` và cùng lỗi. Điều này cho thấy số connection 4/8 không phải nguyên nhân chính của regression.
+- `fastest + aria2 x8` ở cùng thời điểm pass FFprobe với video `36.16 MiB/s`, audio `12.12 MiB/s`, và resolver chọn `upos-sz-mirrorcosov.bilivideo.com`. Ép manual `mirrorcosov` trước bản sửa chỉ đạt video `4.43 MiB/s` dù cùng hostname.
+- Root cause cục bộ được tìm thấy trong `_optimize_stream_url()`: manual UPOS luôn rewrite hostname của `baseUrl`, làm mất URL exact do Bilibili cung cấp cho CDN đó và có thể giữ query/signature thuộc route khác. Đã sửa thành ưu tiên exact candidate cùng host, chỉ rewrite khi candidate không tồn tại.
+- Resolver sau sửa xác nhận manual `mirrorcosov` trả host `upos-sz-mirrorcosov.bilivideo.com` với tham số CDN `os=cosovbv` cho cả video/audio. Unit test khóa cả nhánh exact-candidate và fallback rewrite.
+- Benchmark hậu sửa trên cùng `BV1opg36pEPf`, format `30080+30280`: manual `mirrorcosov + aria2 x8` pass FFprobe ở `31.77 MiB/s`, so với `4.43 MiB/s` trước sửa. Kết quả này xác nhận việc giữ exact candidate URL/signature là nguyên nhân trực tiếp của regression manual CDN trong ca kiểm thử này.
+- Engine persistent đổi từ explicit `aria2c` sang `auto`: vẫn dùng aria2 khi khả dụng nhưng có native fallback khi external downloader lỗi. CDN vẫn giữ `fastest` vì live benchmark tại thời điểm kiểm tra cho throughput tốt nhất trên video đối chứng; không hard-code một CDN toàn cục từ một mẫu.
+- Báo cáo upstream cũng phù hợp với kết luận route/CDN: issue yt-dlp #14498 từ Việt Nam mô tả default Bilibili CDN chậm dù dùng aria2 nhiều connection, và issue #13316/#17465 ghi nhận tụt tốc/timeout/SSL EOF trên Bilibili. Vì vậy cần xem CDN/route và tính ổn định HTTP Range là biến động runtime, không chỉ là vấn đề downloader local.
+
+## 9. Tái hiện long-transfer throttle 2026-09-20
+
+- Video kiểm tra: `BV1D2hPzxEWe`, format `30080`, stream khoảng 656 MiB. `mirrorcosov + aria2 x8` đạt 59–77 MiB/s lúc đầu và vẫn 72 MiB/s ở 203 MiB, sau đó tụt nhanh xuống khoảng 600 KiB/s ở 209 MiB trong khi aria2 vẫn báo `CN:8`.
+- Pattern này phù hợp token-bucket/throttling phía CDN hơn là giới hạn client: disk/CPU không đổi, connection count không giảm trước khi throttle, và restart cùng host chỉ khôi phục burst ngắn.
+- `--lowest-speed-limit=256K --max-tries=0` làm connection bị đóng dần và kết thúc bằng aria2 code 5; không dùng làm fix mặc định.
+- Chuyển sang Akamai trên cùng partial file chỉ đạt khoảng 1–2 MiB/s rồi lại giảm. Chuyển sang `upos-sz-mirrorhwo1.bilivideo.com` trên cùng partial file phục hồi 8.5–29 MiB/s và hoàn tất phần còn lại đến 656 MiB.
+- Smoke độc lập sau restart tải `mirrorhwo1` từ byte 0 và vẫn đạt khoảng 23 MiB/s ở 247 MiB, vượt ngưỡng throttle của `mirrorcosov`; đây là kiểm tra bổ sung rằng lợi ích không chỉ đến từ resume state.
+- Kết luận local: small 2 MiB probe của `fastest` có thể chọn host có burst rất cao nhưng long-transfer kém. Với mạng hiện tại, ưu tiên `mirrorhwo1` cho tải dài; giữ các host khác cho A/B vì xếp hạng CDN vẫn phụ thuộc ISP/thời điểm.
 
 ## Kế hoạch phát triển
 

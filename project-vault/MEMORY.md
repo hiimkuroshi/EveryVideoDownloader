@@ -8,7 +8,7 @@ tags:
 type: project
 status: active
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-09-20
 ---
 
 # Memory Index
@@ -19,7 +19,7 @@ updated: 2026-09-09
 - [project] Trọng tâm hiện tại là tải video Bilibili ổn định và đúng chất lượng → [[03 - Bilibili Download Flow]]
 - [project] Frontend thuần → Express → Python `yt_dlp` vendored → downloader/FFmpeg → [[02 - Architecture]]
 - [project] Nhánh baseline `nhanh-2`; lõi vendored báo phiên bản `2026.07.04` → [[01 - Project Overview]]
-- [project] Kế hoạch tối ưu tốc độ Bilibili nằm tại project root: `bilibili-speed-optimization-plan.md`; default mới theo benchmark là Auto + aria2 x8 + Tencent Overseas `upos-sz-mirrorcosov`, còn `fastest` vẫn opt-in
+- [project] Kế hoạch tối ưu tốc độ Bilibili nằm tại project root: `bilibili-speed-optimization-plan.md`; default local hiện là Auto + aria2 x8 + Huawei Overseas `upos-sz-mirrorhwo1` sau benchmark file 656 MiB ngày 2026-09-20; `fastest` vẫn có để A/B
 
 ## Conventions
 
@@ -29,11 +29,12 @@ updated: 2026-09-09
 
 ## Bilibili
 
-- [reference] Anti-P2P và Geo Bypass mặc định bật; default UPOS hiện là `upos-sz-mirrorcosov.bilivideo.com` theo benchmark BV1opg36pEPf, có thể đổi về auto để thích nghi CDN → [[03 - Bilibili Download Flow]]
+- [reference] Anti-P2P và Geo Bypass mặc định bật; default UPOS hiện là `upos-sz-mirrorhwo1.bilivideo.com` vì `mirrorcosov` tái hiện throttle ~0.6 MiB/s sau ~200 MiB trên file 656 MiB, còn `mirrorhwo1` hoàn tất phần còn lại ở ~12–29 MiB/s → [[09 - Bilibili Download Speed Research]]
 - [reference] Cookie lấy từ trình duyệt, fallback `cookies.txt`; `SESSDATA` quyết định trạng thái đăng nhập → [[03 - Bilibili Download Flow]]
 - [reference] Bước phân tích và bước tải phải nhận cùng cấu hình Bilibili → [[03 - Bilibili Download Flow]]
 - [research] `-N` chỉ tăng tốc fragment; Bilibili VOD `.m4s` direct cần multi-range như aria2 để có nhiều kết nối/file → [[09 - Bilibili Download Speed Research]]
 - [research] Không hard-code một UPOS toàn cầu; benchmark base/backup URL bằng Range throughput và cache ngắn → [[09 - Bilibili Download Speed Research]]
+- [research] Small Range probe có thể bỏ sót long-transfer throttling/token bucket; cần benchmark đủ dài khi chọn default CDN cho file lớn → [[09 - Bilibili Download Speed Research]]
 - [project] Ưu tiên P0: telemetry đúng đơn vị + aria2 HTTP(S) tùy chọn + fallback native; runtime portable cục bộ đã được cài trong `.runtime/` và tự động được resolver nhận diện → [[09 - Bilibili Download Speed Research]]
 
 ## Verification

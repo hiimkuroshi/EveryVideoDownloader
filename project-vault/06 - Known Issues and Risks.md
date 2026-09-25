@@ -89,10 +89,10 @@ related:
 ## PERF-002 — Hard-pin UPOS có thể chọn route chậm
 
 - **Mức:** cao
-- **Trạng thái:** đã benchmark một video; default local tạm chọn `mirrorcosov`, cần benchmark đa video
+- **Trạng thái:** đã benchmark ngắn và một stream dài 656 MiB; default local hiện chọn `mirrorhwo1`, vẫn cần benchmark đa video/đa thời điểm
 - **Quan sát:** Khi có `upos_host`, extractor rewrite base URL và return ngay; không đo base/backup URL và không giữ mirror cho fallback.
 - **Rủi ro:** Một host được gắn nhãn nhanh có thể chậm hoặc lỗi với ISP/vùng hiện tại.
-- **Hướng xử lý:** Range probe tối đa bốn candidate exact, 2 MiB/4 giây, chọn host nhanh nhất trong danh sách Bilibili trả về và fallback auto khi probe lỗi. Với video đã test, `mirrorcosov` pass 3/3 và nhanh nhất theo median; không coi đó là tối ưu toàn cầu, cần ma trận đa video. Chi tiết tại [[09 - Bilibili Download Speed Research]].
+- **Hướng xử lý:** Range probe ngắn vẫn hữu ích cho lỗi route tức thời nhưng không phát hiện token-bucket sau hàng trăm MiB. Benchmark dài 2026-09-20 cho thấy `mirrorcosov` có thể tụt ~0.6 MiB/s sau ~200 MiB, trong khi `mirrorhwo1` resume và hoàn tất ở multi-MiB/s; dùng `mirrorhwo1` làm default local và tiếp tục ma trận đa video. Chi tiết tại [[09 - Bilibili Download Speed Research]].
 
 ## PERF-003 — Chưa đủ benchmark đa video để kết luận lợi ích toàn mạng
 
