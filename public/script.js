@@ -522,7 +522,7 @@ $('checkBtn').addEventListener('click', async () => {
 
         // Bilibili Anti-P2P CDN & UPOS Server selection
         const biliAvoidP2p = $('bilibiliAvoidP2p')?.checked ?? true;
-        const biliUposHost = val('bilibiliUposHost') || 'upos-sz-mirrorcosov.bilivideo.com';
+        const biliUposHost = val('bilibiliUposHost') || 'upos-sz-mirrorhwo1.bilivideo.com';
         qp.append('bilibili_avoid_p2p', biliAvoidP2p ? 'true' : 'false');
         if (biliUposHost !== 'auto' && biliUposHost !== 'default') {
             qp.append('bilibili_upos_host', biliUposHost);
@@ -1728,7 +1728,7 @@ function startDirectDownload(customParams = null) {
                     size: item.size,
                     downloadEngine: val('bilibiliDownloadEngine') || 'auto',
                     aria2Connections: val('bilibiliAria2Connections') || '8',
-                    uposHost: val('bilibiliUposHost') || 'upos-sz-mirrorcosov.bilivideo.com',
+                    uposHost: val('bilibiliUposHost') || 'upos-sz-mirrorhwo1.bilivideo.com',
                     avoidP2p: $('bilibiliAvoidP2p')?.checked !== false,
                 });
                 addedCount++;
@@ -1795,7 +1795,7 @@ function startDirectDownload(customParams = null) {
         merge_output_format:  val('quickMergeFormat') || val('mergeOutputFormat') || 'mkv',
         custom_filename:      val('customFileNameInput')?.trim() || '',
         bilibili_avoid_p2p:   $('bilibiliAvoidP2p')?.checked ? 'true' : 'false',
-        bilibili_upos_host:    val('bilibiliUposHost') || 'upos-sz-mirrorcosov.bilivideo.com',
+        bilibili_upos_host:    val('bilibiliUposHost') || 'upos-sz-mirrorhwo1.bilivideo.com',
         bilibili_download_engine: val('bilibiliDownloadEngine') || 'auto',
         bilibili_aria2_connections: val('bilibiliAria2Connections') || '8',
         download_sections:    (customParams?.download_sections !== undefined) ? customParams.download_sections : getTimeRangeSection(),
@@ -1869,6 +1869,20 @@ function startDirectDownload(customParams = null) {
         }
         if (data.diagnostic === 'cdn') {
             appendLog(`[CDN] ${data.host}`);
+            return;
+        }
+
+        if (data.progress) {
+            const progress = data.progress;
+            const pct = Number(progress.percent);
+            if (Number.isFinite(pct)) {
+                bar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+                percentCounter.textContent = `${pct.toFixed(1)}%`;
+                statusText.textContent = `Đang tải: ${pct.toFixed(1)}%`;
+            }
+            if (progress.speed) $('metricSpeed').textContent = `⚡ Tốc độ: ${progress.speed}`;
+            if (progress.eta) $('metricEta').textContent = `⏱️ Còn lại: ${progress.eta}`;
+            if (progress.size) $('metricSize').textContent = `📦 Đã tải: ${progress.size}`;
             return;
         }
 
@@ -2072,7 +2086,7 @@ $('addSelectedToQueueBtn')?.addEventListener('click', () => {
                 size: item.size,
                 downloadEngine: val('bilibiliDownloadEngine') || 'auto',
                 aria2Connections: val('bilibiliAria2Connections') || '8',
-                    uposHost: val('bilibiliUposHost') || 'upos-sz-mirrorcosov.bilivideo.com',
+                    uposHost: val('bilibiliUposHost') || 'upos-sz-mirrorhwo1.bilivideo.com',
                 avoidP2p: $('bilibiliAvoidP2p')?.checked !== false,
             });
             addedCount++;
@@ -2214,7 +2228,7 @@ async function processNextQueueItem() {
         download_sections: nextItem.downloadSections || '',
         bilibili_download_engine: nextItem.downloadEngine || 'auto',
         bilibili_aria2_connections: nextItem.aria2Connections || '8',
-        bilibili_upos_host: nextItem.uposHost || 'upos-sz-mirrorcosov.bilivideo.com',
+        bilibili_upos_host: nextItem.uposHost || 'upos-sz-mirrorhwo1.bilivideo.com',
         bilibili_avoid_p2p: nextItem.avoidP2p === false ? 'false' : 'true'
     });
 

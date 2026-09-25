@@ -59,7 +59,7 @@ Frontend gửi các tùy chọn Bilibili ở cả `/api/info` và `/api/download
 `BilibiliBaseIE._optimize_stream_url()` được áp dụng cho DASH audio, DASH video và legacy fragments:
 
 1. Đọc, chuẩn hóa và deduplicate base URL cùng backup URL.
-2. Nếu có UPOS host cụ thể, rewrite base URL sang HTTPS và hostname đó.
+2. Nếu có UPOS host cụ thể, ưu tiên URL exact trong base/backup list có đúng hostname đó để giữ nguyên query/signature CDN; chỉ rewrite base URL sang hostname yêu cầu khi Bilibili không trả candidate tương ứng.
 3. Nếu `cdn_strategy=fastest`, probe tối đa bốn candidate bằng Range 2 MiB/timeout 4 giây một lần cho `play_info`, sau đó chọn exact URL có host nhanh nhất còn hợp lệ.
 4. Nếu anti-P2P bật và base host bị coi là P2P:
    - Chọn backup URL đầu tiên không bị coi là P2P; hoặc

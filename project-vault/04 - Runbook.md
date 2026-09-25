@@ -81,7 +81,7 @@ Xem phạm vi và giới hạn tại [[07 - Testing]].
 
 ### Timeout hoặc tốc độ thấp
 
-- Bắt đầu với Anti-P2P và Geo Bypass bật, cùng UPOS `upos-sz-mirrorcosov.bilivideo.com` (default theo benchmark hiện tại); đổi sang `auto` nếu video/route khác chậm.
+- Bắt đầu với Anti-P2P và Geo Bypass bật, cùng UPOS `upos-sz-mirrorhwo1.bilivideo.com` (default local sau benchmark file dài 656 MiB); đổi sang `fastest`/`auto` hoặc mirror khác nếu route hiện tại thay đổi.
 - Nếu Bilibili trả HTTP 412, kiểm tra server đang chạy bản có Bilibili-only `Referer`/User-Agent; không coi 412 là bằng chứng downloader chậm.
 - Phân biệt `--concurrent-fragments` (fragment DASH/HLS), `--http-chunk-size` (Range tuần tự) và `aria2c` connections (Range song song cho direct `.m4s`).
 - Kiểm tra `/api/config` hoặc setup output để biết `hasAria2c` và `hasLocalFfmpeg`; thiếu aria2 ở `Auto` là hành vi fallback bình thường.

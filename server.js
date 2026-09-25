@@ -14,6 +14,7 @@ const {
   normalizeEngine,
   resolveAria2Command,
 } = require('./lib/download-acceleration');
+const { createProcessLineParser, parseAria2Progress } = require('./lib/download-progress');
 
 // Protect process from unexpected crashes
 process.on('uncaughtException', (err) => {
@@ -137,7 +138,7 @@ function loadPersistentConfig() {
         return {
           downloadFolder: DOWNLOADS_DIR,
           bilibiliAvoidP2p: true,
-          bilibiliUposHost: 'upos-sz-mirrorcosov.bilivideo.com',
+          bilibiliUposHost: 'upos-sz-mirrorhwo1.bilivideo.com',
           bilibiliDownloadEngine: 'auto',
           bilibiliAria2Connections: 8,
           ...parsed,
@@ -150,7 +151,7 @@ function loadPersistentConfig() {
   return {
     downloadFolder: DOWNLOADS_DIR,
     bilibiliAvoidP2p: true,
-    bilibiliUposHost: 'upos-sz-mirrorcosov.bilivideo.com',
+    bilibiliUposHost: 'upos-sz-mirrorhwo1.bilivideo.com',
     bilibiliDownloadEngine: 'auto',
     bilibiliAria2Connections: 8,
   };
@@ -1050,10 +1051,18 @@ app.get('/api/cancel-download', (req, res) => {
 
   const task = activeDownloads.get(downloadId);
   if (task) {
-    if (typeof task.kill === 'function' && !task.killed) {
-      task.kill('SIGTERM');
-    } else if (typeof task.abort === 'function') {
+    if (typeof task.abort === 'function') {
       task.abort();
+    } else if (process.platform === 'win32' && task.pid) {
+      const killer = spawn('taskkill', ['/pid', String(task.pid), '/t', '/f'], {
+        windowsHide: true,
+        stdio: 'ignore',
+      });
+      killer.once('error', () => {
+        if (typeof task.kill === 'function' && !task.killed) task.kill('SIGTERM');
+      });
+    } else if (typeof task.kill === 'function' && !task.killed) {
+      task.kill('SIGTERM');
     }
     activeDownloads.delete(downloadId);
     console.log(`[/api/cancel-download] Cancelled download task ${downloadId}`);
@@ -1683,7 +1692,14 @@ app.get('/api/download', async (req, res) => {
 
     activeDownloads.set(downloadId, currentChild);
     const sendProcessLine = (line, channel = 'output') => {
-      const cdnMatch = line.match(/^\[Bilibili\] CDN fastest host:\s*([a-z0-9.:-]+)$/i);
+      if (channel === 'output') {
+        const progress = parseAria2Progress(line);
+        if (progress) {
+          sendEvent({ downloadId, progress });
+          return;
+        }
+      }
+      const cdnMatch = line.match(/\[Bilibili\] CDN fastest host:\s*([a-z0-9.:-]+)/i);
       if (cdnMatch) {
         sendEvent({ downloadId, diagnostic: 'cdn', host: cdnMatch[1].toLowerCase() });
       }
@@ -1694,20 +1710,20 @@ app.get('/api/download', async (req, res) => {
       stderrBuffer += ` ${message}`;
       sendEvent({ downloadId, error: message });
     });
-    currentChild.stdout.on('data', (data) => {
-      for (const line of data.toString().split(/\r?\n/).filter(Boolean)) {
-        sendProcessLine(line);
-      }
+    const stdoutLines = createProcessLineParser(line => sendProcessLine(line));
+    const stderrLines = createProcessLineParser(line => {
+      const isFfmpegProgress = /frame=\s*\d+|size=\s*\d+|time=\s*\d+|bitrate=\s*|speed=\s*|Opening |Metadata:|Stream #|Output #|encoder\s*:/i.test(line)
+        || /^\[Bilibili\]/i.test(line);
+      sendProcessLine(line, isFfmpegProgress ? 'output' : 'error');
     });
+    currentChild.stdout.on('data', data => stdoutLines.write(data));
+    currentChild.stdout.on('end', () => stdoutLines.flush());
     currentChild.stderr.on('data', (data) => {
       const text = data.toString();
       stderrBuffer = `${stderrBuffer} ${text}`.slice(-16000);
-      for (const line of text.split(/\r?\n/).filter(Boolean)) {
-        const isFfmpegProgress = /frame=\s*\d+|size=\s*\d+|time=\s*\d+|bitrate=\s*|speed=\s*|Opening |Metadata:|Stream #|Output #|encoder\s*:/i.test(line)
-          || /^\[Bilibili\]/i.test(line);
-        sendProcessLine(line, isFfmpegProgress ? 'output' : 'error');
-      }
+      stderrLines.write(data);
     });
+    currentChild.stderr.on('end', () => stderrLines.flush());
     currentChild.on('close', (code) => {
       if (cancelled || completed) return;
       if (shouldFallback(code, stderrBuffer)) {

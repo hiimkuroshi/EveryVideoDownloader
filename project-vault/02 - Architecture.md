@@ -16,6 +16,10 @@ related:
 
 # Architecture
 
+## Cập nhật tiến độ tải
+
+Backend giữ parser stream riêng cho stdout/stderr của tiến trình tải. Parser xử lý dữ liệu bị chia giữa các chunk và cả ký tự `\r` mà aria2 dùng để cập nhật cùng một dòng; tiến độ aria2 được chuyển thành SSE `progress` với phần trăm, dung lượng, tốc độ và ETA để frontend cập nhật thanh loading.
+
 ## Sơ đồ hệ thống
 
 ```mermaid

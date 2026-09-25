@@ -9,13 +9,22 @@ tags:
 type: reference
 status: active
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-09-25
 related:
   - "[[03 - Bilibili Download Flow]]"
   - "[[06 - Known Issues and Risks]]"
 ---
 
 # Testing
+
+## Verification ngày 2026-09-25 — Thanh loading aria2
+
+- Tái hiện bằng `aria2c 1.37.0`: tiến độ phát qua `stdout` với ký tự `\r` và mẫu `[#... 25% ...]`, nên parser cũ chờ `[download] ...%` không cập nhật thanh loading.
+- Thêm parser stream có buffer cho dữ liệu bị chia giữa các chunk, chuẩn hóa CR/LF, nhận diện tiến độ aria2 và gửi sự kiện SSE `progress` cho frontend.
+- `npm run test:progress`: **pass** — kiểm tra chunked CR/LF và aria2 percent/speed/ETA/size.
+- `node --check server.js`, `node --check lib/download-progress.js`, `node --check public/script.js`: **pass**.
+- `npm run test:contracts`: **pass** — UI 151 ID/115 hook; server 11 route.
+- `npm run test:unit`: **pass** — download acceleration.
 
 ## Baseline và verification ngày 2026-09-09
 
@@ -32,13 +41,15 @@ Kết quả:
 - `npm run test:unit`: **pass** — option builder kiểm tra Auto/Native/aria2, whitelist connections, URL ngoài Bilibili và missing executable.
 - `node --check` cho `server.js`, `setup.js`, `public/script.js`, `public/i18n.js`: **pass**.
 - `npm run test:python`: **pass 9/9** — wrapper tự chọn Python portable tại `.runtime/python/python.exe` và đặt `PYTHONPATH=core`.
-- Smoke local `/api/config`: **pass** — capability trả `hasAria2c=true`, `hasLocalFfmpeg=true`, engine mặc định `auto`, connections mặc định `8`, UPOS default `mirrorcosov`; UI mặc định bật Anti-P2P và Geo Bypass.
+- Smoke local `/api/config`: **pass** — capability trả `hasAria2c=true`, `hasLocalFfmpeg=true`, engine mặc định `auto`, connections mặc định `8`; từ 2026-09-20 UPOS default local là `mirrorhwo1`; UI mặc định bật Anti-P2P và Geo Bypass.
 - Smoke tải Bilibili thật trước đó: **pass** — format `100109`, engine explicit `aria2c`, 4 connections, file mẫu 15.74 MiB hoàn tất trong khoảng 1 giây, tốc độ hiển thị 12.11 MiB/s; không ghi signed URL vào log/vault.
 - End-to-end URL `BV1opg36pEPf`: **pass** — sau khi thêm Bilibili-only `Referer`/User-Agent, analyze trả 15 formats; `auto + aria2 x8` tải `30080+30280`, video hiển thị 24.29 MiB/s, audio 8.02 MiB/s; FFprobe xác nhận 240.746667 giây, H.264 1920×822 và AAC stereo. Lượt `fastest` cùng format đạt 12.15 MiB/s và chọn host `upos-sz-mirrorcosov.bilivideo.com`.
 - Native mirroraliov đối chứng không kết luận được vì upstream trả HTTP 412 sau nhiều lượt liên tiếp; không dùng lượt lỗi này làm baseline.
 - Benchmark ma trận tự động: **21 option case**, 11 pass ở vòng đầu; lặp 7 ứng viên đầu bảng thêm 2 vòng. Nhóm ổn định 3/3: `mirrorcosov` median 28.35 MiB/s (nhanh nhất), Akamai median 26.65 MiB/s, aria2 x8 + auto median 25.19 MiB/s, aria2 x16 + auto median 24.86 MiB/s. Native đạt tối đa 0.316 MiB/s với chunk 100M nhưng chỉ có một lượt pass; các case HTTP 412 được ghi là upstream rate-limit.
 - `ffmpeg`/`ffprobe`: **pass** — runtime portable 9.0.1 được nhận diện qua `/api/config`; synthetic MP4 smoke xác nhận duration 1 giây, H.264 video 320×180 và AAC audio. Chưa dùng kết quả này thay cho FFprobe trên file Bilibili benchmark.
 - Chưa chạy ma trận benchmark 3 video × 3 lần; benchmark hiện tại chỉ trên một video nên default `mirrorcosov` là quyết định cục bộ/tạm thời, chưa phải kết luận tối ưu toàn mạng.
+- Long-file probe 2026-09-20 trên `BV1D2hPzxEWe`/`30080` (~656 MiB): `mirrorcosov` rơi từ ~72 MiB/s ở 203 MiB xuống ~600 KiB/s ở 209 MiB với `CN:8`; `mirrorhwo1` resume phần >347 MiB và hoàn tất ở khoảng 8.5–29 MiB/s. Kết quả này thay default local nhưng chưa thay gate đa video/đa thời điểm.
+- Smoke server sau restart: `mirrorhwo1 + aria2 x8` đạt ~23 MiB/s tại 247 MiB tính từ đầu stream; cancel tree test kết thúc download và `Get-Process aria2c` không còn process, xác nhận `/api/cancel-download` dừng cả external downloader child.
 
 ## Các tầng kiểm thử
 

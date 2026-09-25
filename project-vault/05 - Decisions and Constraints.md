@@ -59,7 +59,7 @@ related:
 
 - **Trạng thái:** accepted cho default local theo benchmark một video; cần benchmark đa video trước khi phát hành rộng
 - **Lý do:** Host nhanh phụ thuộc ISP/thời điểm; rewrite mù có thể làm signed URL 403/404.
-- **Hệ quả:** Probe tối đa bốn base/backup URL Bilibili trả về, chọn host nhanh nhất trong candidate list; lỗi probe quay về auto anti-P2P và không log query token. Benchmark BV1opg36pEPf chọn `upos-sz-mirrorcosov.bilivideo.com` làm default local vì median tốt nhất trong nhóm pass 3/3; selector và `auto` vẫn là đường rollback.
+- **Hệ quả:** Probe tối đa bốn base/backup URL Bilibili trả về, chọn host nhanh nhất trong candidate list; lỗi probe quay về auto anti-P2P và không log query token. Benchmark ngắn từng chọn `mirrorcosov`, nhưng benchmark file 656 MiB ngày 2026-09-20 tái hiện throttle ~0.6 MiB/s sau ~200 MiB; default local hiện đổi sang `upos-sz-mirrorhwo1.bilivideo.com`. Selector, `fastest` và `auto` vẫn là đường rollback.
 
 ## Design contract
 

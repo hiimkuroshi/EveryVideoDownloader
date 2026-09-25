@@ -23,6 +23,7 @@ const CDN = Object.freeze({
   auto: 'auto',
   fastest: 'fastest',
   aliov: 'upos-sz-mirroraliov.bilivideo.com',
+  hwo1: 'upos-sz-mirrorhwo1.bilivideo.com',
   cosov: 'upos-sz-mirrorcosov.bilivideo.com',
   akamai: 'upos-hz-mirrorakam.akamaized.net',
   ali: 'upos-sz-mirrorali.bilivideo.com',
@@ -45,7 +46,7 @@ const cases = [
   { id: 'native-f8-10m', group: 'native', engine: 'native', connections: 8, cdn: 'auto', chunk: '10M', fragments: 8 },
   { id: 'native-f8-100m', group: 'native', engine: 'native', connections: 8, cdn: 'auto', chunk: '100M', fragments: 8 },
 
-  ...['fastest', 'aliov', 'cosov', 'akamai', 'ali', 'cos', 'hw', 'bos', 'allow-p2p'].map((cdn) => ({
+  ...['fastest', 'aliov', 'hwo1', 'cosov', 'akamai', 'ali', 'cos', 'hw', 'bos', 'allow-p2p'].map((cdn) => ({
     id: `auto-x8-${cdn}`,
     group: 'cdn',
     engine: 'auto',
