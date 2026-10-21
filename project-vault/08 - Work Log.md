@@ -13,12 +13,13 @@ updated: 2026-10-21
 
 # Work Log
 
-## 2026-10-21 — Chuẩn bị đồng bộ GitHub
+## 2026-10-21 — Đồng bộ GitHub
 
 - Người dùng yêu cầu cập nhật repository; xác nhận remote có quyền push và nhánh hiện tại `nhanh-2` đang chậm hơn upstream 9 commit. Đã tạo commit local rồi rebase thành công lên upstream, giữ Docker/Render, Python workflow và `/health`, không có xung đột và không force-push.
 - Rà soát file thay đổi, chỉ đưa source/test/tài liệu/asset cần thiết vào Git; bổ sung ignore cookie và file môi trường. Các gói Windows, runtime và dữ liệu cá nhân giữ ngoài commit.
 - Bổ sung `.dockerignore` để build context không mang runtime/build Windows, output và dữ liệu cá nhân; chưa deploy hoặc kiểm chứng cloud.
 - Node syntax và UI/server contracts pass sau rebase (151 ID, 116 hook, 14 GET route gồm `/health`); commit không chứa runtime/build/config/cookie hoặc file lớn. Chi tiết tại [[07 - Testing]].
+- Đã push commit tính năng `334755f` lên `origin/nhanh-2`; đối chiếu SHA local với remote trùng khớp và working tree sạch. Chưa tạo Release hoặc đưa các gói Windows vào repository.
 
 ## 2026-10-21 — Dọn và tổ chức lại thư mục dự án
 
