@@ -13,11 +13,12 @@ updated: 2026-10-21
 
 # Work Log
 
-## 2026-10-21 — Chuẩn bị GitHub Release v1.2.0
+## 2026-10-21 — Phát hành GitHub Release v1.2.0
 
 - Người dùng yêu cầu đăng release. Xác nhận quyền phát hành và tag hiện có `v1.1.0`; nâng package/lockfile lên `1.2.0` để giữ thứ tự phiên bản và build lại ba gói Windows với metadata đúng.
 - Thêm release notes tiếng Việt và liên kết tải trong README/hướng dẫn. Build và cả hai smoke unpacked/portable thực tế pass; UI/API contracts pass, bundle version khớp và tạo SHA256SUMS. Chi tiết tại [[07 - Testing]].
-- Chuẩn bị release draft từ commit phiên bản mới trên `nhanh-2`, đính kèm Setup, portable ZIP khuyến nghị, portable EXE và checksum; sẽ kiểm tra digest/size trên GitHub trước khi công khai.
+- Tạo release draft từ commit `3885109` trên `nhanh-2`, upload Setup, portable ZIP khuyến nghị, portable EXE và SHA256SUMS. Xác nhận tên/kích thước/trạng thái và toàn bộ digest SHA-256 GitHub khớp local rồi công khai, đặt Latest và xác minh tag đúng commit.
+- [Release v1.2.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.2.0) có đủ bốn asset công khai; giữ các release/tag trước đó. Evidence được lưu ở `output/reports/release-v1.2.0/`, profile/fixture kiểm thử tạm đã dọn. Không ký số hoặc deploy cloud trong phiên này.
 
 ## 2026-10-21 — Đồng bộ GitHub
 

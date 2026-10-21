@@ -23,6 +23,7 @@ related:
 - `npm run test:desktop` và `npm run test:desktop-portable` pass trên gói 1.2.0; kiểm tra lại extraction, DASH mux/FFprobe, cancel, persistence và process cleanup. Bundle package version là `1.2.0`; Windows ProductVersion `1.2.0.0`, FileVersion `1.2.0`. Không có root config/cookie/profile/media cá nhân trong app archive.
 - UI/server contracts pass 151 ID/116 hook/14 GET route; package và lockfile đồng nhất; `git diff --check` pass. Tạo SHA256SUMS cho Setup/portable EXE/ZIP và manifest local ở `output/reports/release-v1.2.0/local-assets.json` để đối chiếu upload.
 - Hai smoke-test evidence được lưu gọn về `output/reports/release-v1.2.0/`. Các gói chưa ký số; chưa cài/gỡ trên VM Windows sạch, không bổ sung benchmark website thật trong phiên phát hành.
+- Đã đối chiếu đủ bốn asset GitHub với local theo tên, kích thước, trạng thái uploaded và digest SHA-256 (gồm cả file checksum), tất cả khớp. Release được công khai, không phải prerelease, Latest là `v1.2.0`; tag resolve đúng commit nguồn `388510988db424ead996e7e22fbf72d43c4c3ade`. Báo cáo API/digest nằm trong `output/reports/release-v1.2.0/verified-github-assets.json` và `published-release.json`.
 
 ## Verification ngày 2026-10-21 — Tích hợp upstream trước push GitHub
 

@@ -18,7 +18,7 @@ updated: 2026-10-21
 - [project] EveryVideo là Web UI cục bộ để phân tích, chọn format và tải media → [[01 - Project Overview]]
 - [project] Trọng tâm hiện tại là tải video Bilibili ổn định và đúng chất lượng → [[03 - Bilibili Download Flow]]
 - [project] Frontend thuần → Express → Python `yt_dlp` vendored → downloader/FFmpeg → [[02 - Architecture]]
-- [project] Windows desktop Electron có NSIS/portable EXE/ZIP x64 trong `dist/`, kèm runtime và app-data riêng. Khuyên portable ZIP giải nén một lần: benchmark folder ~0,5 giây, EXE tự giải nén ~13–15 giây trên host dev; smoke pass, chưa ký số/test cài-gỡ VM sạch → [[02 - Architecture]], [[07 - Testing]]
+- [project] [Release Windows v1.2.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.2.0) đã công khai/Latest, có Setup + portable EXE/ZIP x64 + SHA256SUMS, digest GitHub khớp local. Khuyên ZIP giải nén một lần (~0,5 giây trên host dev); smoke pass, chưa ký số/test cài-gỡ VM sạch → [[02 - Architecture]], [[07 - Testing]]
 - [project] Website phải miễn phí, có tên miền Cloudflare và chạy khi máy cá nhân tắt; đang đánh giá backend VM Always Free ngoài Cloudflare, chưa chốt/deploy → [[02 - Architecture]]
 - [project] Phân Tích có resolver đa website HTTP/JSON/iframe + yt-dlp + Chromium; liệt kê/copy/tải nhiều media qua descriptor, giữ luồng preset/queue cũ. Node 22+, browser runtime tùy chọn → [[12 - Universal Media Extraction Implementation]]
 - [project] Nhánh baseline `nhanh-2`; lõi vendored báo phiên bản `2026.07.04` → [[01 - Project Overview]]

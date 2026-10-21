@@ -22,7 +22,8 @@ related:
 - Nhánh làm việc hiện tại là `nhanh-2`; fetch remote trước khi push và tích hợp các commit mới, không force-push để ghi đè lịch sử.
 - Chỉ commit source, test, tài liệu, icon và giấy phép cần thiết. `dist/`, `.runtime/`, `node_modules/`, `output/`, media, config, cookie và file môi trường cá nhân không thuộc bản cập nhật Git.
 - Repository cũng có Docker/Render và `/health` từ upstream. `.dockerignore` loại runtime/build Windows, dữ liệu cá nhân và output khỏi build context; chưa có kiểm chứng deployment cloud trong phiên đồng bộ này.
-- Bản cập nhật Windows/media discovery và sắp xếp thư mục đã qua các kiểm tra tại [[07 - Testing]]. Các bộ cài/ZIP hiện giữ cục bộ, chưa xuất bản GitHub Release.
+- Bản cập nhật Windows/media discovery và sắp xếp thư mục đã qua các kiểm tra tại [[07 - Testing]]. Bộ cài/ZIP được đăng dưới dạng asset tại [Release v1.2.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.2.0), không commit binary vào Git. Khuyên dùng portable folder ZIP để tránh giải nén lại mỗi lần mở.
+- Quy trình phát hành đã dùng: build và smoke đúng version → push commit nguồn → tạo release draft với target SHA rõ ràng → upload ba gói cùng SHA256SUMS → so sánh tên/kích thước/digest GitHub → công khai và xác nhận tag/Latest. Không di chuyển tag đã phát hành.
 
 ## Khởi động
 
