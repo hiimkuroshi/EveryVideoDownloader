@@ -13,6 +13,12 @@ updated: 2026-10-21
 
 # Work Log
 
+## 2026-10-21 — Chuẩn bị GitHub Release v1.2.0
+
+- Người dùng yêu cầu đăng release. Xác nhận quyền phát hành và tag hiện có `v1.1.0`; nâng package/lockfile lên `1.2.0` để giữ thứ tự phiên bản và build lại ba gói Windows với metadata đúng.
+- Thêm release notes tiếng Việt và liên kết tải trong README/hướng dẫn. Build và cả hai smoke unpacked/portable thực tế pass; UI/API contracts pass, bundle version khớp và tạo SHA256SUMS. Chi tiết tại [[07 - Testing]].
+- Chuẩn bị release draft từ commit phiên bản mới trên `nhanh-2`, đính kèm Setup, portable ZIP khuyến nghị, portable EXE và checksum; sẽ kiểm tra digest/size trên GitHub trước khi công khai.
+
 ## 2026-10-21 — Đồng bộ GitHub
 
 - Người dùng yêu cầu cập nhật repository; xác nhận remote có quyền push và nhánh hiện tại `nhanh-2` đang chậm hơn upstream 9 commit. Đã tạo commit local rồi rebase thành công lên upstream, giữ Docker/Render, Python workflow và `/health`, không có xung đột và không force-push.

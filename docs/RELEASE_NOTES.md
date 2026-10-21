@@ -1,4 +1,19 @@
-# Unreleased — Graphite Signal
+# v1.2.0 — Windows desktop và media discovery
+
+Ngày phát hành: 2026-10-21. [Hướng dẫn tải và sử dụng](releases/v1.2.0.md).
+
+- Thêm ứng dụng Windows x64 với bộ cài NSIS, portable ZIP và portable EXE; kèm Python/core, FFmpeg/FFprobe, aria2 và Chromium.
+- Portable ZIP chỉ cần giải nén một lần, tránh thời gian giải nén lặp lại của portable EXE.
+- Thêm media discovery HTTP/HTML/JSON/iframe và Chromium cho trang tương tác, cùng danh sách nguồn, xem trước, sao chép URL và tải/hủy riêng.
+- Cải thiện giao diện Studio, preset chất lượng, hàng chờ, bốn ngôn ngữ và tiến độ tải.
+- Tách dữ liệu ứng dụng khỏi thư mục cài đặt; quản lý backend loopback và dọn tiến trình khi thoát.
+- Gom kế hoạch/tài liệu và loại runtime, output, config/cookie khỏi Git và Docker context.
+
+Các bản Windows chưa ký số; chưa kiểm thử cài/gỡ trên VM Windows sạch.
+
+---
+
+# Historical — Graphite Signal
 
 > Cập nhật: 26/08/2026
 >

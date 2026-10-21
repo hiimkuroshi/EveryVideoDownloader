@@ -4,9 +4,11 @@
 
 Build outputs include an NSIS installer, a self-extracting executable and a portable folder ZIP. All include the same Windows x64 application and download runtimes.
 
-- `dist/EveryVideo-0.3.0-Setup-x64.exe`: creates desktop/Start menu shortcuts and supports uninstall.
-- `dist/EveryVideo-0.3.0-Portable-Folder-x64.zip`: recommended for portable use. Extract the whole archive once into a dedicated folder, then run `EveryVideo.exe`. Keep all companion resources in place.
-- `dist/EveryVideo-0.3.0-Portable-x64.exe`: extracts the full application into a temporary directory on every launch and removes it on exit. This repeats substantial disk work, so startup is slower than the installed or folder app.
+- `dist/EveryVideo-1.2.0-Setup-x64.exe`: creates desktop/Start menu shortcuts and supports uninstall.
+- `dist/EveryVideo-1.2.0-Portable-Folder-x64.zip`: recommended for portable use. Extract the whole archive once into a dedicated folder, then run `EveryVideo.exe`. Keep all companion resources in place.
+- `dist/EveryVideo-1.2.0-Portable-x64.exe`: extracts the full application into a temporary directory on every launch and removes it on exit. This repeats substantial disk work, so startup is slower than the installed or folder app.
+
+Published downloads: [EveryVideo v1.2.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.2.0). Local builds write these files under `dist/`.
 
 The ready-to-run copy kept in this project is `dist/win-unpacked/EveryVideo.exe`. The duplicate `dist/EveryVideo-Portable-Folder/` extraction was removed during project cleanup after comparing every payload file. Keep the companion files in `win-unpacked/` when running or copying it.
 

@@ -10,9 +10,11 @@ EveryVideo là trạm tải media chạy cục bộ, hỗ trợ khám phá đị
 
 Bản desktop có cửa sổ riêng và kèm Node.js, Python, FFmpeg/FFprobe, aria2 cùng Chromium headless; người dùng không cần cài các công cụ này riêng.
 
-- `dist/EveryVideo-0.3.0-Setup-x64.exe`: bộ cài cho tài khoản hiện tại, có shortcut và gỡ cài đặt.
-- `dist/EveryVideo-0.3.0-Portable-Folder-x64.zip`: **khuyến nghị nếu dùng portable**. Giải nén toàn bộ một lần vào thư mục riêng rồi mở `EveryVideo.exe`; giữ nguyên các file/thư mục đi kèm.
-- `dist/EveryVideo-0.3.0-Portable-x64.exe`: một file tự giải nén, không cần cài nhưng giải nén lại runtime vào thư mục tạm **mỗi lần mở**, nên chậm hơn bản thư mục hoặc bản đã cài.
+Tải tại [GitHub Release v1.2.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.2.0).
+
+- `EveryVideo-1.2.0-Setup-x64.exe`: bộ cài cho tài khoản hiện tại, có shortcut và gỡ cài đặt.
+- `EveryVideo-1.2.0-Portable-Folder-x64.zip`: **khuyến nghị nếu dùng portable**. Giải nén toàn bộ một lần vào thư mục riêng rồi mở `EveryVideo.exe`; giữ nguyên các file/thư mục đi kèm.
+- `EveryVideo-1.2.0-Portable-x64.exe`: một file tự giải nén, không cần cài nhưng giải nén lại runtime vào thư mục tạm **mỗi lần mở**, nên chậm hơn bản thư mục hoặc bản đã cài.
 
 Cấu hình và dữ liệu giao diện nằm trong `%APPDATA%/EveryVideo`; video mặc định ở thư mục Downloads/EveryVideo của Windows, có thể đổi trong ứng dụng. Bản portable cũng dùng thư mục dữ liệu này để giữ cấu hình qua các lần mở. Đóng ứng dụng sẽ dừng các tác vụ đang tải. Các bản build cục bộ hiện chưa ký số nhà phát hành.
 

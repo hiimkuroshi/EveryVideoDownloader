@@ -17,6 +17,13 @@ related:
 
 # Testing
 
+## Verification ngày 2026-10-21 — Gói phát hành v1.2.0
+
+- Repository có release `v1.1.0`; chọn phiên bản tiếp theo `v1.2.0`, cập nhật package/lockfile và build mới toàn bộ ba gói Windows. `npm run desktop:build` và runtime prerequisite check pass.
+- `npm run test:desktop` và `npm run test:desktop-portable` pass trên gói 1.2.0; kiểm tra lại extraction, DASH mux/FFprobe, cancel, persistence và process cleanup. Bundle package version là `1.2.0`; Windows ProductVersion `1.2.0.0`, FileVersion `1.2.0`. Không có root config/cookie/profile/media cá nhân trong app archive.
+- UI/server contracts pass 151 ID/116 hook/14 GET route; package và lockfile đồng nhất; `git diff --check` pass. Tạo SHA256SUMS cho Setup/portable EXE/ZIP và manifest local ở `output/reports/release-v1.2.0/local-assets.json` để đối chiếu upload.
+- Hai smoke-test evidence được lưu gọn về `output/reports/release-v1.2.0/`. Các gói chưa ký số; chưa cài/gỡ trên VM Windows sạch, không bổ sung benchmark website thật trong phiên phát hành.
+
 ## Verification ngày 2026-10-21 — Tích hợp upstream trước push GitHub
 
 - Rebase commit Windows desktop/media/UI/layout lên `origin/nhanh-2` thành công, giữ các commit Docker/Render, Pylint workflow và health endpoint từ upstream.
