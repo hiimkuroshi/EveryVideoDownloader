@@ -12,10 +12,31 @@
     "test:unit": "node tests/download_acceleration_test.js",
     "test:python": "node scripts/run-python-tests.js",
     "test:progress": "node tests/download_progress_test.js",
-    "benchmark:bilibili": "node scripts/benchmark-bilibili.js"
+    "test:media": "node tests/media_discovery_test.js && node tests/media_resolver_test.js",
+    "test:media-ui": "node tests/media_ui_test.js",
+    "setup:browser": "node scripts/install-media-browser.js",
+    "benchmark:bilibili": "node scripts/benchmark-bilibili.js",
+    "desktop": "electron desktop/main.js",
+    "desktop:check": "node scripts/check-desktop-runtime.js",
+    "desktop:pack": "npm run desktop:check && electron-builder --config electron-builder.cjs --win --x64 --dir --publish never",
+    "desktop:build": "npm run desktop:check && electron-builder --config electron-builder.cjs --win --x64 --publish never",
+    "desktop:zip": "electron-builder --config electron-builder.cjs --win zip --x64 --prepackaged dist/win-unpacked --publish never",
+    "desktop:benchmark": "node scripts/benchmark-desktop-startup.js",
+    "test:desktop": "node tests/desktop_smoke_test.js",
+    "test:desktop-portable": "node tests/desktop_portable_test.js"
   },
   "dependencies": {
+    "cheerio": "1.2.0",
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "ipaddr.js": "2.5.0",
+    "playwright": "1.63.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "electron": "44.9.3",
+    "electron-builder": "26.15.3"
   }
 }

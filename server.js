@@ -15,6 +15,10 @@ const {
   resolveAria2Command,
 } = require('./lib/download-acceleration');
 const { createProcessLineParser, parseAria2Progress } = require('./lib/download-progress');
+const { createMediaResolver } = require('./lib/media-resolver');
+const { installMediaRoutes } = require('./lib/media-routes');
+const { normalizeUrl } = require('./lib/media-network');
+const { resourceRoot, dataRoot, downloadsDir } = require('./lib/runtime-paths');
 
 // Protect process from unexpected crashes
 process.on('uncaughtException', (err) => {
@@ -25,11 +29,13 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT ?? 3000);
+const DESKTOP_TOKEN = process.env.EVERYVIDEO_DESKTOP_TOKEN;
+let listeningPort;
 
 // -- Portable Dynamic Paths (Relative to this folder) -------------------------
-const CORE_DIR = path.join(__dirname, 'core');
-const DOWNLOADS_DIR = path.join(__dirname, 'Download');
+const CORE_DIR = path.join(resourceRoot, 'core');
+const DOWNLOADS_DIR = downloadsDir;
 const DEFAULT_DOWNLOAD_PATH = path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s');
 
 function findExecutableOnPath(fileNames) {
@@ -51,7 +57,7 @@ function resolvePythonCommand() {
         path.join(__dirname, 'python.exe'),
         path.join(__dirname, '.venv', 'Scripts', 'python.exe'),
         path.join(__dirname, 'venv', 'Scripts', 'python.exe'),
-        path.join(__dirname, '.runtime', 'python', 'python.exe'),
+        path.join(resourceRoot, '.runtime', 'python', 'python.exe'),
       ]
     : [
         path.join(__dirname, '.venv', 'bin', 'python'),
@@ -87,7 +93,7 @@ function describeProcessError(error, processName) {
 function spawnYtDlp(args, options = {}) {
   const fullArgs = [...PYTHON_PREFIX_ARGS, '-u', '-m', 'yt_dlp', ...args];
   const env = { ...process.env, PYTHONUNBUFFERED: '1', PYTHONPATH: CORE_DIR, ...(options.env || {}) };
-  return spawn(PYTHON_CMD, fullArgs, { ...options, env });
+  return spawn(PYTHON_CMD, fullArgs, { windowsHide: true, ...options, env });
 }
 
 /**
@@ -101,7 +107,7 @@ function execFileYtDlp(args, options = {}, callback) {
   const fullArgs = [...PYTHON_PREFIX_ARGS, '-u', '-m', 'yt_dlp', ...args];
   const env = { ...process.env, PYTHONUNBUFFERED: '1', PYTHONPATH: CORE_DIR, ...(options.env || {}) };
   try {
-    return execFile(PYTHON_CMD, fullArgs, { ...options, env }, callback);
+    return execFile(PYTHON_CMD, fullArgs, { windowsHide: true, ...options, env }, callback);
   } catch (error) {
     queueMicrotask(() => callback(error, '', ''));
     return null;
@@ -117,7 +123,7 @@ if (!fs.existsSync(DOWNLOADS_DIR)) {
 const FFMPEG_DIR_CANDIDATES = [
   __dirname,
   path.join(__dirname, 'bin'),
-  path.join(__dirname, '.runtime', 'ffmpeg'),
+  path.join(resourceRoot, '.runtime', 'ffmpeg'),
 ];
 const LOCAL_FFMPEG = FFMPEG_DIR_CANDIDATES.find((dir) => fs.existsSync(path.join(dir, 'ffmpeg.exe'))) || null;
 const BILIBILI_BROWSER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36';
@@ -127,7 +133,8 @@ const BILIBILI_REFERER = 'https://www.bilibili.com/';
 const activeDownloads = new Map();
 
 // -- Persistent User Configuration Manager (config.json) -----------------------
-const CONFIG_PATH = path.join(__dirname, 'config.json');
+fs.mkdirSync(dataRoot, { recursive: true });
+const CONFIG_PATH = path.join(dataRoot, 'config.json');
 
 function loadPersistentConfig() {
   try {
@@ -171,7 +178,21 @@ function savePersistentConfig(updates) {
 }
 
 // -- Middleware ---------------------------------------------------------------
-app.use(cors());
+if (DESKTOP_TOKEN) {
+  app.use((req, res, next) => {
+    const origin = `http://127.0.0.1:${listeningPort}`;
+    const cookie = (req.headers.cookie || '').split(';').map(value => value.trim());
+    if (req.headers.host !== `127.0.0.1:${listeningPort}`
+        || (req.headers.origin && req.headers.origin !== origin)
+        || !cookie.includes(`everyvideo_session=${DESKTOP_TOKEN}`)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; media-src 'self' blob: https: http:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
+    next();
+  });
+} else {
+  app.use(cors());
+}
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -646,7 +667,7 @@ app.get('/api/translate', async (req, res) => {
 // =============================================================================
 // GET /api/browse-folder — Modern Windows 10/11 Explorer Folder Picker Dialog
 // =============================================================================
-const FOLDER_PICKER_EXE = path.join(__dirname, 'bin', 'folder_picker.exe');
+const FOLDER_PICKER_EXE = path.join(resourceRoot, 'bin', 'folder_picker.exe');
 
 app.get('/api/browse-folder', (req, res) => {
   const defaultDir = path.resolve(req.query.current || DOWNLOADS_DIR);
@@ -661,7 +682,7 @@ app.get('/api/browse-folder', (req, res) => {
   // 1. Primary: Native Windows 10/11 Explorer IFileOpenDialog (TopMost + UTF-8 + Direct Navigation)
   if (fs.existsSync(FOLDER_PICKER_EXE)) {
     try {
-      return execFile(FOLDER_PICKER_EXE, [defaultDir], { encoding: 'utf8', timeout: 180000 }, (err, stdout) => {
+      return execFile(FOLDER_PICKER_EXE, [defaultDir], { windowsHide: true, encoding: 'utf8', timeout: 180000 }, (err, stdout) => {
         if (err) return sendPickerError(err);
         const selected = stdout ? stdout.trim().split(/\r?\n/).filter(Boolean).pop() : '';
         if (selected && fs.existsSync(selected)) {
@@ -700,7 +721,7 @@ $form.Dispose()
 
   const b64 = Buffer.from(psScript, 'utf16le').toString('base64');
   try {
-    execFile('powershell.exe', ['-NoProfile', '-STA', '-EncodedCommand', b64], { timeout: 180000 }, (err, stdout) => {
+    execFile('powershell.exe', ['-NoProfile', '-STA', '-EncodedCommand', b64], { windowsHide: true, timeout: 180000 }, (err, stdout) => {
       if (err) return sendPickerError(err);
       if (stdout && stdout.includes('CHOSEN:')) {
         const match = stdout.match(/CHOSEN:(.*)/);
@@ -1080,19 +1101,15 @@ app.get('/api/cancel-download', (req, res) => {
 // =============================================================================
 // GET /api/info — Fetch video or playlist metadata as JSON
 // =============================================================================
-app.get('/api/info', async (req, res) => {
-  const { url, browser, playlist, bilibili_upos_host, bilibili_avoid_p2p } = req.query;
-
-  if (!url) {
-    return res.status(400).json({ error: 'Missing required query parameter: url' });
-  }
+async function fetchVideoMetadata(url, options = {}, signal) {
+  const { browser, playlist, bilibili_upos_host, bilibili_avoid_p2p } = options;
 
   // 1. Direct high-speed resolver for Douyin (unlocked 4K, 2K, 1080p Full HD)
   if (isDouyinUrl(url)) {
     const douyinInfo = await fetchDouyinMetadata(url);
     if (douyinInfo) {
       console.log('[/api/info] Fetched Douyin metadata with full 1080p/4K formats.');
-      return res.json(douyinInfo);
+      return douyinInfo;
     }
   }
 
@@ -1101,11 +1118,11 @@ app.get('/api/info', async (req, res) => {
     const ttInfo = await fetchTikTokMetadata(url);
     if (ttInfo) {
       console.log('[/api/info] Fetched TikTok metadata via direct engine.');
-      return res.json(ttInfo);
+      return ttInfo;
     }
   }
 
-  const args = ['-J'];
+  const args = ['-J', '--ignore-config', '--socket-timeout', '12', '--extractor-retries', '1'];
   
   if (playlist !== 'true') {
     args.push('--no-playlist');
@@ -1113,8 +1130,8 @@ app.get('/api/info', async (req, res) => {
 
   if (browser && browser !== 'none') {
     args.push('--cookies-from-browser', browser);
-  } else if (fs.existsSync(path.join(__dirname, 'cookies.txt'))) {
-    args.push('--cookies', path.join(__dirname, 'cookies.txt'));
+  } else if (fs.existsSync(path.join(dataRoot, 'cookies.txt'))) {
+    args.push('--cookies', path.join(dataRoot, 'cookies.txt'));
   }
 
   if (LOCAL_FFMPEG) {
@@ -1127,7 +1144,7 @@ app.get('/api/info', async (req, res) => {
   }
 
   // Use Node.js runtime as portable JS engine for yt-dlp
-  args.push('--js-runtimes', 'node');
+  args.push('--js-runtimes', DESKTOP_TOKEN ? `node:${process.execPath}` : 'node');
 
   // Bilibili Anti-P2P CDN & Custom UPOS host
   const biliExtractorArgs = [];
@@ -1145,32 +1162,45 @@ app.get('/api/info', async (req, res) => {
 
   args.push(url);
 
-  execFileYtDlp(args, { maxBuffer: 35 * 1024 * 1024 }, async (error, stdout, stderr) => {
+  return new Promise((resolve, reject) => {
+  execFileYtDlp(args, { maxBuffer: 35 * 1024 * 1024, timeout: options.timeout || 60000, signal }, async (error, stdout, stderr) => {
     if (error) {
       const message = stderr?.trim() || describeProcessError(error, 'Python extractor');
-      console.error('[/api/info] Error:', message);
+      // Extraction failures are returned without logging signed URLs or credentials.
 
       // Secondary fallback for Douyin / TikTok if initial check didn't catch it
       if (isDouyinUrl(url)) {
         const fallbackDouyin = await fetchDouyinMetadata(url);
-        if (fallbackDouyin) return res.json(fallbackDouyin);
+        if (fallbackDouyin) return resolve(fallbackDouyin);
       }
       if (isTikTokUrl(url)) {
         const fallbackInfo = await fetchTikTokMetadata(url);
-        if (fallbackInfo) return res.json(fallbackInfo);
+        if (fallbackInfo) return resolve(fallbackInfo);
       }
 
-      return res.status(500).json({ error: message });
+      return reject(new Error(message));
     }
 
     try {
       const info = JSON.parse(stdout);
-      return res.json(info);
+      return resolve(info);
     } catch (parseErr) {
-      console.error('[/api/info] JSON parse error:', parseErr.message);
-      return res.status(500).json({ error: 'Failed to parse yt-dlp output as JSON' });
+      return reject(new Error('Failed to parse yt-dlp output as JSON'));
     }
   });
+  });
+}
+
+app.get('/api/info', async (req, res) => {
+  if (!req.query.url) return res.status(400).json({ error: 'Missing required query parameter: url' });
+  const controller = new AbortController();
+  res.on('close', () => { if (!res.writableEnded) controller.abort(); });
+  try {
+    const info = await fetchVideoMetadata(normalizeUrl(req.query.url), req.query, controller.signal);
+    if (!res.destroyed) res.json(info);
+  } catch (error) {
+    if (!res.destroyed) res.status(500).json({ error: error.message });
+  }
 });
 
 // =============================================================================
@@ -1514,8 +1544,8 @@ app.get('/api/download', async (req, res) => {
   // Browser cookies (or local cookies.txt file)
   if (browser && browser !== 'none') {
     args.push('--cookies-from-browser', browser);
-  } else if (fs.existsSync(path.join(__dirname, 'cookies.txt'))) {
-    args.push('--cookies', path.join(__dirname, 'cookies.txt'));
+  } else if (fs.existsSync(path.join(dataRoot, 'cookies.txt'))) {
+    args.push('--cookies', path.join(dataRoot, 'cookies.txt'));
   }
 
   // Playlist handling
@@ -1627,7 +1657,7 @@ app.get('/api/download', async (req, res) => {
   }
 
   // Use Node.js runtime as portable JS engine for yt-dlp
-  args.push('--js-runtimes', 'node');
+  args.push('--js-runtimes', DESKTOP_TOKEN ? `node:${process.execPath}` : 'node');
 
   // Bilibili Anti-P2P CDN & Custom UPOS host
   if (isBilibiliUrl(url)) {
@@ -1756,10 +1786,45 @@ app.get('/api/download', async (req, res) => {
   });
 });
 
+const mediaResolver = createMediaResolver({
+  extract: (url, options, signal) => fetchVideoMetadata(url, { ...options, timeout: 23000 }, signal),
+});
+installMediaRoutes(app, {
+  resolver: mediaResolver,
+  downloadsDir: DOWNLOADS_DIR,
+  activeDownloads,
+  spawnResolved: descriptor => {
+    const child = spawn(PYTHON_CMD, [...PYTHON_PREFIX_ARGS, '-u', path.join(resourceRoot, 'scripts', 'download-resolved-media.py')], {
+      windowsHide: true,
+      env: { ...process.env, PYTHONPATH: CORE_DIR, PYTHONUNBUFFERED: '1' },
+    });
+    child.stdin.on('error', () => {});
+    child.stdin.end(JSON.stringify({ ...descriptor, ffmpeg_location: LOCAL_FFMPEG }));
+    return child;
+  },
+});
+
 // =============================================================================
 // Start Server
 // =============================================================================
-app.listen(PORT, () => {
-  console.log(`EveryVideoDownloader server running at http://localhost:${PORT}`);
+const httpServer = app.listen(PORT, DESKTOP_TOKEN ? '127.0.0.1' : process.env.HOST, () => {
+  listeningPort = httpServer.address().port;
+  console.log(`EveryVideoDownloader server running at http://localhost:${listeningPort}`);
+  if (process.send) process.send({ type: 'ready', port: listeningPort });
 });
+httpServer.on('error', error => {
+  console.error('[Server]', error.message);
+  process.exit(1);
+});
+
+// If the desktop parent crashes, do not leave downloader/browser processes behind.
+if (DESKTOP_TOKEN && process.send) {
+  process.once('disconnect', () => {
+    if (process.platform === 'win32') {
+      execFile(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'taskkill.exe'),
+        ['/pid', String(process.pid), '/t', '/f'], { windowsHide: true }, () => process.exit());
+      setTimeout(() => process.exit(), 3000).unref();
+    } else process.exit();
+  });
+}
 

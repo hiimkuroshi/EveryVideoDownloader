@@ -9,13 +9,20 @@ tags:
 type: reference
 status: active
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-10-21
 related:
   - "[[03 - Bilibili Download Flow]]"
   - "[[07 - Testing]]"
 ---
 
 # Runbook
+
+## Đồng bộ GitHub
+
+- Nhánh làm việc hiện tại là `nhanh-2`; fetch remote trước khi push và tích hợp các commit mới, không force-push để ghi đè lịch sử.
+- Chỉ commit source, test, tài liệu, icon và giấy phép cần thiết. `dist/`, `.runtime/`, `node_modules/`, `output/`, media, config, cookie và file môi trường cá nhân không thuộc bản cập nhật Git.
+- Repository cũng có Docker/Render và `/health` từ upstream. `.dockerignore` loại runtime/build Windows, dữ liệu cá nhân và output khỏi build context; chưa có kiểm chứng deployment cloud trong phiên đồng bộ này.
+- Bản cập nhật Windows/media discovery và sắp xếp thư mục đã qua các kiểm tra tại [[07 - Testing]]. Các bộ cài/ZIP hiện giữ cục bộ, chưa xuất bản GitHub Release.
 
 ## Khởi động
 

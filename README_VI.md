@@ -6,6 +6,27 @@ EveryVideo là trạm tải media chạy cục bộ, hỗ trợ khám phá đị
 
 ## Khởi động nhanh
 
+### Ứng dụng Windows x64
+
+Bản desktop có cửa sổ riêng và kèm Node.js, Python, FFmpeg/FFprobe, aria2 cùng Chromium headless; người dùng không cần cài các công cụ này riêng.
+
+- `dist/EveryVideo-0.3.0-Setup-x64.exe`: bộ cài cho tài khoản hiện tại, có shortcut và gỡ cài đặt.
+- `dist/EveryVideo-0.3.0-Portable-Folder-x64.zip`: **khuyến nghị nếu dùng portable**. Giải nén toàn bộ một lần vào thư mục riêng rồi mở `EveryVideo.exe`; giữ nguyên các file/thư mục đi kèm.
+- `dist/EveryVideo-0.3.0-Portable-x64.exe`: một file tự giải nén, không cần cài nhưng giải nén lại runtime vào thư mục tạm **mỗi lần mở**, nên chậm hơn bản thư mục hoặc bản đã cài.
+
+Cấu hình và dữ liệu giao diện nằm trong `%APPDATA%/EveryVideo`; video mặc định ở thư mục Downloads/EveryVideo của Windows, có thể đổi trong ứng dụng. Bản portable cũng dùng thư mục dữ liệu này để giữ cấu hình qua các lần mở. Đóng ứng dụng sẽ dừng các tác vụ đang tải. Các bản build cục bộ hiện chưa ký số nhà phát hành.
+
+Build từ mã nguồn trên Windows với runtime portable đã chuẩn bị trong `.runtime/`:
+
+```powershell
+npm ci
+npm run desktop:check
+npm run desktop:build
+npm run test:desktop
+```
+
+`desktop:check` kiểm tra Python/core, FFmpeg, aria2, icon, giấy phép và chạy thử Chromium. `desktop:pack` chỉ tạo thư mục `dist/win-unpacked` để thử nhanh. `npm run desktop` mở cửa sổ desktop từ mã nguồn; `npm start` vẫn chạy Web UI như trước. Nếu trình quản lý npm chặn install script của Electron, tải runtime chính thức bằng `node node_modules/electron/install.js`. Xem [hướng dẫn build Windows](docs/WINDOWS_DESKTOP.md) để biết tài nguyên cần chuẩn bị và phạm vi kiểm thử.
+
 ### Khởi động một chạm trên Windows
 
 Nhấp đúp `Chay_Studio.bat` hoặc `Run_Studio.bat`. Launcher sẽ kiểm tra công cụ cần thiết, chạy server và mở `http://localhost:3000`.
@@ -14,6 +35,7 @@ Nhấp đúp `Chay_Studio.bat` hoặc `Run_Studio.bat`. Launcher sẽ kiểm tra
 
 ```bash
 npm install
+npm run setup:browser
 npm start
 ```
 
@@ -23,11 +45,12 @@ Sau đó mở [http://localhost:3000](http://localhost:3000).
 
 | Công cụ | Khuyến nghị | Vai trò |
 | --- | --- | --- |
-| Node.js | 18+ | Chạy Express server và Web UI |
+| Node.js | 22+ | Chạy Express server và khám phá media |
 | Python | 3.9+ | Chạy gói mã nguồn `core/yt_dlp` đi kèm |
 | FFmpeg | 5+ | Ghép, chuyển đổi, trích xuất audio và nhúng phụ đề |
 | aria2c | Tùy chọn | Tăng tốc multi-range HTTP(S) cho file Bilibili `.m4s` direct |
 | Trình duyệt | Edge, Chrome, Firefox hoặc Brave | Hiển thị ứng dụng và cung cấp cookie tùy chọn |
+| Chromium headless | Tùy chọn, cài bằng `npm run setup:browser` | Đọc DOM/network của trang tương tác |
 
 Server tìm Python theo thứ tự:
 
@@ -46,6 +69,9 @@ EveryVideo cần tạo tiến trình con để chạy Python, Windows Explorer v
 
 ## Tính năng
 
+- Dán URL từ nhiều website để tìm audio, video, ảnh bìa, gallery, phụ đề và nguồn HLS/DASH.
+- Sao chép URL gốc hoặc tải từng tài sản, kể cả từ website engine chưa nhận diện.
+- Kết hợp quét HTML/JSON/iframe, engine trích xuất hiện có và trình duyệt khi cần.
 - Giao diện Graphite Signal dark/light với một màu signal-coral duy nhất.
 - Workstation desktop và bố cục mobile 390 px dùng được đầy đủ.
 - Bảng format có filter, tìm kiếm, sort, chế độ table/card và multi-select.
@@ -59,6 +85,18 @@ EveryVideo cần tạo tiến trình con để chạy Python, Windows Explorer v
 - Giao diện Tiếng Việt, English, 简体中文 và 日本語.
 - Dịch tiêu đề qua nhiều provider có fallback.
 - Resolver riêng cho Douyin và TikTok.
+
+## Trích xuất media từ URL
+
+Dán link trang web hoặc media trực tiếp rồi bấm **Phân Tích**. Khung **Media trong trang** liệt kê loại, chất lượng nếu có, trạng thái kiểm tra và nút **Sao chép URL** / **Tải file**. Có thể lọc audio, video, ảnh, luồng phát và phụ đề. File được lưu vào thư mục đã chọn; tên trùng sẽ được thêm số thứ tự.
+
+Quét HTML chạy cùng engine trích xuất. Khi trang động chưa có nguồn phát khả dụng, ứng dụng tự thử trình duyệt; bật **Quét thêm nội dung tương tác** để yêu cầu bước này cho trang khác. Cài Chromium cục bộ một lần bằng `npm run setup:browser`. Trình duyệt quét dùng phiên ẩn danh riêng; lựa chọn cookie vẫn áp dụng cho engine trích xuất hiện có.
+
+Website đã được hỗ trợ vẫn có preset chất lượng, tùy chọn ghép và hàng chờ. Các nguồn được phát hiện có nút tải riêng; chuyển đổi định dạng, cắt thời gian và hàng chờ áp dụng cho luồng chọn format hiện có. URL HLS/DASH sao chép được là playlist; tải qua app sẽ dùng Python/FFmpeg để ghép media. Một số URL cần Referer hoặc phiên truy cập; app giữ cookie phiên quét ở backend khi cần.
+
+Phạm vi quét là trang được dán, một số iframe và tối đa 120 tài sản. Trang có thể chứa cả nội dung gợi ý hoặc ảnh trang trí ngoài media chính. Trang lớn có thể còn nguồn chưa kiểm tra; bấm **Tải file** sẽ xác minh nguồn đó trước khi lưu. Danh sách có hiệu lực 15 phút; phân tích lại để làm mới. Query ký số được giữ nguyên và lỗi từng bước không làm mất kết quả đã lấy được.
+
+Không thể bảo đảm mọi URL đều trích xuất được. DRM, nội dung riêng tư/không còn tồn tại, anti-bot hoặc player cần thao tác bổ sung có thể ngăn việc lấy nguồn. App không vượt các giới hạn này.
 
 ## Giao diện Graphite Signal
 
@@ -78,30 +116,27 @@ Responsive và accessibility gồm:
 
 ```text
 EveryVideoDownloader/
-├── bin/folder_picker.exe          # Folder picker native trên Windows
-├── core/yt_dlp/                   # Lõi Python source đi kèm
-├── docs/
-│   ├── PROJECT_SUMMARY.md
-│   ├── RELEASE_NOTES.md
-│   ├── YTDLP_CORE_ARCHITECTURE.md
-│   └── ui-concepts/               # Prompt concept và ghi chú thiết kế
-├── public/
-│   ├── graphite-signal.css        # Theme Graphite Signal hiện tại
-│   ├── i18n.js
-│   ├── index.html
-│   ├── script.js
-│   └── style.css                  # Nền component legacy
-├── tests/
-│   ├── server_contract_test.js
-│   ├── download_acceleration_test.js
-│   ├── test_bilibili_speed.py
-│   ├── test_suite.js
-│   └── ui_contract_test.js
-├── lib/download-acceleration.js   # Builder engine/capability Bilibili
-├── DESIGN.md                      # Design contract chính thức
-├── server.js
-└── ui-overhaul-plan.md
+├── bin/                          # Folder picker native Windows
+├── core/yt_dlp/                  # Lõi Python vendored
+├── desktop/                      # Electron shell, icon và giấy phép
+├── docs/                         # Hướng dẫn, kiến trúc và docs/plans/
+├── lib/                          # Runtime, download và media resolver
+├── project-vault/                # Bộ nhớ dự án
+├── public/                       # Giao diện HTML/CSS/JavaScript
+├── scripts/                      # Setup, build và benchmark
+├── tests/                        # Contract, unit và integration tests
+├── dist/                         # Bộ cài/ZIP; win-unpacked/ là app mở nhanh
+├── Download/                     # Media; incomplete/ giữ file tải dở
+├── output/                       # Báo cáo, ảnh và dữ liệu kiểm thử
+├── .runtime/                     # Python, FFmpeg, aria2 và Chromium
+├── DESIGN.md                     # Design contract chính thức
+├── electron-builder.cjs          # Cấu hình đóng gói Windows
+├── package.json
+├── server.js                     # Express backend
+└── setup.js
 ```
+
+Xem [bản đồ thư mục và tài liệu](docs/README.md). Các thư mục runtime/build/output được Git ignore.
 
 ## Tổng quan API
 
@@ -110,6 +145,9 @@ EveryVideoDownloader/
 | `GET` | `/api/config` | Đọc cấu hình runtime và thư mục tải hiện tại |
 | `POST` | `/api/config` | Lưu thư mục tải và tùy chọn nâng cao |
 | `GET` | `/api/info` | Trích xuất metadata, format, playlist và phụ đề |
+| `POST` | `/api/resolve` | Khám phá nhiều tài sản và trả metadata cùng mã phiên tạm |
+| `GET` | `/api/media-preview` | Xem trước ảnh qua mã phiên và mã tài sản |
+| `GET` | `/api/media-download` | Tải nguồn trực tiếp hoặc manifest qua SSE |
 | `GET` | `/api/download` | Bắt đầu tải và stream tiến trình qua SSE |
 | `GET` | `/api/cancel-download` | Dừng tiến trình tải đang chạy |
 | `GET` | `/api/download-thumbnail` | Lưu thumbnail HD |
@@ -156,7 +194,16 @@ Python test selector/probe Bilibili tự dùng runtime portable trong dự án n
 npm run test:python
 ```
 
-Bộ integration test đầy đủ có tải dữ liệu mạng thật và thay đổi cấu hình runtime:
+Bộ kiểm thử media dùng HTTP fixture và media tạo trong thư mục tạm, không sửa cấu hình người dùng. Cần Chromium và Python, FFmpeg/FFprobe portable trong dự án:
+
+```bash
+npm run test:media
+npm run test:media-ui
+```
+
+Kiểm tra domain chưa biết, HTML/JSON/Nuxt, iframe khác host, JavaScript/POST/phiên truy cập, xem trước/tải/hủy, HLS/DASH bằng FFprobe, clipboard, ngôn ngữ và mobile. Ảnh kiểm chứng UI nằm trong `output/playwright/`.
+
+Bộ integration test gốc có tải dữ liệu mạng thật và thay đổi cấu hình runtime:
 
 ```bash
 npm test
@@ -167,7 +214,7 @@ Chỉ chạy bộ này trong môi trường test có thể hoàn nguyên.
 ## Tài liệu
 
 - [Design contract Graphite Signal](DESIGN.md)
-- [Kế hoạch đại tu UI và trạng thái triển khai](ui-overhaul-plan.md)
+- [Kế hoạch đại tu UI và trạng thái triển khai](docs/plans/ui-overhaul-plan.md)
 - [Tổng kết dự án](docs/PROJECT_SUMMARY.md)
 - [Ghi chú phát hành](docs/RELEASE_NOTES.md)
 - [Kiến trúc lõi — Tiếng Việt](docs/YTDLP_CORE_ARCHITECTURE.md)

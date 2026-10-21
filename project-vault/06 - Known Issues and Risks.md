@@ -9,7 +9,7 @@ tags:
 type: project
 status: active
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-10-08
 related:
   - "[[03 - Bilibili Download Flow]]"
   - "[[07 - Testing]]"
@@ -69,6 +69,15 @@ related:
 - **Quan sát:** image/subtitle proxy nhận URL từ query và backend thực hiện fetch.
 - **Rủi ro:** Nếu app được expose ra ngoài localhost, URL tùy ý có thể truy cập tài nguyên nội bộ.
 - **Hướng xử lý dự kiến:** Chỉ bind localhost, validate protocol/host và chặn private/link-local ranges nếu route phải tồn tại.
+- **Cập nhật 2026-10-07:** Resolver HTTP/Chromium/preview/direct download mới kiểm tra protocol, credentials, tất cả DNS answers và redirect; HTTP pin địa chỉ đã xác minh, WebSocket/service worker bị chặn. Route tải mới chỉ nhận mã descriptor đã đăng ký. Không coi đây là audit đầy đủ: API proxy/engine cũ vẫn cần rà soát, downloader Python kiểm tra manifest/fragment trước tải nhưng redirect/DNS bên trong engine chưa có cùng cơ chế pin của Node. Giữ ứng dụng theo phạm vi local.
+
+## SEC-002 — API local chưa sẵn sàng cho sử dụng public hoặc nhiều người
+
+- **Mức:** cao nếu expose ra Internet.
+- **Trạng thái:** phát hiện từ đọc mã 2026-10-08; chưa triển khai chế độ web hay audit đầy đủ.
+- **Quan sát:** middleware chỉ gồm CORS mở, JSON và static assets; chưa có authentication/authorization. `config.json` dùng chung; các route tải/config nhận đường dẫn output từ client, không ràng buộc vào một storage root; job/descriptor chưa có chủ sở hữu. Static middleware chỉ phục vụ `public/`, chưa có route trả media hoàn tất về client.
+- **Rủi ro:** khách truy cập có thể thay cấu hình dùng chung, tạo nhiều tiến trình tải hoặc ghi file vào nơi tài khoản backend được phép; ID job/descriptor không thay thế kiểm tra quyền.
+- **Hướng xử lý:** authentication bao phủ API, storage/job/cookie isolation, giới hạn concurrency/thời gian/dung lượng, confinement đường dẫn, audit SSRF/egress và route tải file có quyền truy cập. Folder picker/Explorer và lấy cookie profile backend cần chế độ web riêng. Chi tiết khảo sát tại [[02 - Architecture#Chuẩn bị triển khai website — khảo sát 2026-10-08]].
 
 ## OPS-001 — Integration test thay đổi dữ liệu runtime
 

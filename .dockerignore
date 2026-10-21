@@ -1,6 +1,13 @@
 .git
 .github
 node_modules
+.runtime
+.runtime-cache
+dist
+output
+project-vault
+.obsidian
+desktop
 Download/*
 *.mp4
 *.mkv
@@ -13,6 +20,10 @@ Download/*
 *.png
 *.webp
 config.json
+cookies.txt
+.env
+.env.*
+!.env.example
 scratch
 *.log
 tests

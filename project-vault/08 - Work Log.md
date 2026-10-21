@@ -8,10 +8,105 @@ tags:
 type: reference
 status: active
 created: 2026-09-09
-updated: 2026-09-25
+updated: 2026-10-21
 ---
 
 # Work Log
+
+## 2026-10-21 — Chuẩn bị đồng bộ GitHub
+
+- Người dùng yêu cầu cập nhật repository; xác nhận remote có quyền push và nhánh hiện tại `nhanh-2` đang chậm hơn upstream 9 commit. Đã tạo commit local rồi rebase thành công lên upstream, giữ Docker/Render, Python workflow và `/health`, không có xung đột và không force-push.
+- Rà soát file thay đổi, chỉ đưa source/test/tài liệu/asset cần thiết vào Git; bổ sung ignore cookie và file môi trường. Các gói Windows, runtime và dữ liệu cá nhân giữ ngoài commit.
+- Bổ sung `.dockerignore` để build context không mang runtime/build Windows, output và dữ liệu cá nhân; chưa deploy hoặc kiểm chứng cloud.
+- Node syntax và UI/server contracts pass sau rebase (151 ID, 116 hook, 14 GET route gồm `/health`); commit không chứa runtime/build/config/cookie hoặc file lớn. Chi tiết tại [[07 - Testing]].
+
+## 2026-10-21 — Dọn và tổ chức lại thư mục dự án
+
+- Theo yêu cầu người dùng, gom ba kế hoạch vào `docs/plans/`, thêm `docs/README.md`, cập nhật cây thư mục và các liên kết. Giữ các entry point, code, runtime, cấu hình, bộ cài/ZIP và dữ liệu tải; chuyển file tải dở từ root vào `Download/incomplete/`.
+- Xóa bản app giải nén trùng sau đối chiếu payload SHA-256, browser profile/fixture kiểm thử, bytecode/log, scratch rỗng, metadata build không dùng và `ffplay.exe` thừa. Dọn ban đầu 31 target, khoảng 1.096,46 MiB; chỉ giữ app nhanh tại `dist/win-unpacked/EveryVideo.exe`.
+- Gom ảnh/báo cáo vào `output/reports/windows-desktop-20261021/`; bỏ dữ liệu tạm kiểm thử mới sau khi lưu kết quả. Contract/unit/progress/Python/runtime và full packaged smoke pass, 33 link tương đối hợp lệ, checksum ba gói phát hành không đổi. Chi tiết tại [[07 - Testing]].
+
+## 2026-10-21 — Khắc phục thời gian mở portable
+
+- Người dùng xác nhận portable EXE mở chậm. Tái hiện và đối chiếu NSIS: giải nén lại gần 900 MiB mỗi lượt; đo hai vòng 12,9–15,0 giây, trong khi bản thư mục 0,51–0,57 giây trên host hiện tại.
+- Bổ sung portable folder ZIP và lệnh `desktop:zip`/`desktop:benchmark`; sửa hướng dẫn giải nén mỗi lần. ZIP đã giải nén sẵn trong `dist/EveryVideo-Portable-Folder/`, full desktop smoke pass trên bản giải nén và cập nhật SHA256SUMS. Chi tiết tại [[02 - Architecture]] và [[07 - Testing]].
+- Giữ nguyên các EXE cũ và engine/UI; khuyến nghị giải nén ZIP toàn bộ một lần rồi chạy app trực tiếp để tránh chi phí giải nén lặp lại.
+
+## 2026-10-21 — Đóng gói Windows x64 và kiểm chứng artifact
+
+- Sau khi người dùng duyệt, thêm Electron shell, backend loopback có cookie/Origin guard, cổng ngẫu nhiên, dữ liệu riêng và cleanup process tree; frontend và luồng web cũ được giữ nguyên.
+- Thêm build allowlist cùng runtime Python/core/FFmpeg/aria2/Chromium, icon, notices và hướng dẫn. Xuất NSIS `EveryVideo-0.3.0-Setup-x64.exe` cùng `EveryVideo-0.3.0-Portable-x64.exe`, khoảng 269 MB mỗi bản; SHA-256 ở `dist/SHA256SUMS.txt`.
+- Desktop smoke pass extraction, DASH mux/FFprobe, cancel, persistence và đóng app giữa lượt tải; portable thật pass startup/extraction/exit khi PATH chỉ có Windows system folders. Hồi quy contracts/unit/progress/Python/media/UI và audit production pass. Chi tiết tại [[07 - Testing]].
+- Hai artifact chưa ký số; chưa kiểm thử cài/gỡ trên VM sạch. Không mang dữ liệu cá nhân vào artifact và không publish. Cập nhật kiến trúc tại [[02 - Architecture]].
+
+## 2026-10-21 — Khảo sát đóng gói EveryVideo thành ứng dụng Windows
+
+- Đọc kiến trúc, package, resolver runtime, browser discovery và đường dẫn config/output; xác nhận chưa có desktop shell/build config.
+- Đề xuất Electron + electron-builder, xuất NSIS/portable và kèm runtime; ghi yêu cầu tách dữ liệu ghi, tài nguyên ngoài ASAR, loopback/vòng đời tiến trình và gate Windows sạch tại [[02 - Architecture]].
+- Đối chiếu tài liệu chính thức Electron/electron-builder. Chỉ khảo sát và cập nhật bộ nhớ; chưa chọn phương án thay người dùng, sửa logic ứng dụng, cài dependency hoặc tạo bộ cài.
+
+## 2026-10-08 — Làm rõ phương án miễn phí khi máy cá nhân tắt
+
+- Người dùng xác nhận đã có tên miền trên Cloudflare, cần miễn phí và backend độc lập máy cá nhân. Loại local-origin Tunnel khỏi đề xuất chính; chưa chọn nhà cung cấp.
+- Đối chiếu OCI Always Free hiện ghi ARM 2 OCPU/12 GB (khác 4 OCPU/24 GB thường thấy trong tài liệu cũ), storage/traffic miễn phí, xác minh thẻ, capacity và idle reclaim. Đề xuất VM chạy toàn bộ app, Cloudflare quản lý DNS; ghi giới hạn tại [[02 - Architecture]].
+- Đối chiếu Render Free Docker: 0,1 CPU/512 MB, sleep/disk tạm/quota và suspend khi service-initiated traffic cao; chỉ phù hợp demo tải nhỏ. Không tạo resource, sửa app hoặc kiểm chứng cloud runtime.
+
+## 2026-10-08 — Đối chiếu phương án Cloudflare
+
+- Xác nhận Workers `node:child_process` chỉ là stub; backend native hiện cần Containers hoặc origin riêng qua Tunnel.
+- Đề xuất full Cloudflare gồm Workers Static Assets + Worker/Durable Object + Container Linux + R2; ghi yêu cầu persistence/job routing, disk tạm, quyền tải file và giá theo usage trong [[02 - Architecture]]. Chưa chốt triển khai hay tạo resource.
+- Xác nhận Quick Tunnel không hỗ trợ SSE; phương án cá nhân cần tunnel quản lý/hostname ổn định và Access, origin tiếp tục online. Chỉ khảo sát tài liệu và cập nhật bộ nhớ, chưa chạy smoke cloud hoặc sửa ứng dụng.
+
+## 2026-10-08 — Khảo sát yêu cầu đưa EveryVideo lên website
+
+- Đọc kiến trúc, runtime, API tải/config, cookie và hành vi SSE; xác nhận cần backend chạy Node/Python/FFmpeg, không chỉ static hosting.
+- Ghi khoảng trống trả file về thiết bị người dùng, thao tác Windows, cookie trên máy backend, path confinement, đăng nhập/quyền sở hữu job và quota trong [[02 - Architecture]] và SEC-002 tại [[06 - Known Issues and Risks]].
+- Đối chiếu tài liệu chính thức Docker, Playwright và Nginx; đề xuất VPS Linux + Docker Compose + HTTPS + storage persistent. Phạm vi người dùng/hosting chưa được chốt.
+- Chỉ khảo sát và cập nhật bộ nhớ; không sửa logic ứng dụng, chạy integration test, tạo hosting hoặc deploy.
+
+## 2026-10-07 — Triển khai universal media discovery
+
+- Triển khai resolver chung HTTP/HTML/JSON/Nuxt/iframe + yt-dlp + Chromium DOM/network có điều kiện, nhiều asset/partial results, copy URL và tải direct/HLS/DASH qua descriptor. Giữ custom Bilibili, preset/queue/API/151 DOM IDs hiện có.
+- Cài dependencies/runtime Chromium; Node baseline 22+. Xác minh MIME và đuôi WebP, chia ngân sách giữa audio/ảnh, giữ cookie phiên ở backend, TTL 15 phút, hủy/tên trùng/staging cleanup.
+- Kiểm chứng thêm cookie từ redirect và probe lại nguồn từng 403 khi browser có phiên mới; DNS pinning hỗ trợ các địa chỉ IPv4/IPv6 đã xác minh.
+- Media fixture + UI tests pass; HLS/DASH FFprobe, tải đồng thời và hủy Python pass; regression contracts/unit/progress và Python 11/11 pass. Live kiểm chứng MDN/Mux/W3Schools/Nuxt NCT; một nguồn SoundHelix HTTP 500 được ghi nhận đúng là lỗi nguồn.
+- Cập nhật README song ngữ, kiến trúc, kiểm thử và giới hạn SSRF/coverage tại [[12 - Universal Media Extraction Implementation]]. Không chạy integration suite gốc sửa config; không lưu URL ký số/cookie/HTML vào vault.
+
+## 2026-10-07 — Điều chỉnh phạm vi nghiên cứu theo yêu cầu đa website
+
+- Người dùng làm rõ NhacCuaTui chỉ là ví dụ; mục tiêu là dán URL bất kỳ để khám phá media của trang. Bỏ đề xuất lấy extractor NhacCuaTui làm MVP, giữ kết quả đó ở phần minh họa.
+- Rà soát GenericIE: có direct MIME, manifests, embeds/player/JSON-LD nhưng chưa phải asset enumerator tổng quát; tham số browser hiện lấy cookie, chưa có DOM/network discovery worker.
+- Cập nhật [[11 - Universal Media Extraction Research]] thành resolver chung HTTP discovery + yt-dlp + browser có điều kiện, schema nhiều asset/partial results, download descriptor và gate theo cơ chế web/nhiều domain. Browser APIs đã đối chiếu tài liệu; chưa chạy browser prototype hoặc ma trận đa website.
+
+## 2026-10-07 — Nghiên cứu trích xuất media đa website và NhacCuaTui
+
+- Core hiện tại chỉ chọn GenericIE cho URL bài mẫu NhacCuaTui và báo Unsupported URL; HTML public có dữ liệu Nuxt của đúng bài Lưu Niên, Jack - J97, duration 194 giây.
+- Giải mã đúng song ID; stream/download MP3 128/320 kbps đều HTTP 206, kiểm tra khung MPEG xác nhận bitrate và 44.100 Hz; thumbnail HTTP 200 trả WebP dù URL đuôi jpg. Chỉ đọc Range nhỏ, không tải toàn bài hoặc request lossless VIP.
+- Helper `_search_nuxt_json` sẵn có và `process_ie_result(download=False)` pass, format tốt nhất là 320; extractor riêng trong core sẽ dùng chung cho analyze/download. Chưa thêm tính năng ứng dụng hoặc chạy end-to-end API/UI.
+- Đề xuất mở rộng yt-dlp + site extractors + generic rồi browser fallback khi cần; không bảo đảm mọi URL. Báo cáo, trade-off và gate triển khai tại [[11 - Universal Media Extraction Research]]; không lưu URL ký số/cookie/HTML gốc vào vault.
+
+## 2026-09-29 — Triển khai nâng cấp UI Graphite Signal 2
+
+- Triển khai hướng preset-first: thêm workflow rail, preset cards sau khi phân tích, trạng thái preset mặc định và lớp chi tiết format cho power user.
+- Thu gọn Quick Settings và Advanced bằng disclosure, làm lại empty state/Queue CTA, chuẩn hóa accent và bổ sung bản dịch vi/en/zh/ja.
+- Giữ nguyên 151 HTML IDs, 116 JS hooks, API contract, dark/light, responsive, keyboard focus và reduced-motion behavior.
+- Verification pass: syntax checks, UI/server contracts, download acceleration unit, download progress và browser smoke test desktop/mobile/theme/i18n/Queue.
+
+## 2026-09-29 — Nghiên cứu hướng nâng cấp UI/UX
+
+- Chỉ audit, chưa chỉnh sửa mã nguồn hoặc UI.
+- Quan sát EveryVideo ở desktop 1440×900, mobile 390×844, dark/light và các tab Studio, Hàng Chờ, Nâng Cao, Cài Đặt.
+- Xác nhận Graphite Signal và bố cục inspector + explorer là nền tảng tốt; điểm cần giải quyết là mật độ option kỹ thuật, bảng format nhiều cột, Advanced dài và thứ bậc CTA.
+- Đề xuất hướng **Graphite Signal 2: Preset-first Media Workstation**; chi tiết tại [[10 - UI UX Upgrade Research]].
+- Luồng phân tích URL công khai chưa hiển thị metadata trong phiên này vì runtime local bị sandbox chặn kết nối mạng `WinError 10013`; không thay đổi kết luận về hướng UI.
+
+## 2026-09-29 — Kiểm chứng tải video X/Twitter
+
+- Kiểm tra URL X công khai `historyinmemes/status/1790637656616943991` bằng lõi vendored `TwitterIE` và adapter Express của EveryVideo.
+- `/api/info` nhận diện thành công và trả 9 format; `/api/download` với `bv*+ba/b` tạo MP4 hoàn chỉnh.
+- FFprobe pass: H.264 `728x720`, AAC stereo, duration `15.557370` giây.
+- Rà soát UI cho thấy payload X vẫn có resolution (`272x270`, `364x360`, `728x720`) và frontend đã có fallback từ `width`/`height`; hiện chưa có bằng chứng extractor làm mất resolution.
+- Không cần sửa mã. Contract, unit, progress và Python tests đều pass sau kiểm chứng.
 
 ## 2026-09-25 — Sửa thanh loading khi tải bằng aria2
 

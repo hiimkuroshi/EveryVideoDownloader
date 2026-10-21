@@ -1,0 +1,32 @@
+EveryVideo desktop - bundled third-party software
+
+Electron includes Node.js and Chromium. Their license files ship beside
+EveryVideo.exe as LICENSE.electron.txt and LICENSES.chromium.html.
+https://github.com/electron/electron
+
+Python: Python Software Foundation License and bundled library notices.
+See .runtime/python/LICENSE.txt. Source: https://www.python.org/downloads/
+
+yt-dlp: vendored source and license are included in core/.
+https://github.com/yt-dlp/yt-dlp
+EveryVideo includes local modifications, including its Bilibili extractor.
+
+aria2 1.37.0: GPL; see .runtime/aria2/COPYING and LICENSE.OpenSSL.
+Binary and corresponding source releases:
+https://github.com/aria2/aria2/releases/tag/release-1.37.0
+
+FFmpeg 9.0.1 essentials, built by gyan.dev with GPL/version3 enabled.
+See licenses/FFmpeg-GPL-3.0.txt and licenses/FFmpeg-build.txt.
+Build configuration is also printed by .runtime/ffmpeg/ffmpeg.exe -version.
+Binary distribution/build information: https://www.gyan.dev/ffmpeg/builds/
+FFmpeg source: https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz
+Build scripts and external dependencies: https://github.com/GyanD/codexffmpeg
+
+Playwright and its Chromium headless shell: Apache-2.0 and Chromium notices.
+See node_modules/playwright/LICENSE, node_modules/playwright-core/LICENSE,
+node_modules/playwright-core/NOTICE and the browser's LICENSE.headless_shell.
+https://github.com/microsoft/playwright
+
+Other JavaScript dependencies retain their license/notice files under
+resources/app.asar/node_modules. The application archive can be inspected
+using @electron/asar.

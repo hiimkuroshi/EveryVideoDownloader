@@ -215,10 +215,74 @@ tabBtns.forEach((btn, index) => {
     });
 });
 
+document.querySelector('[data-action="open-studio"]')?.addEventListener('click', () => {
+    const studioTab = $('tabBtnStudio');
+    if (studioTab) activateTab(studioTab, true);
+});
+
 // ── Helper Utilities ──────────────────────────────────
 function $(id) { return document.getElementById(id); }
 function val(id) { return $(id)?.value ?? ''; }
 function checked(id) { return $(id)?.checked ?? false; }
+
+function enhanceDisclosureLayouts() {
+    const quickCard = document.querySelector('.speed-ctrl-card');
+    if (quickCard && !quickCard.dataset.disclosureReady) {
+        const header = quickCard.querySelector('.card-header-compact');
+        const form = quickCard.querySelector('.compact-form-grid');
+        const switches = quickCard.querySelector('.quick-switches-row');
+        if (header && form && switches) {
+            const details = document.createElement('details');
+            details.className = 'quick-settings-details';
+            details.open = true;
+
+            const summary = document.createElement('summary');
+            summary.className = 'quick-settings-summary';
+            while (header.firstChild) summary.appendChild(header.firstChild);
+            const chevron = document.createElement('span');
+            chevron.className = 'disclosure-chevron';
+            chevron.setAttribute('aria-hidden', 'true');
+            chevron.textContent = '⌄';
+            summary.appendChild(chevron);
+
+            details.append(summary, form, switches);
+            header.remove();
+            quickCard.appendChild(details);
+            quickCard.dataset.disclosureReady = 'true';
+        }
+    }
+
+    const advancedRoot = document.querySelector('#tab-advanced .settings-card-wrap');
+    if (!advancedRoot || advancedRoot.dataset.disclosureReady) return;
+
+    const headings = [...advancedRoot.querySelectorAll(':scope > h3.section-title')];
+    headings.forEach((heading, index) => {
+        const details = document.createElement('details');
+        details.className = 'advanced-section';
+        details.open = index === 0;
+
+        const summary = document.createElement('summary');
+        summary.className = 'advanced-section-summary';
+        if (heading.dataset.i18n) summary.dataset.i18n = heading.dataset.i18n;
+        while (heading.firstChild) summary.appendChild(heading.firstChild);
+
+        advancedRoot.insertBefore(details, heading);
+        let node = heading.nextElementSibling;
+        heading.remove();
+        details.appendChild(summary);
+
+        while (node && !node.matches('hr, h3.section-title')) {
+            const next = node.nextElementSibling;
+            details.appendChild(node);
+            node = next;
+        }
+        if (node?.matches('hr')) node.remove();
+    });
+
+    advancedRoot.dataset.disclosureReady = 'true';
+}
+
+enhanceDisclosureLayouts();
 
 function formatBytes(bytes) {
     if (!bytes || isNaN(bytes) || bytes <= 0) return null;
@@ -494,6 +558,50 @@ function updateDownloadButtonState() {
     }
 }
 
+function syncExplorerViewChrome() {
+    const explorer = document.querySelector('.format-explorer-card');
+    if (!explorer) return;
+
+    const isPresetView = currentViewMode === 'cards' && currentTypeFilter === 'all' && parsedFormats.length > 0;
+    explorer.classList.toggle('format-view-cards', isPresetView);
+    explorer.classList.toggle('format-view-table', !isPresetView);
+
+    const presetPanel = explorer.querySelector('.preset-selection-panel');
+    const presetCards = $('presetCardsContainer');
+    const table = $('tableModeContainer');
+    const multiBar = $('multiSelectBar');
+    const detailIntro = explorer.querySelector('.format-detail-intro');
+
+    presetPanel?.classList.toggle('hidden', !isPresetView);
+    presetCards?.classList.toggle('hidden', !isPresetView);
+    table?.classList.toggle('hidden', isPresetView || currentTypeFilter === 'subtitles');
+    multiBar?.classList.toggle('hidden', isPresetView || currentTypeFilter === 'subtitles');
+    detailIntro?.classList.toggle('hidden', parsedFormats.length === 0 || isPresetView || currentTypeFilter === 'subtitles');
+
+    document.querySelectorAll('.mode-switch-btn').forEach(btn => {
+        const isActive = btn.dataset.mode === currentViewMode;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', String(isActive));
+    });
+
+    const selectedStatus = explorer.querySelector('.preset-selection-status');
+    if (selectedStatus && selectedFormatValue) {
+        const recommended = typeof t === 'function' ? t('presetRecommended') : 'Đề xuất: chất lượng tốt nhất';
+        const selectedPreset = explorer.querySelector('.preset-card.selected .format-label')?.textContent?.trim();
+        selectedStatus.textContent = selectedRawFormat
+            ? `${selectedRawFormat.resolution} · ID ${selectedRawFormat.id}`
+            : (selectedPreset || recommended);
+    }
+
+    updateWorkflowStage(parsedFormats.length ? (activeEventSource ? 3 : 2) : 1);
+}
+
+function updateWorkflowStage(stage) {
+    document.querySelectorAll('.workflow-step').forEach((step, index) => {
+        step.classList.toggle('active', index === stage - 1);
+    });
+}
+
 // ── Check Info & Fetch Formats ───────────────────────
 $('checkBtn').addEventListener('click', async () => {
     const url = val('url').trim();
@@ -502,6 +610,12 @@ $('checkBtn').addEventListener('click', async () => {
 
     currentUrl = url;
     currentBrowser = browser;
+    window.MediaDiscovery?.reset();
+    currentVideoData = null;
+    processAndRenderFormats([]);
+    processAndRenderSubtitles({});
+    $('videoHeroCard').classList.add('hidden');
+    document.querySelector('.format-explorer-card')?.classList.add('hidden');
 
     const platform = detectPlatform(url);
     updatePlatformBadges(platform);
@@ -509,6 +623,7 @@ $('checkBtn').addEventListener('click', async () => {
     const checkBtn = $('checkBtn');
     const loadingInfo = $('loadingInfo');
     const emptyCard = $('emptyHeroCard');
+    emptyCard?.classList.remove('hidden');
 
     $('statusArea').classList.add('hidden');
     $('downloadSuccessAlert')?.classList.add('hidden');
@@ -528,14 +643,29 @@ $('checkBtn').addEventListener('click', async () => {
             qp.append('bilibili_upos_host', biliUposHost);
         }
 
-        const res = await fetch(`/api/info?${qp}`);
+        const res = await fetch('/api/resolve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...Object.fromEntries(qp), browserMode: window.MediaDiscovery?.browserMode() || 'auto' })
+        });
         const contentType = res.headers.get('content-type') || '';
-        const data = contentType.includes('application/json')
+        const resolution = contentType.includes('application/json')
             ? await res.json()
-            : { error: (await res.text()).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() };
-        if (!res.ok) throw new Error(data.error || 'Lỗi khi tải thông tin video.');
+            : { error: 'NETWORK_ERROR' };
+        if (!res.ok) throw new Error(window.MediaDiscovery?.errorText(resolution.error) || 'Lỗi khi phân tích trang.');
+        currentUrl = resolution.source_url;
+        $('url').value = currentUrl;
+        window.MediaDiscovery?.render(resolution);
+        const data = resolution.info;
+        if (!data) {
+            emptyCard?.classList.toggle('hidden', resolution.assets.length > 0);
+            updateDownloadButtonState();
+            showToast(resolution.assets.length ? `${resolution.assets.length} ${t('mediaSources')}` : t('mediaNoResults'), resolution.assets.length ? 'success' : 'info');
+            return;
+        }
 
         currentVideoData = data;
+        document.querySelector('.format-explorer-card')?.classList.remove('hidden');
         const actualPlatform = detectPlatform(url, data.extractor || data.extractor_key);
         updatePlatformBadges(actualPlatform);
 
@@ -809,9 +939,19 @@ function handlePlaylistDisplay(data) {
 function processAndRenderFormats(formats) {
     parsedFormats = [];
     audioOnlyFormats = [];
+    currentTypeFilter = 'all';
+    currentSearchQuery = '';
+    currentViewMode = 'cards';
     selectedFormatSet.clear();
+    selectedRawFormat = null;
+    selectedFormatValue = 'bv*+ba/b';
     currentSortField = null;
     currentSortState = 'none';
+
+    document.querySelectorAll('.filter-pill').forEach(pill => {
+        pill.classList.toggle('active', pill.dataset.filter === 'all');
+    });
+    if ($('formatSearchInput')) $('formatSearchInput').value = '';
 
     document.querySelectorAll('th.th-sortable').forEach(t => {
         t.classList.remove('sorted-asc', 'sorted-desc');
@@ -884,12 +1024,9 @@ function processAndRenderFormats(formats) {
     renderPresetCards();
     updateMultiSelectBar();
 
-    // Reset selection so user must explicitly choose an option
-    selectedRawFormat = null;
-    selectedFormatSet.clear();
-    selectedFormatValue = null;
-    $('formatPreviewCode').textContent = '(Chưa chọn định dạng - Vui lòng chọn 1 dòng)';
-    if ($('customFormatInput')) $('customFormatInput').value = '';
+    // Start with the safest useful preset so the primary action is ready.
+    setFinalFormat('bv*+ba/b', typeof t === 'function' ? t('presetRecommended') : 'Đề xuất: chất lượng tốt nhất');
+    syncExplorerViewChrome();
 
     updateDownloadButtonState();
 }
@@ -1148,37 +1285,48 @@ function selectFormatFromTable(item) {
 // ── Render Quick Preset Cards ─────────────────────────
 function renderPresetCards() {
     const list = $('presetCardsContainer');
+    if (!list) return;
     list.innerHTML = '';
 
     const presets = [
         {
             value: 'bv*+ba/b',
-            title: '🌟 Chất Lượng Tốt Nhất (Best Video + Best Audio)',
-            desc: 'Tự động tải video độ phân giải cao nhất và ghép với âm thanh tốt nhất'
+            tag: 'Khuyên dùng',
+            title: 'Chất lượng tốt nhất',
+            desc: 'Video độ phân giải cao nhất, ghép với audio tốt nhất'
         },
         {
             value: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-            title: '🎬 Chuẩn MP4 / H.264 (Tương thích mọi thiết bị)',
-            desc: 'Định dạng MP4 và AAC tương thích hoàn hảo trên TV, iPhone, Android, PC'
+            tag: 'Tương thích cao',
+            title: 'MP4 cho mọi thiết bị',
+            desc: 'Ưu tiên MP4 và AAC cho TV, điện thoại và máy tính'
         },
         {
             value: 'bestaudio/best',
-            title: '🎵 Chỉ Tải Âm Thanh (Best Audio Only)',
-            desc: 'Trích xuất bài hát / podcast với chất lượng âm thanh cao nhất'
+            tag: 'Audio only',
+            title: 'Chỉ tải âm thanh',
+            desc: 'Phù hợp cho nhạc, podcast và nội dung nghe'
         },
         {
             value: 'bestvideo[height<=720]+bestaudio/best[height<=720]',
-            title: '📱 Tiết Kiệm Dung Lượng (720p HD Balanced)',
-            desc: 'Độ phân giải 720p HD nhẹ, tải nhanh, phù hợp lưu trữ điện thoại'
+            tag: 'Cân bằng',
+            title: '720p tiết kiệm dung lượng',
+            desc: 'Chất lượng HD nhẹ, phù hợp lưu trữ và mạng chậm'
         }
     ];
 
-    presets.forEach((p, i) => {
+    presets.forEach(p => {
         const card = document.createElement('label');
-        card.className = 'format-card' + (i === 0 ? ' selected' : '');
+        const isSelected = p.value === selectedFormatValue;
+        card.className = 'format-card preset-card' + (isSelected ? ' selected' : '');
+        card.dataset.presetValue = p.value;
         card.innerHTML = `
-            <input type="radio" name="presetRadio" value="${p.value}" ${i === 0 ? 'checked' : ''}>
+            <input type="radio" name="presetRadio" value="${p.value}" ${isSelected ? 'checked' : ''} aria-label="${p.title}">
             <div class="format-info">
+                <span class="preset-card-topline">
+                    <span class="preset-card-tag">${p.tag}</span>
+                    <span class="preset-card-check" aria-hidden="true">✓</span>
+                </span>
                 <span class="format-label">${p.title}</span>
                 <span class="format-meta">${p.desc}</span>
             </div>
@@ -1188,9 +1336,11 @@ function renderPresetCards() {
             document.querySelectorAll('.format-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
             selectedRawFormat = null;
+            selectedFormatSet.clear();
             document.querySelectorAll('.format-row').forEach(r => r.classList.remove('selected'));
             $('audioMergeHelperBox').classList.add('hidden');
             setFinalFormat(p.value, p.title);
+            syncExplorerViewChrome();
             updateDownloadButtonState();
         });
 
@@ -1206,6 +1356,8 @@ function setFinalFormat(formatString, summaryLabel) {
     $('formatPreviewCode').textContent = `-f "${formatString}"${sectionFlag}`;
     $('customFormatInput').value = formatString;
     $('downloadBtnText').textContent = typeof t === 'function' ? t('startDownloadBtn') : 'Bắt Đầu Tải Xuống';
+    const status = document.querySelector('.preset-selection-status');
+    if (status && summaryLabel) status.textContent = summaryLabel;
 }
 
 // ── Filter Toolbar Event Listeners ────────────────────
@@ -1215,6 +1367,7 @@ $('typeFilterPills').addEventListener('click', (e) => {
     document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     currentTypeFilter = btn.dataset.filter;
+    if (currentTypeFilter !== 'all') currentViewMode = 'table';
 
     const subContainer = $('subtitlesModeContainer');
     const tableContainer = $('tableModeContainer');
@@ -1241,11 +1394,14 @@ $('typeFilterPills').addEventListener('click', (e) => {
         }
         renderFormatTable();
     }
+    syncExplorerViewChrome();
 });
 
 $('formatSearchInput').addEventListener('input', (e) => {
     currentSearchQuery = e.target.value.trim();
+    if (currentSearchQuery) currentViewMode = 'table';
     renderFormatTable();
+    syncExplorerViewChrome();
 });
 
 $('subSearchInput')?.addEventListener('input', (e) => {
@@ -1273,6 +1429,7 @@ document.querySelectorAll('.mode-switch-btn').forEach(btn => {
             $('presetCardsContainer').classList.add('hidden');
             $('tableModeContainer').classList.remove('hidden');
         }
+        syncExplorerViewChrome();
     });
 });
 
@@ -1827,6 +1984,7 @@ function startDirectDownload(customParams = null) {
     dlBtn.disabled = true;
     dlBtn.innerHTML = `<div class="btn-spinner"></div> <span>Đang tải...</span>`;
     statusArea.classList.remove('hidden');
+    updateWorkflowStage(3);
     if (successBox) successBox.classList.add('hidden');
     if (openFolderBtn) openFolderBtn.classList.add('hidden');
     logs.innerHTML = '';
@@ -2289,6 +2447,7 @@ function showToast(message, type = 'info') {
 
 // ── Hook into i18n Language Switcher ─────────────────
 window.onLanguageChanged = function(lang) {
+    window.MediaDiscovery?.render();
     updateTimeRangeStatusBadge();
     if (currentVideoData?.title) {
         translateTitle(currentVideoData.title, lang);

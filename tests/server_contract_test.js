@@ -9,8 +9,9 @@ const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const acceleration = fs.readFileSync(path.join(root, 'lib', 'download-acceleration.js'), 'utf8');
 const progress = fs.readFileSync(path.join(root, 'lib', 'download-progress.js'), 'utf8');
 const client = fs.readFileSync(path.join(root, 'public', 'script.js'), 'utf8');
+const mediaRoutes = fs.readFileSync(path.join(root, 'lib', 'media-routes.js'), 'utf8');
 
-const getRoutes = [...server.matchAll(/app\.get\(['"]([^'"]+)['"]/g)].map(match => match[1]);
+const getRoutes = [...`${server}\n${mediaRoutes}`.matchAll(/app\.get\(['"]([^'"]+)['"]/g)].map(match => match[1]);
 const duplicateGetRoutes = [...new Set(getRoutes.filter((route, index) => getRoutes.indexOf(route) !== index))];
 assert.deepEqual(duplicateGetRoutes, [], `Duplicate GET routes: ${duplicateGetRoutes.join(', ')}`);
 

@@ -1,5 +1,7 @@
 # Tổng kết dự án EveryVideo
 
+> Đây là snapshot lịch sử. Bố cục hiện tại xem [chỉ mục tài liệu](README.md).
+
 > Cập nhật: 26/08/2026
 >
 > Nhánh phát triển: `nhanh-2`

@@ -245,7 +245,7 @@ Chỉ làm khi P0/P1 cho thấy lợi ích đủ lớn nhưng wrapper aria2 khô
 
 ## Kế hoạch phát triển
 
-Kế hoạch triển khai chi tiết được lưu ở project root theo quy ước planning skill: `bilibili-speed-optimization-plan.md`. Kế hoạch gồm chín task, contract mới, file impact, Auto fallback và benchmark gates trước khi bật mặc định.
+Kế hoạch triển khai chi tiết hiện ở `docs/plans/bilibili-speed-optimization-plan.md` sau đợt sắp xếp ngày 2026-10-21 (trước đây ở project root). Kế hoạch gồm chín task, contract mới, file impact, Auto fallback và benchmark gates trước khi bật mặc định.
 
 ## Sources
 

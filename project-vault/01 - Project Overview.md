@@ -8,13 +8,20 @@ tags:
 type: project
 status: active
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-10-21
 related:
   - "[[02 - Architecture]]"
   - "[[03 - Bilibili Download Flow]]"
 ---
 
 # Project Overview
+
+## Bố cục sau đợt dọn 2026-10-21
+
+- Bản đồ thư mục và chỉ mục tài liệu: `docs/README.md`. Ba kế hoạch UI, tốc độ Bilibili và Windows packaging đã chuyển từ root vào `docs/plans/`.
+- Bản app mở nhanh duy nhất được giữ là `dist/win-unpacked/EveryVideo.exe`; các bộ cài/portable EXE/ZIP và SHA256SUMS giữ trong `dist/`. Bản giải nén trùng `dist/EveryVideo-Portable-Folder/` đã bỏ sau đối chiếu 1.469 file payload.
+- Báo cáo, số đo khởi động và ảnh desktop được giữ tại `output/reports/windows-desktop-20261021/`; ảnh media UI vẫn ở `output/playwright/`. Browser profile/fixture tạm của các lượt smoke đã dọn.
+- File media tải dở cũ ở root được chuyển nguyên vẹn sang `Download/incomplete/`; giữ config, dữ liệu tải, code vendored và các dependency đang dùng. Dọn cache/log, metadata build không dùng và `ffplay.exe` thừa giải phóng tổng khoảng 1.096,46 MiB cùng bản app trùng.
 
 ## Mục tiêu sản phẩm
 

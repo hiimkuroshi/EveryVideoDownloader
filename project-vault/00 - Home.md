@@ -9,7 +9,7 @@ tags:
 type: project
 status: active
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-10-21
 ---
 
 # EveryVideo Project Vault
@@ -29,7 +29,7 @@ updated: 2026-09-09
 - [[07 - Testing|Chiến lược kiểm thử]]
 - [[08 - Work Log|Nhật ký công việc]]
 - [[09 - Bilibili Download Speed Research|Nghiên cứu tối ưu tốc độ Bilibili]]
-- [Kế hoạch triển khai tốc độ Bilibili](../bilibili-speed-optimization-plan.md)
+- [Kế hoạch triển khai tốc độ Bilibili](../docs/plans/bilibili-speed-optimization-plan.md)
 
 ## Nguyên tắc dùng vault
 

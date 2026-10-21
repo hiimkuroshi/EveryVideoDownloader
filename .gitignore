@@ -2,6 +2,8 @@
 node_modules/
 .runtime/
 .runtime-cache/
+dist/
+output/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -19,9 +21,14 @@ Download/*
 *.jpg
 *.png
 *.webp
+!desktop/icon.png
 
 # Temporary files & logs
 config.json
+cookies.txt
+.env
+.env.*
+!.env.example
 scratch/
 .system_generated/
 *.log

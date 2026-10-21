@@ -6,6 +6,18 @@ EveryVideo is a local media download studio with format inspection, subtitle too
 
 ## Quick Start
 
+### Windows x64 desktop app
+
+The desktop app includes its own Node.js, Python, FFmpeg/FFprobe, aria2 and headless Chromium runtimes.
+
+- `dist/EveryVideo-0.3.0-Setup-x64.exe`: per-user installer with shortcuts and an uninstaller.
+- `dist/EveryVideo-0.3.0-Portable-Folder-x64.zip`: **recommended portable option**. Extract the whole archive once to a dedicated folder, then launch `EveryVideo.exe`; keep all companion files and folders.
+- `dist/EveryVideo-0.3.0-Portable-x64.exe`: single-file wrapper that extracts its bundled runtime to a temporary folder **on every launch**, making startup slower than the folder or installed app.
+
+Settings and UI data live under `%APPDATA%/EveryVideo`, including when using the portable executable. Downloads default to your Windows Downloads/EveryVideo folder and can be changed in the app. Closing the app cancels active downloads. Local builds currently have no publisher signature.
+
+With the portable runtimes prepared in `.runtime/`, build on Windows using `npm ci`, `npm run desktop:check`, then `npm run desktop:build`. Run `npm run test:desktop` against the unpacked build. `npm run desktop` opens the desktop shell from source; `npm start` keeps the original browser workflow. See [Windows desktop build notes](docs/WINDOWS_DESKTOP.md) for prerequisites and verification details.
+
 ### Windows one-click launcher
 
 Double-click `Chay_Studio.bat` or `Run_Studio.bat`. The launcher checks the required tools, starts the server, and opens `http://localhost:3000`.
@@ -14,6 +26,7 @@ Double-click `Chay_Studio.bat` or `Run_Studio.bat`. The launcher checks the requ
 
 ```bash
 npm install
+npm run setup:browser
 npm start
 ```
 
@@ -23,11 +36,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Dependency | Recommended | Purpose |
 | --- | --- | --- |
-| Node.js | 18+ | Express server and Web UI |
+| Node.js | 22+ | Express server and media discovery |
 | Python | 3.9+ | Runs the bundled `core/yt_dlp` source package |
 | FFmpeg | 5+ | Merging, conversion, audio extraction, and subtitle embedding |
 | aria2c | Optional | Multi-range HTTP(S) acceleration for direct Bilibili `.m4s` files |
 | Browser | Edge, Chrome, Firefox, or Brave | Local application UI and optional browser cookies |
+| Chromium headless | Optional, installed by `npm run setup:browser` | DOM and network discovery for interactive pages |
 
 The server resolves Python in this order:
 
@@ -46,6 +60,9 @@ EveryVideo launches Python, Windows Explorer, and the native folder picker as ch
 
 ## Features
 
+- Paste URLs from different websites to discover audio, video, covers, galleries, subtitles, and HLS/DASH sources.
+- Copy original URLs or download individual assets, including sources on websites the extraction engine does not recognize.
+- Combine HTML/JSON/iframe discovery with the existing extraction engine and optional browser scanning.
 - Graphite Signal dark/light interface with a single coral interaction accent.
 - Desktop format workstation with a fully usable 390 px mobile layout.
 - Detailed format explorer with filtering, search, sorting, table/card modes, and multi-select.
@@ -59,6 +76,18 @@ EveryVideo launches Python, Windows Explorer, and the native folder picker as ch
 - Vietnamese, English, Simplified Chinese, and Japanese UI.
 - Resilient multi-provider title translation.
 - Dedicated Douyin and TikTok metadata/download resolvers.
+
+## Discover media from a URL
+
+Paste a webpage or direct media URL and click **Analyze**. The **Media on this page** panel lists sources with type, quality when supplied, verification status, and **Copy URL** / **Download** actions. Filter by audio, video, images, streams, or subtitles. Downloads use the selected folder and preserve existing files by choosing a new filename.
+
+HTML scanning and the extraction engine run together. Browser scanning starts automatically when a dynamic page has no playable source; enable **Scan interactive content too** to request it for other pages. Install its project-local Chromium runtime once with `npm run setup:browser`. The browser uses an isolated anonymous session; the cookie selector continues to apply to the existing extraction engine.
+
+Known platforms keep their format presets, merging options, and queue workflow. Individual discovered assets use their own download buttons; advanced conversion, time trimming, and queue options apply to the existing format workflow. A copied HLS/DASH URL is a playlist, while downloading it through the app uses Python/FFmpeg to assemble media. A copied URL may require Referer or session information; the app retains browser session cookies privately when needed.
+
+Discovery is bounded to the supplied page, a limited number of embedded frames, and at most 120 assets. A page can include recommendations or decorative images as well as its main media. Large pages may have unchecked candidates; clicking **Download** verifies that source before saving. Source descriptors expire after 15 minutes; analyze again to refresh them. Signed queries remain intact and partial results are retained.
+
+Coverage cannot be guaranteed for every URL. DRM, unavailable or private content, anti-bot challenges, and players requiring additional interaction can prevent extraction. The app does not bypass those restrictions.
 
 ## Graphite Signal UI
 
@@ -78,30 +107,27 @@ Accessibility and responsive behavior include:
 
 ```text
 EveryVideoDownloader/
-├── bin/folder_picker.exe          # Native Windows folder picker
-├── core/yt_dlp/                   # Bundled Python source engine
-├── docs/
-│   ├── PROJECT_SUMMARY.md
-│   ├── RELEASE_NOTES.md
-│   ├── YTDLP_CORE_ARCHITECTURE.md
-│   └── ui-concepts/               # UI concept prompts and design notes
-├── public/
-│   ├── graphite-signal.css        # Current visual override layer
-│   ├── i18n.js
-│   ├── index.html
-│   ├── script.js
-│   └── style.css                  # Legacy component foundation
-├── tests/
-│   ├── server_contract_test.js
-│   ├── download_acceleration_test.js
-│   ├── test_bilibili_speed.py
-│   ├── test_suite.js
-│   └── ui_contract_test.js
-├── lib/download-acceleration.js   # Bilibili engine/capability option builder
+├── bin/                          # Native Windows folder picker
+├── core/yt_dlp/                  # Vendored Python engine
+├── desktop/                      # Electron shell, icon and licenses
+├── docs/                         # Guides, architecture and docs/plans/
+├── lib/                          # Runtime, download and media modules
+├── project-vault/                # Project working memory
+├── public/                       # HTML/CSS/JavaScript interface
+├── scripts/                      # Setup, build and benchmark helpers
+├── tests/                        # Contract, unit and integration tests
+├── dist/                         # Installer/ZIP; win-unpacked/ runs directly
+├── Download/                     # Media; incomplete/ holds partial files
+├── output/                       # Reports, screenshots and test data
+├── .runtime/                     # Python, FFmpeg, aria2 and Chromium
 ├── DESIGN.md                      # Canonical design contract
-├── server.js
-└── ui-overhaul-plan.md
+├── electron-builder.cjs          # Windows packaging configuration
+├── package.json
+├── server.js                     # Express backend
+└── setup.js
 ```
+
+See the [folder map and documentation index](docs/README.md). Runtime, build and output directories are Git-ignored.
 
 ## API Overview
 
@@ -110,6 +136,9 @@ EveryVideoDownloader/
 | `GET` | `/api/config` | Read runtime configuration and the active download directory |
 | `POST` | `/api/config` | Persist download directory and advanced settings |
 | `GET` | `/api/info` | Extract metadata, formats, playlists, and subtitles |
+| `POST` | `/api/resolve` | Discover multiple assets and return metadata plus a temporary resolution ID |
+| `GET` | `/api/media-preview` | Preview an image using its resolution and asset IDs |
+| `GET` | `/api/media-download` | Download a resolved direct source or manifest over SSE |
 | `GET` | `/api/download` | Start a download and stream progress over SSE |
 | `GET` | `/api/cancel-download` | Stop an active download process |
 | `GET` | `/api/download-thumbnail` | Save an HD thumbnail |
@@ -156,7 +185,16 @@ The Python Bilibili selector/probe tests use the project-local portable runtime 
 npm run test:python
 ```
 
-The comprehensive integration suite performs real network downloads and modifies runtime configuration:
+The media suites use temporary local HTTP fixtures and generated media, without changing user configuration. Install Chromium first; integration checks also require the project-local Python and FFmpeg/FFprobe runtimes:
+
+```bash
+npm run test:media
+npm run test:media-ui
+```
+
+They cover unknown domains, HTML/JSON/Nuxt, cross-host frames, JavaScript/POST/session handling, preview/download/cancel, HLS/DASH output verified with FFprobe, clipboard, languages, and mobile layout. UI screenshots are written under `output/playwright/`.
+
+The original comprehensive suite performs real network downloads and modifies runtime configuration:
 
 ```bash
 npm test
@@ -167,7 +205,7 @@ Use it only in a disposable test environment.
 ## Documentation
 
 - [Graphite Signal design contract](DESIGN.md)
-- [UI overhaul plan and implementation status](ui-overhaul-plan.md)
+- [UI overhaul plan and implementation status](docs/plans/ui-overhaul-plan.md)
 - [Project summary](docs/PROJECT_SUMMARY.md)
 - [Release notes](docs/RELEASE_NOTES.md)
 - [Core architecture — English](docs/YTDLP_CORE_ARCHITECTURE_EN.md)

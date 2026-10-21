@@ -170,10 +170,13 @@ async function runSetup() {
   }
 
   // 4. Check Node Dependencies
-  process.stdout.write(` [4/4] Kiểm tra thư viện Web UI (Express/Cors)... `);
+  process.stdout.write(` [4/4] Kiểm tra thư viện Web UI và trích xuất media... `);
   try {
     require('express');
     require('cors');
+    require('cheerio');
+    require('playwright');
+    require('ipaddr.js');
     console.log(`${C.green}[SẴN SÀNG]${C.reset}`);
   } catch (e) {
     console.log(`${C.yellow}[CHƯA ĐẦY ĐỦ - ĐANG CHẠY NPM INSTALL]${C.reset}`);
@@ -184,6 +187,13 @@ async function runSetup() {
       console.log(`   ${C.red}❌ Lỗi cài đặt npm: ${err.message}${C.reset}`);
       allReady = false;
     }
+  }
+
+  const browserRuntime = path.join(ROOT_DIR, '.runtime', 'playwright');
+  if (fs.existsSync(browserRuntime) && fs.readdirSync(browserRuntime).some(name => name.startsWith('chromium_headless_shell-'))) {
+    console.log(`   ${C.green}✅ Chromium portable sẵn sàng cho trang tương tác.${C.reset}`);
+  } else {
+    console.log(`   ${C.dim}ℹ️ Chạy npm run setup:browser để bật quét trang tương tác. Quét HTML và yt-dlp vẫn hoạt động.${C.reset}`);
   }
 
   const aria2 = checkAria2System();

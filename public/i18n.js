@@ -111,7 +111,23 @@ const I18N = {
     filterSubs: "Phụ Đề",
     searchPlaceholder: "Tìm ID, Codec (av01, hvc1, avc), 1080p, mp4...",
     viewTableTitle: "Xem dạng Bảng chi tiết (hỗ trợ Sort & Multi-select)",
-    viewCardsTitle: "Xem dạng Mẫu nhanh gọn",
+    viewCardsTitle: "Xem preset chất lượng",
+    workflowLabel: "Quy trình",
+    workflowAria: "Quy trình tải video",
+    workflowAnalyze: "Phân tích",
+    workflowChoose: "Chọn chất lượng",
+    workflowDownload: "Tải xuống",
+    workflowNote: "Preset được đề xuất sau khi phân tích",
+    presetStepLabel: "BƯỚC 2 · CHỌN CHẤT LƯỢNG",
+    presetAria: "Preset chất lượng",
+    viewTableAria: "Bảng format chi tiết",
+    viewPresetAria: "Preset chất lượng",
+    presetTitle: "Chọn cách tải",
+    presetDesc: "Bắt đầu với một preset dễ hiểu hoặc mở bảng chi tiết để chọn exact format.",
+    presetRecommended: "Đề xuất: chất lượng tốt nhất",
+    detailStepLabel: "CHI TIẾT FORMAT",
+    detailStepDesc: "Chọn exact ID, sắp xếp hoặc thêm nhiều format vào hàng chờ.",
+    queueGoStudio: "Mở Studio để chọn format",
     selectedCountPrefix: "Đã chọn: ",
     selectedCountSuffix: " định dạng",
     addSelectedToQueue: "Thêm Mục Đã Chọn Vào Hàng Chờ",
@@ -351,7 +367,23 @@ const I18N = {
     filterSubs: "Subtitles",
     searchPlaceholder: "Search ID, Codec (av01, hvc1, avc), 1080p, mp4...",
     viewTableTitle: "Detailed Table View (Sort & Multi-select)",
-    viewCardsTitle: "Quick Cards View",
+    viewCardsTitle: "Quality preset view",
+    workflowLabel: "Workflow",
+    workflowAria: "Video download workflow",
+    workflowAnalyze: "Analyze",
+    workflowChoose: "Choose quality",
+    workflowDownload: "Download",
+    workflowNote: "A recommended preset appears after analysis",
+    presetStepLabel: "STEP 2 · CHOOSE QUALITY",
+    presetAria: "Quality presets",
+    viewTableAria: "Detailed format table",
+    viewPresetAria: "Quality presets",
+    presetTitle: "Choose how to download",
+    presetDesc: "Start with a clear preset or open the detailed table for an exact format.",
+    presetRecommended: "Recommended: best quality",
+    detailStepLabel: "FORMAT DETAILS",
+    detailStepDesc: "Choose an exact ID, sort formats or add multiple items to the queue.",
+    queueGoStudio: "Open Studio to choose a format",
     selectedCountPrefix: "Selected: ",
     selectedCountSuffix: " formats",
     addSelectedToQueue: "Add Selected To Queue",
@@ -591,7 +623,23 @@ const I18N = {
     filterSubs: "字幕列表",
     searchPlaceholder: "搜索 ID, 编码 (av01, hvc1, avc), 1080p, mp4...",
     viewTableTitle: "详细表格视图 (支持多选与排序)",
-    viewCardsTitle: "预设卡片视图",
+    viewCardsTitle: "质量预设视图",
+    workflowLabel: "下载流程",
+    workflowAria: "视频下载流程",
+    workflowAnalyze: "分析",
+    workflowChoose: "选择质量",
+    workflowDownload: "下载",
+    workflowNote: "分析后会显示推荐预设",
+    presetStepLabel: "步骤 2 · 选择质量",
+    presetAria: "质量预设",
+    viewTableAria: "详细格式表格",
+    viewPresetAria: "质量预设",
+    presetTitle: "选择下载方式",
+    presetDesc: "先选择易懂的预设，也可以打开详细表格选择精确格式。",
+    presetRecommended: "推荐：最高质量",
+    detailStepLabel: "格式详情",
+    detailStepDesc: "选择精确 ID、排序格式，或将多个项目加入队列。",
+    queueGoStudio: "打开 Studio 选择格式",
     selectedCountPrefix: "已选择: ",
     selectedCountSuffix: " 个格式",
     addSelectedToQueue: "将选中项加入下载队列",
@@ -831,7 +879,23 @@ const I18N = {
     filterSubs: "字幕リスト",
     searchPlaceholder: "ID, コーデック (av01, hvc1, avc), 1080p, mp4 を検索...",
     viewTableTitle: "詳細テーブル表示 (ソート & 複数選択対応)",
-    viewCardsTitle: "クイックカード表示",
+    viewCardsTitle: "品質プリセット表示",
+    workflowLabel: "ダウンロード手順",
+    workflowAria: "動画ダウンロード手順",
+    workflowAnalyze: "解析",
+    workflowChoose: "品質を選択",
+    workflowDownload: "ダウンロード",
+    workflowNote: "解析後におすすめプリセットが表示されます",
+    presetStepLabel: "ステップ2 · 品質を選択",
+    presetAria: "品質プリセット",
+    viewTableAria: "詳細フォーマット表",
+    viewPresetAria: "品質プリセット",
+    presetTitle: "ダウンロード方法を選択",
+    presetDesc: "分かりやすいプリセットを選ぶか、詳細テーブルで正確な形式を選択します。",
+    presetRecommended: "おすすめ：最高品質",
+    detailStepLabel: "形式の詳細",
+    detailStepDesc: "正確な ID を選び、並べ替え、複数項目をキューに追加できます。",
+    queueGoStudio: "Studio で形式を選択",
     selectedCountPrefix: "選択中: ",
     selectedCountSuffix: " 個の形式",
     addSelectedToQueue: "選択項目をキューに追加",
@@ -965,6 +1029,54 @@ const I18N = {
   }
 };
 
+const MEDIA_I18N = {
+  vi: {
+    urlPlaceholder: 'Dán link trang web hoặc media', mediaEyebrow: 'NGUỒN TẢI', mediaTitle: 'Media trong trang', mediaFilterAria: 'Lọc media', mediaDeepScan: 'Quét thêm nội dung tương tác',
+    mediaType_audio: 'Audio', mediaType_video: 'Video', mediaType_image: 'Ảnh', mediaType_thumbnail: 'Ảnh bìa', mediaType_manifest: 'Luồng phát', mediaType_subtitle: 'Phụ đề', mediaType_unknown: 'Nguồn media',
+    mediaStatus_verified: 'Đã kiểm tra', mediaStatus_available: 'Được nhận diện', mediaStatus_unverified: 'Chưa kiểm tra', mediaStatus_access_required: 'Cần quyền truy cập', mediaStatus_unavailable: 'Không khả dụng',
+    mediaSources: 'nguồn media', mediaSourceUrl: 'URL nguồn', mediaImage: 'Ảnh', mediaCopy: 'Sao chép URL', mediaCopied: 'Đã sao chép', mediaCopyFailed: 'Không thể sao chép. Hãy chọn URL và sao chép thủ công.',
+    mediaSave: 'Tải file', mediaCancel: 'Hủy', mediaCancelled: 'Đã hủy', mediaDownloading: 'Đang tải…', mediaSaved: 'Đã lưu:', mediaDownloadFailed: 'Tải thất bại. Hãy phân tích lại trang để cập nhật nguồn.',
+    mediaManifestHint: 'Nguồn phát theo nhiều đoạn; ứng dụng sẽ tải và ghép thành file.', mediaUrlHint: 'Một số URL có thời hạn hoặc cần thông tin từ trang nguồn để tải.',
+    mediaNoResults: 'Chưa tìm thấy media. Thử bật quét nội dung tương tác rồi phân tích lại.', mediaPartial: 'Đã giữ các nguồn tìm được. Một số nguồn chưa kiểm tra được hoặc cần quyền truy cập.', mediaBrowserUnavailable: 'Chưa mở được trang tương tác. Các nguồn đọc được từ trang vẫn được giữ.',
+    mediaResolveFailed: 'Không thể phân tích trang. Kiểm tra đường dẫn và thử lại.', mediaError_INVALID_URL: 'Hãy nhập URL http hoặc https hợp lệ.', mediaError_PRIVATE_ADDRESS: 'Không thể quét địa chỉ nội bộ.', mediaError_TIMEOUT: 'Trang phản hồi quá lâu. Hãy thử lại.', mediaError_NETWORK_ERROR: 'Không thể kết nối đến trang nguồn.',
+    mediaError_RESOLUTION_EXPIRED: 'Danh sách nguồn đã hết hạn. Hãy phân tích lại trang.', mediaError_ASSET_NOT_FOUND: 'Nguồn này không còn trong danh sách. Hãy phân tích lại.', mediaError_ACCESS_REQUIRED: 'Nguồn này yêu cầu quyền truy cập.', mediaError_MEDIA_UNAVAILABLE: 'Nguồn media không còn khả dụng.',
+  },
+  en: {
+    urlPlaceholder: 'Paste a webpage or media URL', mediaEyebrow: 'DOWNLOAD SOURCES', mediaTitle: 'Media on this page', mediaFilterAria: 'Filter media', mediaDeepScan: 'Scan interactive content too',
+    mediaType_audio: 'Audio', mediaType_video: 'Video', mediaType_image: 'Images', mediaType_thumbnail: 'Cover', mediaType_manifest: 'Streams', mediaType_subtitle: 'Subtitles', mediaType_unknown: 'Media source',
+    mediaStatus_verified: 'Checked', mediaStatus_available: 'Detected', mediaStatus_unverified: 'Unchecked', mediaStatus_access_required: 'Access required', mediaStatus_unavailable: 'Unavailable',
+    mediaSources: 'media sources', mediaSourceUrl: 'Source URL', mediaImage: 'Image', mediaCopy: 'Copy URL', mediaCopied: 'Copied', mediaCopyFailed: 'Could not copy. Select the URL and copy it manually.',
+    mediaSave: 'Download', mediaCancel: 'Cancel', mediaCancelled: 'Cancelled', mediaDownloading: 'Downloading…', mediaSaved: 'Saved:', mediaDownloadFailed: 'Download failed. Analyze the page again to refresh the source.',
+    mediaManifestHint: 'This stream uses segments; the app will download and assemble them.', mediaUrlHint: 'Some URLs expire or require information from their source page.',
+    mediaNoResults: 'No media found yet. Enable interactive scanning and analyze again.', mediaPartial: 'Found sources are preserved. Some are unchecked or require access.', mediaBrowserUnavailable: 'Could not open the interactive page. Sources read from the page are preserved.',
+    mediaResolveFailed: 'Could not analyze this page. Check the URL and try again.', mediaError_INVALID_URL: 'Enter a valid http or https URL.', mediaError_PRIVATE_ADDRESS: 'Internal network addresses cannot be scanned.', mediaError_TIMEOUT: 'The page took too long to respond. Try again.', mediaError_NETWORK_ERROR: 'Could not connect to the source page.',
+    mediaError_RESOLUTION_EXPIRED: 'The source list expired. Analyze the page again.', mediaError_ASSET_NOT_FOUND: 'This source is no longer listed. Analyze again.', mediaError_ACCESS_REQUIRED: 'This source requires access.', mediaError_MEDIA_UNAVAILABLE: 'This media source is unavailable.',
+  },
+  zh: {
+    urlPlaceholder: '粘贴网页或媒体链接', mediaEyebrow: '下载来源', mediaTitle: '网页中的媒体', mediaFilterAria: '筛选媒体', mediaDeepScan: '同时扫描交互内容',
+    mediaType_audio: '音频', mediaType_video: '视频', mediaType_image: '图片', mediaType_thumbnail: '封面', mediaType_manifest: '媒体流', mediaType_subtitle: '字幕', mediaType_unknown: '媒体来源',
+    mediaStatus_verified: '已检查', mediaStatus_available: '已识别', mediaStatus_unverified: '未检查', mediaStatus_access_required: '需要访问权限', mediaStatus_unavailable: '不可用',
+    mediaSources: '个媒体来源', mediaSourceUrl: '来源 URL', mediaImage: '图片', mediaCopy: '复制 URL', mediaCopied: '已复制', mediaCopyFailed: '复制失败，请选中 URL 手动复制。',
+    mediaSave: '下载文件', mediaCancel: '取消', mediaCancelled: '已取消', mediaDownloading: '正在下载…', mediaSaved: '已保存：', mediaDownloadFailed: '下载失败，请重新分析网页以更新来源。',
+    mediaManifestHint: '此媒体流由多个片段组成，应用将下载并合并。', mediaUrlHint: '部分 URL 会过期或需要来源网页的信息。',
+    mediaNoResults: '尚未找到媒体，请启用交互扫描后重新分析。', mediaPartial: '已保留找到的来源，部分来源尚未检查或需要权限。', mediaBrowserUnavailable: '无法打开交互网页，已保留网页来源。',
+    mediaResolveFailed: '无法分析网页，请检查 URL 后重试。', mediaError_INVALID_URL: '请输入有效的 http 或 https 链接。', mediaError_PRIVATE_ADDRESS: '无法扫描内部网络地址。', mediaError_TIMEOUT: '网页响应超时，请重试。', mediaError_NETWORK_ERROR: '无法连接来源网页。',
+    mediaError_RESOLUTION_EXPIRED: '来源列表已过期，请重新分析。', mediaError_ASSET_NOT_FOUND: '此来源已不在列表中，请重新分析。', mediaError_ACCESS_REQUIRED: '此来源需要访问权限。', mediaError_MEDIA_UNAVAILABLE: '此媒体来源不可用。',
+  },
+  ja: {
+    urlPlaceholder: 'ウェブページやメディアの URL を貼り付け', mediaEyebrow: 'ダウンロード元', mediaTitle: 'ページ内のメディア', mediaFilterAria: 'メディアを絞り込む', mediaDeepScan: '動的なコンテンツも調べる',
+    mediaType_audio: '音声', mediaType_video: '動画', mediaType_image: '画像', mediaType_thumbnail: 'カバー', mediaType_manifest: 'ストリーム', mediaType_subtitle: '字幕', mediaType_unknown: 'メディア元',
+    mediaStatus_verified: '確認済み', mediaStatus_available: '検出済み', mediaStatus_unverified: '未確認', mediaStatus_access_required: 'アクセス権が必要', mediaStatus_unavailable: '利用不可',
+    mediaSources: '件のメディア元', mediaSourceUrl: 'ソース URL', mediaImage: '画像', mediaCopy: 'URL をコピー', mediaCopied: 'コピーしました', mediaCopyFailed: 'コピーできません。URL を選択して手動でコピーしてください。',
+    mediaSave: 'ダウンロード', mediaCancel: 'キャンセル', mediaCancelled: 'キャンセルしました', mediaDownloading: 'ダウンロード中…', mediaSaved: '保存済み：', mediaDownloadFailed: '失敗しました。ページを再解析してソースを更新してください。',
+    mediaManifestHint: '分割されたストリームをダウンロードし、ファイルに結合します。', mediaUrlHint: 'URL には有効期限がある場合や、元のページ情報が必要な場合があります。',
+    mediaNoResults: 'メディアが見つかりません。動的コンテンツの調査を有効にして再解析してください。', mediaPartial: '検出したソースを保持しています。一部は未確認、または権限が必要です。', mediaBrowserUnavailable: '動的なページを開けませんでした。読み取れたソースは保持しています。',
+    mediaResolveFailed: 'ページを解析できません。URL を確認して再試行してください。', mediaError_INVALID_URL: '有効な http または https URL を入力してください。', mediaError_PRIVATE_ADDRESS: '内部ネットワークのアドレスは調査できません。', mediaError_TIMEOUT: 'ページの応答が遅すぎます。再試行してください。', mediaError_NETWORK_ERROR: '元のページに接続できません。',
+    mediaError_RESOLUTION_EXPIRED: 'ソース一覧の期限が切れました。ページを再解析してください。', mediaError_ASSET_NOT_FOUND: 'このソースは一覧にありません。再解析してください。', mediaError_ACCESS_REQUIRED: 'このソースにはアクセス権が必要です。', mediaError_MEDIA_UNAVAILABLE: 'このメディア元は利用できません。',
+  }
+};
+for (const [lang, labels] of Object.entries(MEDIA_I18N)) Object.assign(I18N[lang], labels);
+
 // Current active language code
 let currentAppLanguage = localStorage.getItem('appLanguage') || 'vi';
 if (!I18N[currentAppLanguage]) {
@@ -1019,14 +1131,21 @@ function applyLanguage(lang) {
     if (val) el.setAttribute('title', val);
   });
 
-  // 4. Update dynamic select elements
+  // 4. Accessible labels
+  document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+    const key = el.getAttribute('data-i18n-aria-label');
+    const val = t(key, lang);
+    if (val) el.setAttribute('aria-label', val);
+  });
+
+  // 5. Update dynamic select elements
   const topLangSelect = document.getElementById('appLanguageSelect');
   if (topLangSelect && topLangSelect.value !== lang) topLangSelect.value = lang;
 
   const settingsLangSelect = document.getElementById('settingsLanguageSelect');
   if (settingsLangSelect && settingsLangSelect.value !== lang) settingsLangSelect.value = lang;
 
-  // 5. Update dynamic translation title box label if present
+  // 6. Update dynamic translation title box label if present
   const transLabel = document.querySelector('#videoTranslatedBox .trans-label span');
   if (transLabel) {
     if (lang === 'vi') transLabel.textContent = 'Tiếng Việt (Google Dịch):';
@@ -1035,7 +1154,7 @@ function applyLanguage(lang) {
     else if (lang === 'ja') transLabel.textContent = '日本語翻訳：';
   }
 
-  // 6. Notify active view re-rendering if needed
+  // 7. Notify active view re-rendering if needed
   if (typeof window.onLanguageChanged === 'function') {
     window.onLanguageChanged(lang);
   }
