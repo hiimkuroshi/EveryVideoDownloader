@@ -967,7 +967,7 @@ input[type='radio'] {
 
 @media (max-width: 980px) {
   .workstation-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .workstation-sidebar {

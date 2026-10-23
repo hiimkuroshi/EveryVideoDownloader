@@ -4,17 +4,19 @@
 
 Build outputs include an NSIS installer, a self-extracting executable and a portable folder ZIP. All include the same Windows x64 application and download runtimes.
 
-- `dist/EveryVideo-1.2.0-Setup-x64.exe`: creates desktop/Start menu shortcuts and supports uninstall.
-- `dist/EveryVideo-1.2.0-Portable-Folder-x64.zip`: recommended for portable use. Extract the whole archive once into a dedicated folder, then run `EveryVideo.exe`. Keep all companion resources in place.
-- `dist/EveryVideo-1.2.0-Portable-x64.exe`: extracts the full application into a temporary directory on every launch and removes it on exit. This repeats substantial disk work, so startup is slower than the installed or folder app.
+- `dist/EveryVideo-1.3.0-Setup-x64.exe`: creates desktop/Start menu shortcuts and supports uninstall.
+- `dist/EveryVideo-1.3.0-Portable-Folder-x64.zip`: recommended for portable use. Extract the whole archive once into a dedicated folder, then run `EveryVideo.exe`. Keep all companion resources in place.
+- `dist/EveryVideo-1.3.0-Portable-x64.exe`: extracts the full application into a temporary directory on every launch and removes it on exit. This repeats substantial disk work, so startup is slower than the installed or folder app.
 
-Published downloads: [EveryVideo v1.2.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.2.0). Local builds write these files under `dist/`.
+Published downloads: [EveryVideo v1.3.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.3.0). Local builds write these files under `dist/`.
 
 The ready-to-run copy kept in this project is `dist/win-unpacked/EveryVideo.exe`. The duplicate `dist/EveryVideo-Portable-Folder/` extraction was removed during project cleanup after comparing every payload file. Keep the companion files in `win-unpacked/` when running or copying it.
 
 All variants save settings, local storage and shell logs under the Windows app-data folder for EveryVideo. Downloads default to Downloads/EveryVideo and can be changed in settings. Personal settings/cookies and existing downloaded media are not copied from the build machine. Removing or upgrading the application preserves user data. Closing the window cancels its download processes.
 
 These local builds are unsigned. A publisher certificate is required for signed releases. No update service or automatic publishing is configured.
+
+The v1.3.0 packages include the Velvet Silk interface, automatic audio merging, secondary media-source tab and manual GitHub update checker. The local-update notes below describe work performed before this release.
 
 ## Workspace after disk cleanup
 

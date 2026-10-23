@@ -13,6 +13,12 @@ updated: 2026-10-23
 
 # Work Log
 
+## 2026-10-23 — Chuẩn bị release Windows v1.3.0
+
+- Theo yêu cầu phát hành file mới nhất, chọn minor `v1.3.0` sau Latest `v1.2.0`; tăng package/lockfile, cập nhật README/hướng dẫn và release notes. Khôi phục dependency/runtime build từ lockfile và bản Windows đã giữ, build lại cả ba dạng Setup/portable EXE/ZIP.
+- Sửa một cột grid mobile tránh tràn ngang với font mới và test cache cập nhật phụ thuộc package version. Contracts/unit/progress/update checker/Python, media integration/FFprobe, source + packaged UI và full desktop smoke bản cuối pass; production audit 0 vulnerability.
+- Đối chiếu 19 file source + helper, metadata version và ZIP CRC/hash; tạo SHA256SUMS/manifest bốn asset. Quy trình tiếp theo: push commit nguồn, draft release target SHA cụ thể, đối chiếu asset GitHub rồi công khai. Chi tiết tại [[02 - Architecture]] và [[07 - Testing]].
+
 ## 2026-10-23 — Đưa toàn bộ thay đổi lên main
 
 - Theo yêu cầu người dùng, fetch và xác nhận `origin/main` không có commit riêng so với `nhanh-2`; fast-forward local `main` qua sáu commit tới `3b9c1ec`. Tree source khớp hoàn toàn bản vừa kiểm chứng/đẩy lên `nhanh-2`.

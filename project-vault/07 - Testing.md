@@ -17,6 +17,15 @@ related:
 
 # Testing
 
+## Verification ngày 2026-10-23 — Release Windows v1.3.0
+
+- `npm ci`, Electron/runtime prerequisite và `desktop:build` pass. Contracts **161 IDs/123 hooks/15 routes**, acceleration/progress, update checker **6/6**, Python **11/11** và production audit **0 vulnerability** pass.
+- Phát hiện test cache phụ thuộc package version: đặt rõ fixture `currentVersion: 1.2.0`; syntax/unit pass. Media UI tái hiện tràn ngang 375px do intrinsic minimum của grid với font mới; sửa cột mobile thành `minmax(0, 1fr)`, source và UI trích từ ASAR cuối pass toàn bộ media/update UI, bốn ngôn ngữ, keyboard, lựa chọn audio, dark/light và responsive.
+- Media parser/resolver fixture pass: audio cùng nội dung, tải riêng, ghép MP4/MKV, HLS/audio riêng, FFprobe đủ stream/codec, audio sai/403, preview/session/collision/cancel và HLS/DASH.
+- Full desktop smoke trên bản build cuối pass isolation/API/runtime, metadata fixture, exact-ID/DASH audio merge + FFprobe, cancel, persistence và shutdown cây tiến trình. Một lượt đầu timeout chụp ảnh khi chạy nhiều browser test cùng lúc; chạy riêng và bản build cuối pass, không thay assert để bỏ qua lỗi.
+- Portable EXE cuối pass từ wrapper thật: tự giải nén/mở UI, nhận FFmpeg/aria2, Python extraction fixture, dữ liệu test riêng/PATH hệ thống và wrapper thoát sạch. Evidence tại `output/desktop-smoke-portable-nogSga/`; full desktop cuối tại `output/desktop-smoke-WLuFZv/`.
+- Package version/executable metadata đúng `1.3.0`; 19 file source trong ASAR và helper Python ngoài ASAR khớp source. ZIP CRC pass; executable, ASAR và helper trong ZIP khớp bản unpacked đã kiểm chứng. Manifest SHA-256 cho ba gói và checksum lưu ở `output/reports/release-v1.3.0/local-assets.json`; ảnh/package evidence nằm cùng thư mục. Chưa kiểm chứng cài/gỡ trên VM sạch hoặc ký số.
+
 ## Verification ngày 2026-10-23 — Chuyển thay đổi sang main
 
 - Sau fetch, `origin/main` là ancestor của `nhanh-2`, chậm hơn sáu commit và không có commit riêng. Fast-forward local `main` tới `3b9c1ec` thành công; đối chiếu tree với `nhanh-2` không có khác biệt.

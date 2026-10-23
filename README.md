@@ -10,11 +10,11 @@ EveryVideo is a local media download studio with format inspection, subtitle too
 
 The desktop app includes its own Node.js, Python, FFmpeg/FFprobe, aria2 and headless Chromium runtimes.
 
-Download from [GitHub Release v1.2.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.2.0).
+Download from [GitHub Release v1.3.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.3.0).
 
-- `EveryVideo-1.2.0-Setup-x64.exe`: per-user installer with shortcuts and an uninstaller.
-- `EveryVideo-1.2.0-Portable-Folder-x64.zip`: **recommended portable option**. Extract the whole archive once to a dedicated folder, then launch `EveryVideo.exe`; keep all companion files and folders.
-- `EveryVideo-1.2.0-Portable-x64.exe`: single-file wrapper that extracts its bundled runtime to a temporary folder **on every launch**, making startup slower than the folder or installed app.
+- `EveryVideo-1.3.0-Setup-x64.exe`: per-user installer with shortcuts and an uninstaller.
+- `EveryVideo-1.3.0-Portable-Folder-x64.zip`: **recommended portable option**. Extract the whole archive once to a dedicated folder, then launch `EveryVideo.exe`; keep all companion files and folders.
+- `EveryVideo-1.3.0-Portable-x64.exe`: single-file wrapper that extracts its bundled runtime to a temporary folder **on every launch**, making startup slower than the folder or installed app.
 
 Settings and UI data live under `%APPDATA%/EveryVideo`, including when using the portable executable. Downloads default to your Windows Downloads/EveryVideo folder and can be changed in the app. Closing the app cancels active downloads. Local builds currently have no publisher signature.
 

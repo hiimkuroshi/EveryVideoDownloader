@@ -16,6 +16,13 @@ related:
 
 # Architecture
 
+## Gói phát hành v1.3.0 — 2026-10-23
+
+- Tăng package/lockfile lên `1.3.0` trên `main`, build lại Setup, portable EXE và portable folder ZIP từ source, gồm Velvet Silk, nguồn media phụ, tự ghép audio và kiểm tra cập nhật GitHub. Cập nhật README/hướng dẫn/release notes; không thay deployment landing page.
+- Khôi phục dependency bằng `npm ci` và runtime build từ gói Windows đã giữ; runtime prerequisite check pass. Root `node_modules/` và `.runtime/` hiện đã có lại để build/test, tiếp tục bị Git ignore.
+- Sửa grid một cột ở viewport <=980px thành `minmax(0, 1fr)` để font/nội dung không ép trang tràn ngang 375px. Cố định `currentVersion` trong fixture test cache để test không phụ thuộc phiên bản package.
+- ASAR version `1.3.0`, executable metadata `1.3.0.0`; 19 file source và helper Python khớp gói. ZIP CRC và hash executable/ASAR/helper khớp bản unpacked đã smoke. SHA256SUMS và manifest asset nằm trong `output/reports/release-v1.3.0/`. Các gói chưa ký số; chưa cài/gỡ trên VM sạch.
+
 ## Đồng bộ source GitHub — 2026-10-23
 
 - Landing page tại `sites/everyvideo-landing/` được lưu đầy đủ source/config/lockfile/ảnh trong repository EveryVideoDownloader, dưới dạng file thường để clone repo chính có đủ nội dung. Git riêng do Sites tạo vẫn giữ ở local, không đưa metadata `.git` hoặc gitlink vào repo chính.

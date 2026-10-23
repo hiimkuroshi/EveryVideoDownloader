@@ -1,3 +1,16 @@
+# v1.3.0 — Velvet Silk, ghép audio và kiểm tra cập nhật
+
+Ngày phát hành: 2026-10-23. [Hướng dẫn tải và sử dụng](releases/v1.3.0.md).
+
+- Giao diện Velvet Silk với bốn bảng màu và bốn bộ font; bảng định dạng mặc định và tab nguồn media phụ.
+- Tự ghép audio khi chọn video-only hoặc thêm vào hàng chờ; chọn audio thủ công/tải riêng luồng gốc.
+- Kiểm tra phiên bản mới từ GitHub trong Cài Đặt và mở trang tải thủ công.
+- Ba gói Windows x64 kèm runtime: Setup, portable ZIP và portable EXE, có SHA256SUMS.
+
+Các bản Windows chưa ký số; chưa kiểm thử cài/gỡ trên VM Windows sạch.
+
+---
+
 # v1.2.0 — Windows desktop và media discovery
 
 Ngày phát hành: 2026-10-21. [Hướng dẫn tải và sử dụng](releases/v1.2.0.md).

@@ -66,7 +66,7 @@ test('timeout also covers waiting for the response body', async () => {
 test('simultaneous checks share one request, cache expires and failures can be retried', async () => {
   let clock = 1000000;
   let calls = 0;
-  const check = createUpdateChecker({ now: () => clock, cacheMs: 100, failureCacheMs: 20, fetchImpl: async () => {
+  const check = createUpdateChecker({ currentVersion: '1.2.0', now: () => clock, cacheMs: 100, failureCacheMs: 20, fetchImpl: async () => {
     calls++;
     return response(calls === 2 ? 429 : 200, release('v1.3.0'));
   } });
