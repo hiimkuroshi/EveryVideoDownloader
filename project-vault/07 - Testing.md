@@ -17,6 +17,11 @@ related:
 
 # Testing
 
+## Verification ngày 2026-10-23 — Chuyển thay đổi sang main
+
+- Sau fetch, `origin/main` là ancestor của `nhanh-2`, chậm hơn sáu commit và không có commit riêng. Fast-forward local `main` tới `3b9c1ec` thành công; đối chiếu tree với `nhanh-2` không có khác biệt.
+- Dùng lại kết quả contracts/unit/progress/update checker và syntax của phiên đồng bộ ngay trước đó vì nội dung source không đổi. Chỉ bổ sung ghi chú kiểm chứng và nhật ký trước khi push `main`; không force-push hoặc sửa lịch sử commit.
+
 ## Verification ngày 2026-10-23 — Đồng bộ GitHub
 
 - Fetch và đối chiếu baseline với `origin/nhanh-2`: không có commit lệch trước khi gom thay đổi. UI/server contracts pass: **161 IDs, 123 hooks, 15 GET routes**; acceleration/progress pass; update checker **6/6** pass. Syntax của 16 JavaScript source/test thay đổi hoặc mới pass; `git diff --check` pass.

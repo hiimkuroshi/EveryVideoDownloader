@@ -13,6 +13,11 @@ updated: 2026-10-23
 
 # Work Log
 
+## 2026-10-23 — Đưa toàn bộ thay đổi lên main
+
+- Theo yêu cầu người dùng, fetch và xác nhận `origin/main` không có commit riêng so với `nhanh-2`; fast-forward local `main` qua sáu commit tới `3b9c1ec`. Tree source khớp hoàn toàn bản vừa kiểm chứng/đẩy lên `nhanh-2`.
+- Bổ sung bằng chứng tại [[07 - Testing]] và chuẩn bị push trực tiếp `main`, giữ nguyên lịch sử và không force-push. Bao gồm Windows desktop, media discovery/audio merge, Velvet Silk, update checker, landing page và tài liệu hiện có.
+
 ## 2026-10-23 — Gom toàn bộ thay đổi để đồng bộ GitHub
 
 - Theo yêu cầu người dùng, gom UI Velvet Silk, tab nguồn phụ, tự ghép audio, kiểm tra cập nhật, test/tài liệu/vault và landing page vào nhánh `nhanh-2`. Landing page lưu bằng file thường trong repo chính, giữ Git riêng local; bổ sung ngoại lệ ignore cho PNG nguồn/UI cần thiết.
