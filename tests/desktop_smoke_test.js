@@ -142,6 +142,23 @@ async function waitDone(page) {
   const metadata = await api(page, `/api/info?${new URLSearchParams({ url: `${fixtureOrigin}/sample.mp4` })}`);
   assert.equal(metadata.status, 200, JSON.stringify(metadata.data));
   assert.ok(metadata.data.formats?.length || metadata.data.url);
+  const dashMetadata = await api(page, `/api/info?${new URLSearchParams({ url: `${fixtureOrigin}/manifest.mpd` })}`);
+  assert.equal(dashMetadata.status, 200);
+  const selectedVideo = await page.evaluate(info => {
+    currentVideoData = info;
+    processAndRenderFormats(info.formats);
+    const video = parsedFormats.find(item => item.type === 'video');
+    if (!video || !audioOnlyFormats.length) throw new Error('Separate DASH streams missing');
+    selectFormatFromTable(video);
+    return { id: video.id, format: selectedFormatValue };
+  }, dashMetadata.data);
+  assert.equal(selectedVideo.format, `${selectedVideo.id}+bestaudio`, 'Selecting an exact video ID must include audio by default');
+  await beginDownload(page, `${fixtureOrigin}/manifest.mpd`, { format: selectedVideo.format, merge_output_format: 'mp4', output: downloads, custom_filename: 'exact-video-with-audio' });
+  await waitDone(page);
+  const exactFile = fs.readdirSync(downloads).find(file => file.startsWith('exact-video-with-audio') && file.endsWith('.mp4'));
+  assert.ok(exactFile, 'Exact video with automatic audio missing');
+  const exactProbe = JSON.parse(tool(ffprobe, ['-v', 'error', '-show_streams', '-of', 'json', path.join(downloads, exactFile)]));
+  assert.deepEqual(new Set(exactProbe.streams.map(stream => stream.codec_type)), new Set(['video', 'audio']));
   await beginDownload(page, `${fixtureOrigin}/manifest.mpd`, { format: 'bestvideo+bestaudio', merge_output_format: 'mkv', output: downloads });
   await waitDone(page);
   const merged = fs.readdirSync(downloads).find(file => file.endsWith('.mkv'));

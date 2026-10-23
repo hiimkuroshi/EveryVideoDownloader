@@ -8,10 +8,29 @@ tags:
 type: reference
 status: active
 created: 2026-09-09
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 # Work Log
+
+## 2026-10-23 — Gom toàn bộ thay đổi để đồng bộ GitHub
+
+- Theo yêu cầu người dùng, gom UI Velvet Silk, tab nguồn phụ, tự ghép audio, kiểm tra cập nhật, test/tài liệu/vault và landing page vào nhánh `nhanh-2`. Landing page lưu bằng file thường trong repo chính, giữ Git riêng local; bổ sung ngoại lệ ignore cho PNG nguồn/UI cần thiết.
+- Fetch xác nhận baseline đồng bộ remote; contracts 161 IDs/123 hooks/15 routes, acceleration/progress, update checker 6/6 và syntax 16 file JavaScript pass. Rà file ứng viên không thấy credential theo mẫu; tiếp tục loại runtime/config/cookie/media/build theo ignore. Xem [[07 - Testing]] và [[02 - Architecture]].
+
+## 2026-10-22 — Mở rộng đa ngôn ngữ: Thêm tiếng Nhật và hoàn thiện tiếng Anh
+
+- Bổ sung trọn vẹn bản tiếng Nhật (`ja`) và hoàn thiện tiếng Anh (`en`) cho landing page `sites/everyvideo-landing/`.
+- Cập nhật `src/data.ts`, `src/storyCopy.ts`, `src/StudioPreview.tsx`, `src/LandingStory.tsx`, `src/App.tsx`, `src/styles.css`: dịch toàn bộ nội dung, aria-labels, alt images, tên file mẫu và tài liệu.
+- Bổ sung cơ chế lưu trữ ngôn ngữ: nhận diện qua URL parameter (`?lang=ja|en|vi`) và `localStorage`, fallback mặc định tiếng Việt (`vi`).
+- Bổ sung font fallback chuẩn Nhật (Hiragino Sans, Yu Gothic, Meiryo, Noto Sans JP).
+- Build TypeScript/Vite và lint pass 100%. Suite Playwright chạy qua 9 viewport, audit Axe WCAG 2/2.1/2.2 A/AA đạt 0 violation cho cả tiếng Việt, tiếng Anh và tiếng Nhật.
+- Triển khai Cloudflare Workers thành công (`version 047e3920-464a-4af7-9d05-dded66e5ca7a`), remote Playwright QA trên production https://evd.tyr.io.vn/ đạt 100% pass với 0 lỗi. Chi tiết tại [[10 - UI UX Upgrade Research]].
+
+## 2026-10-21 — Tạo ba ảnh landing page EveryVideo
+
+- Đọc nguồn và design contract rồi tạo ba concept bằng `image_gen`: Graphite Studio, Paper Editorial, Cinema Library. Skill được yêu cầu `imagegen-frontend-web` chưa có trong môi trường; đã thông báo dùng workflow `imagegen` có sẵn.
+- Đã xem cả ba kết quả và lưu PNG cùng brief/prompt tại `output/design/landingpage-concepts-20261021/`. Chỉ tạo ảnh tham khảo, chưa sửa giao diện hoặc chọn thiết kế mới. Chi tiết tại [[10 - UI UX Upgrade Research]].
 
 ## 2026-10-21 — Phát hành GitHub Release v1.2.0
 
@@ -213,3 +232,86 @@ updated: 2026-10-21
 ## Quy ước cập nhật
 
 Thêm mục mới ở trên cùng theo mẫu [[Templates/Work Log Entry]]. Chỉ ghi kết quả có giá trị lâu dài; debug tạm thời không cần đưa vào đây.
+
+## 2026-10-21 — Triển khai landing page premium EveryVideo
+
+- Tạo ứng dụng marketing React/TypeScript/Tailwind riêng ở `sites/everyvideo-landing/`, theo hướng editorial “Keep what moves you”, có design system, ảnh WebP responsive, motion nhẹ và screenshot giao diện app thật với dữ liệu mẫu.
+- CTA nối tới installer/portable-folder ZIP v1.2.0 đã kiểm chứng qua GitHub; product tabs, collection filters, menu, FAQ, focus/keyboard/reduced-motion hoàn chỉnh. Không sửa downloader/API hoặc config runtime và không bịa testimonial.
+- Build, TypeScript, lint, dependency audit pass; QA production sáu viewport không overflow/runtime error/ảnh lỗi; axe trang và dialog 0 violation. Evidence `output/playwright/everyvideo-landing/`; chi tiết tại [[10 - UI UX Upgrade Research]]. Source và gói static đã chuẩn bị cho private hosted preview.
+- Private hosted preview đã deploy thành công tại https://everyvideo-studio.tartmite13.chatgpt.site ; chỉ landing page tĩnh, không host backend extraction hoặc đổi audience.
+
+## 2026-10-21 — Dựng lại landing page theo Cinema Library
+
+- Đọc source app/marketing và dựng lại `sites/everyvideo-landing/` theo ảnh `03-cinema-library.png`: hero núi hồ hoàng hôn, chữ Việt đậm, CTA coral, Studio nổi, ba loại media, dải nền tảng và footer graphite.
+- Studio preview tương tác có nhãn minh họa, queue/format/settings hoạt động local; hướng dẫn và nút tải trỏ bản Windows thật. Có VI/EN, sáng/tối, keyboard và reduced-motion. Không đổi backend/config của app thật.
+- Build/TypeScript/lint pass; QA production bảy viewport không overflow/ảnh lỗi/runtime error; axe dark/light/dialog 0 violation. Screenshot/report ở `output/playwright/everyvideo-cinema/`; source đã đồng bộ và đóng gói để cập nhật Site riêng tư. Chi tiết tại [[10 - UI UX Upgrade Research]].
+- Bản Cinema Library đã deploy thành công tại https://everyvideo-studio.tartmite13.chatgpt.site , giữ riêng tư. Đã mở trang triển khai và xác nhận nội dung/Studio mới; bản source marketing sạch sau khi đồng bộ.
+
+## 2026-10-21 — Công khai EveryVideo trên evd.tyr.io.vn
+
+- Theo yêu cầu Cloudflare và xác nhận public, mở bản Sites công khai và triển khai landing page trực tiếp lên Cloudflare Workers Static Assets, Worker `everyvideo-landing`, custom domain https://evd.tyr.io.vn/ . Cloudflare tạo DNS/HTTPS thành công; trang không phụ thuộc máy cá nhân.
+- Thêm Wrangler khóa phiên bản, cấu hình deploy/build, canonical/OG và sitemap/robots theo tên miền mới. Giữ backend/Windows app hiện tại. Mapping custom hostname Sites ban đầu còn pending, không dùng DNS production; auto-review từ chối cleanup mapping nên giữ nguyên, triển khai Worker hoàn tất an toàn.
+- Build/TypeScript/lint/audit/dry-run pass. Xác nhận production 100% traffic, HTTPS/HTTP 200 và trình duyệt sạch không đăng nhập. Remote smoke desktop/mobile, download dialog/link, assets, sitemap/robots và 404 pass; screenshot/report ở `output/playwright/everyvideo-cloudflare/`. Cập nhật [[02 - Architecture]], [[10 - UI UX Upgrade Research]] và index.
+
+## 2026-10-22 — Landing page giàu nội dung và motion
+
+- Mở rộng Cinema Library: workflow tương tác, control showcase, tình huống sử dụng, format explorer, bảy FAQ và CTA/footer; thêm parallax, reading progress, sticky navigation, panel transition, spotlight và hover, có reduced-motion. Giữ VI/EN, dark/light và Studio minh họa; không đổi downloader.
+- Build/TypeScript/lint/audit/dry-run pass. QA local và production chín viewport, tương tác/bàn phím và motion pass; axe sáu trạng thái 0 violation, không overflow/runtime error/request lỗi/ảnh lỗi. Đã xem screenshot mobile production và xác nhận version `9a6b98fd-94a9-405b-b29a-22ded134e3fe` nhận 100% traffic tại https://evd.tyr.io.vn/ . Chi tiết/evidence ở [[10 - UI UX Upgrade Research]].
+
+## 2026-10-22 — Tái deploy theo yêu cầu
+
+- Chạy lại build và deploy strict lên Cloudflare, version `8f105fb0-1848-4949-a679-772f0da9644f`, tại https://evd.tyr.io.vn/ . Asset giữ nguyên bản đã QA; HTML/JS/CSS online trả HTTP 200 và khớp từng byte với build local. Chi tiết tại [[10 - UI UX Upgrade Research]].
+
+## 2026-10-22 — Đưa chọn ngôn ngữ và Dark/Light mode lên đầu trang
+
+- Chuyển cụm điều khiển ngôn ngữ (VI/EN/JA) và nút chuyển đổi giao diện sáng/tối (Sun/Moon icon button) từ footer lên thanh header cố định (`site-header`) ở đầu trang.
+- Thiết kế `.header-controls` đồng bộ thẩm mỹ với header: hiệu ứng kính mờ (glassmorphism), viền tinh tế, hover mượt mà và vòng focus accessibility (`focus-visible`) chuẩn WCAG AA. Tự động chuyển đổi màu tương phản thích ứng khi cuộn header qua hero ở cả 2 theme sáng và tối.
+- Xử lý responsive hoàn hảo từ 320px đến 1920px: desktop đặt cạnh navigation và download button; mobile tự động căn phải cạnh hamburger menu, ẩn nút download phụ trong header trên màn hình nhỏ (<= 580px) để chống tràn ngang (0 overflow).
+- Dọn dẹp footer để tránh trùng lặp điều khiển và giữ layout tinh gọn.
+- Build, lint và suite Playwright tự động (9 viewports, 7 lượt kiểm tra Axe WCAG AA) pass 100%. Đã deploy lên Cloudflare Workers (Version `f7dbe47a-902e-4135-9477-5d091c38a3fb`), remote QA trực tiếp trên https://evd.tyr.io.vn/ pass 100%. Chi tiết tại [[10 - UI UX Upgrade Research]].
+
+## 2026-10-23 — Kiểm tra phương án chỉ giữ app Windows
+
+- Xác nhận Electron dùng chung frontend `public/` qua Express; gói `dist/win-unpacked/` chứa tài nguyên riêng và không cần source bên ngoài để chạy. Ghi rõ ranh giới xóa source so với bỏ frontend bên trong gói tại [[02 - Architecture]].
+- Đo dung lượng các nhóm file: frontend chỉ 0,35 MiB; bản Windows khoảng 898 MiB; dependencies/runtime/source landing page bên ngoài chiếm dung lượng đáng kể hơn. Chỉ đọc mã và thống kê file, chưa xóa dữ liệu, sửa app hay gỡ website.
+
+## 2026-10-23 — Dọn dung lượng ngoài app Windows
+
+- Theo yêu cầu người dùng, xóa 69 target/27.848 file/1.407,50 MiB gồm dependency phát triển, native runtime trùng, build/cache website, archive và ảnh QA cũ, metadata builder dư. Giữ toàn bộ gói Windows, mã nguồn, Git, config, media và báo cáo gọn; không thay đổi website đã deploy.
+- Full desktop smoke pass khi các đường dẫn development đã được tách khỏi vị trí cũ: UI, runtime tích hợp, phân tích/tải/ghép fixture có hình+tiếng, cancel, persistence và process cleanup. 1.469 payload hash không đổi, chỉ log Chromium append. Dọn dữ liệu test/staging và lưu evidence tại `output/reports/windows-only-cleanup-20261023/`.
+- Cập nhật [[02 - Architecture]], [[07 - Testing]], index và `docs/WINDOWS_DESKTOP.md` để lần phát triển/build sau khôi phục dependency/native runtime cần thiết; app đã build chạy trực tiếp như cũ.
+
+## 2026-10-23 — Đưa nguồn media vào tab phụ, ưu tiên bảng định dạng
+
+- Theo hai ảnh người dùng cung cấp, thêm hai tab con Studio: bảng định dạng mặc định, nguồn media phụ có số lượng; giữ filter/copy/download và mở nguồn khi không có metadata native. Bảng mặc định thay preset, giữ preset qua view switch; hỗ trợ keyboard/ARIA/bốn ngôn ngữ và giữ trạng thái giữa tab.
+- Cập nhật source và trực tiếp gói Windows local; so toàn bộ nội dung ASAR chỉ đúng năm file UI đổi. Không thay runtime, website hoặc release công khai. Cập nhật design contract/tài liệu/vault và UI contract thành 155 ID/116 hook.
+- Syntax/contracts, UI suite source + ASAR và full Windows smoke đều pass. Ảnh/report tại `output/reports/workspace-tabs-20261023/`; dọn công cụ đóng gói và dữ liệu test sau kiểm chứng.
+
+## 2026-10-23 — Tự tải/ghép video có audio
+
+- Nối helper ghép audio vào chọn exact video ID và queue; nguồn media tự đề xuất audio cùng entry, có chọn thủ công/tải riêng. Backend verify hai descriptor và FFmpeg stream-copy ra MP4/WebM/MKV, không báo thành công khi audio bị từ chối.
+- Cập nhật source và app Windows local (tám file ASAR + một helper ngoài ASAR), không đổi runtime hoặc release công khai. Media fixture/FFprobe, UI source + ASAR, full desktop exact-ID merge/cancel/persistence/shutdown, contracts/unit/progress và Python 11/11 pass.
+- Cập nhật quyết định, issue BILI-002, kiến trúc/implementation/testing và index. Evidence tại `output/reports/auto-audio-merge-20261023/`; dọn công cụ và dữ liệu test riêng sau kiểm chứng.
+
+## 2026-10-23 — Kiểm tra cập nhật EveryVideo từ GitHub
+
+- Thêm mục Cài Đặt hiển thị phiên bản đang chạy, kiểm tra latest stable release trên GitHub và link tải khi có bản mới. So SemVer, timeout/cache/gộp request và thông báo lỗi rõ; hỗ trợ bốn ngôn ngữ, keyboard, dark/light và màn hình hẹp.
+- Cập nhật source và bảy file ASAR của app Windows local, không đổi runtime hoặc bộ cài/release công khai. Unit 6/6, syntax/contracts 159 ID/121 hook/15 GET route, UI source + packaged, real GitHub v1.2.0/cache/session isolation và full desktop download/FFprobe smoke pass.
+- Cập nhật [[02 - Architecture]], [[07 - Testing]], index/design contract và hướng dẫn Windows. Media UI regression pass; dọn công cụ/cache/profile/fixture riêng sau kiểm chứng. Evidence tại `output/reports/github-update-check-20261023/`.
+
+## 2026-10-23 — Thiết kế Phong cách Tối giản Có chiều sâu "VELVET SILK" & Prototype
+
+- Theo phản hồi cần tối giản và giảm rối mắt, thiết kế lại hệ ngôn ngữ **"VELVET SILK" (Atmospheric Minimalism)** cho ứng dụng Windows (`public/index.html`, `public/style.css`, `public/graphite-signal.css`, `public/script.js`).
+- Tự pha chế 4 bảng màu khoáng tự nhiên dịu mắt: **Celadon Matcha** (Đen Rêu Nhung `#0B0F0E` + Xanh Ngọc Bích Dịu `#52DBA3` + Cam Đất Ấm `#F2A365`), **Dusk Peach** (Tím Hoàng Hôn + Hồng Đào `#FA897B`), **Nordic Fjord** (Xanh Bắc Âu + Sương Băng `#63CBE8`), và **Ceramic Light** (Gốm Trắng Ấm `#F3F0EA` + Xanh Xô Thơm `#1D7D59`).
+- Lược bỏ 70% đường viền và chi tiết rườm rà: gộp Header + Capsule Omnibar + Navigation lên 1 hàng thoáng, thay bảng kẻ ô bằng danh sách dải thẻ mềm 5 thông tin và thanh Floating Bottom Bar gọn nhẹ.
+- Bổ sung hệ thống **Typography Độc bản** (hỗ trợ 100% Tiếng Việt, không dùng font đại trà): kết hợp `Fraunces` (Variable Soft-Serif tạo điểm nhấn nghiêng nghệ thuật), `Bricolage Grotesque` (Grotesque có ink-traps cá tính), `Newsreader`, `Unbounded` và `Spline Sans Mono` / `Chivo Mono`. Bảo toàn 100% hợp đồng giao diện (`159 HTML IDs` và `121 JS hooks`). Chi tiết tại [[10 - UI UX Upgrade Research]].
+
+## 2026-10-23 — Triển khai Toàn diện "VELVET SILK" & Đa Bảng Màu / Đa Font vào Cài Đặt
+
+- Triển khai toàn bộ thiết kế **Velvet Silk (Atmospheric Minimalism)** vào codebase ứng dụng Windows:
+  - Thêm 4 tùy chọn Bảng màu (`settingsPaletteSelect`) và 4 tùy chọn Font (`settingsFontSelect`) vào tab Cài đặt trong `public/index.html`.
+  - Nâng cấp `public/script.js` để tự động khởi tạo, lưu `localStorage` và chuyển đổi trực tiếp giao diện thời gian thực.
+  - Cập nhật từ điển `public/i18n.js` cho 4 ngôn ngữ (VI, EN, ZH, JA).
+  - Tích hợp toàn bộ hệ biến CSS, hiệu ứng nền mờ lụa, hạt phim 2.5% và kỹ thuật Mixed-Voice Editorial vào `public/graphite-signal.css`.
+  - Đồng bộ trực tiếp 4 file giao diện vào `dist/win-unpacked/resources/app.asar`.
+  - Bộ kiểm thử hợp đồng giao diện `tests/ui_contract_test.js` (161 IDs, 123 hooks) và kiểm thử server `tests/server_contract_test.js` pass 100%. Chi tiết tại [[10 - UI UX Upgrade Research]].

@@ -9,7 +9,7 @@ tags:
 type: project
 status: active
 created: 2026-10-07
-updated: 2026-10-07
+updated: 2026-10-23
 related:
   - "[[11 - Universal Media Extraction Research]]"
   - "[[02 - Architecture]]"
@@ -17,6 +17,21 @@ related:
 ---
 
 # Universal Media Extraction Implementation
+
+## Tự ghép audio — 2026-10-23
+
+- Bảng định dạng đã nối helper `enableAudioMerge`/`selectedAudioTrack`: chọn video-only tạo `videoID+bestaudio` hoặc `videoID+audioID`, giữ nguyên ID/chất lượng video. Tắt checkbox để tải nguyên video; audio-only/combo không thêm track. Hàng chờ và tải nhiều format dùng cùng quy tắc.
+- Resolver gắn `media_group`, `video_only`, `audio_only` và `audio_asset_id` được đề xuất cho formats thuộc cùng entry extractor. Ưu tiên language preference, container tương thích, bitrate; không tự ghép các nguồn generic không rõ quan hệ hoặc entry khác.
+- Thẻ nguồn có lựa chọn audio và nút **Tải video có tiếng**; cặp đã xác định được chọn mặc định, nguồn generic cho chọn thủ công hoặc giữ tải nguyên nguồn. Lựa chọn được giữ khi đổi filter/ngôn ngữ. Nhãn mới có đủ VI/EN/ZH/JA.
+- `/api/media-download` nhận thêm `audio_asset_id`; thiếu tham số dùng đề xuất của resolver, giá trị `none` tải nguyên nguồn. Audio phải là descriptor cùng resolution, đúng loại; cả hai nguồn được verify/refresh và kiểm tra manifest/fragment trước khi spawn. Không nhận URL audio tùy ý từ client.
+- Helper Python nhận hai descriptor qua stdin, giữ header riêng mỗi nguồn, yêu cầu FFmpeg trước khi tải, chọn video/audio riêng và stream-copy thành một file. Ưu tiên MP4/WebM với tổ hợp container tương thích, fallback MKV; staging/lock/collision/cancel tiếp tục dùng nhánh engine cũ. Audio không truy cập được phải báo lỗi, không trả thành công với video im lặng.
+- Source và app Windows local đã cập nhật: tám file trong ASAR, helper Python ngoài ASAR; không đổi runtime/dependency của app. Fixture thật/FFprobe, UI và desktop smoke pass; chi tiết tại [[07 - Testing]]. Chưa chạy lại URL Bilibili/public trong lượt này.
+
+## Cập nhật bố cục Studio — 2026-10-23
+
+- Theo yêu cầu người dùng, phần nguồn media chuyển thành tab phụ **Nguồn media (N)**; bảng định dạng trở thành tab chính mặc định sau phân tích native. Không bỏ tính năng copy/tải/filter nguồn, không đổi resolver/API. Nếu không có metadata native, tự mở tab nguồn để kết quả generic vẫn thấy ngay.
+- Tab có semantics ARIA, hỗ trợ bàn phím, bốn ngôn ngữ và giữ lựa chọn/filter khi chuyển tab hoặc đổi ngôn ngữ. Selector filter bảng được scope riêng để không làm mất highlight filter nguồn. Mỗi lượt phân tích mới reset về table mode khi có metadata; preset vẫn chọn được bằng nút cards.
+- Source và bản UI trong ASAR đã qua integration; full app Windows smoke pass. Artifact local `dist/win-unpacked/` đã cập nhật, bản release public không thay đổi. Chi tiết/evidence tại [[07 - Testing]], [[02 - Architecture]].
 
 ## Quyết định và phạm vi
 
@@ -53,7 +68,7 @@ Chromium tự xử lý redirect/Set-Cookie; từng request mới vẫn qua DNS/I
 
 Direct download stream qua Node tới `.part`, rồi rename sau hoàn tất. Engine download dùng thư mục staging riêng dưới output, chuyển file sau exit 0 rồi dọn đúng staging đã tạo. File lock đặt trước tác vụ async tránh collision đồng thời; tên Windows được sanitize, không đè file cũ. Hủy SSE abort stream hoặc taskkill cây Python trên Windows, dọn staging/lock/partial.
 
-Nguồn riêng có nút tải riêng; tùy chọn cắt/chuyển đổi và queue áp dụng luồng formats cũ, chưa được nối vào mọi asset generic. Stream video-only/audio-only có thể là thành phần rời; chọn preset/native workflow khi cần ghép theo platform.
+Nguồn riêng có nút tải và chọn audio để ghép như mục cập nhật 2026-10-23; tùy chọn cắt/chuyển đổi và queue vẫn áp dụng luồng formats, chưa nối vào mọi asset generic. Không suy đoán audio cùng nội dung chỉ vì hai nguồn nằm trên cùng trang.
 
 ## Vận hành và giới hạn
 

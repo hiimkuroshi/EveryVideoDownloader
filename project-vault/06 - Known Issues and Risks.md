@@ -9,7 +9,7 @@ tags:
 type: project
 status: active
 created: 2026-09-09
-updated: 2026-10-08
+updated: 2026-10-23
 related:
   - "[[03 - Bilibili Download Flow]]"
   - "[[07 - Testing]]"
@@ -32,11 +32,12 @@ related:
 ## BILI-002 — Exact format ID có thể tạo video không audio
 
 - **Mức:** cao
-- **Trạng thái:** cần tái hiện
+- **Trạng thái:** đã xử lý UI/queue và kiểm chứng fixture DASH/desktop ngày 2026-10-23; chưa chạy lại Bilibili thật trong lượt này
 - **Quan sát:** click một dòng gọi `setFinalFormat(item.id)`. Bilibili DASH thường tách video và audio. UI có `selectedAudioTrack`/audio merge helper nhưng chưa thấy event wiring làm format thành `videoID+audioID`.
 - **Rủi ro:** Người dùng chọn chất lượng video cụ thể và nhận file im lặng.
 - **Kiểm chứng:** Tải một exact DASH video ID, kiểm tra streams bằng FFprobe; so sánh với `bv*+ba/b`.
 - **Hướng xử lý dự kiến:** Khi chọn video-only, hiện audio helper và tạo expression `${videoId}+${audioId}`; vẫn cho phép “video-only” rõ ràng.
+- **Kết quả:** Chọn video-only mặc định dùng `${videoId}+bestaudio`, dropdown cho audio ID cụ thể, tắt checkbox giữ video ID; queue cùng quy tắc. Desktop tải đúng exact ID từ manifest fixture và FFprobe xác nhận video+audio. Nguồn media cũng hỗ trợ tự ghép cùng entry/chọn thủ công; xem [[12 - Universal Media Extraction Implementation]].
 
 ## BILI-003 — Nhận diện P2P bằng substring `xy` quá rộng
 

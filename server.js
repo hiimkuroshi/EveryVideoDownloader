@@ -19,6 +19,8 @@ const { createMediaResolver } = require('./lib/media-resolver');
 const { installMediaRoutes } = require('./lib/media-routes');
 const { normalizeUrl } = require('./lib/media-network');
 const { resourceRoot, dataRoot, downloadsDir } = require('./lib/runtime-paths');
+const { APP_VERSION, createUpdateChecker } = require('./lib/update-checker');
+const checkForUpdates = createUpdateChecker();
 
 // Protect process from unexpected crashes
 process.on('uncaughtException', (err) => {
@@ -201,6 +203,12 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+app.get('/api/check-update', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const result = await checkForUpdates();
+  res.status(result.error ? 503 : 200).json(result);
+});
+
 // =============================================================================
 // GET & POST /api/config — Get / Update dynamic & persistent server config
 // =============================================================================
@@ -208,6 +216,7 @@ app.get('/api/config', (req, res) => {
   const cfg = loadPersistentConfig();
   res.json({
     ...cfg,
+    appVersion: APP_VERSION,
     downloadFolder: cfg.downloadFolder || DOWNLOADS_DIR,
     hasLocalFfmpeg: !!LOCAL_FFMPEG,
     hasAria2c: !!resolveAria2Command(),

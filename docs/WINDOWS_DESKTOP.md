@@ -16,6 +16,26 @@ All variants save settings, local storage and shell logs under the Windows app-d
 
 These local builds are unsigned. A publisher certificate is required for signed releases. No update service or automatic publishing is configured.
 
+## Workspace after disk cleanup
+
+The 2026-10-23 cleanup retained the complete `dist/win-unpacked/` application, source code, Git history, configuration, downloaded media and compact verification reports. It removed development `node_modules/`, the duplicate root `.runtime/`, landing-page dependencies/build output, generated site archives, old QA screenshots and unused builder metadata. The published landing page was not changed.
+
+The packaged application runs without these external development files. To resume development, run `npm ci` in the project root; run it separately in `sites/everyvideo-landing/` for the marketing site. Before running native source-mode tests or building another Windows package, restore the runtime layout in the table below. Python, FFmpeg and Playwright copies remain available under `dist/win-unpacked/resources/.runtime/`; the bundled `aria2/` contents must be restored to `.runtime/aria2/aria2-1.37.0-win-64bit-build1/` for the current builder configuration.
+
+Cleanup inventory, the original app SHA-256 manifest, verification summary and a fresh desktop screenshot are kept in `output/reports/windows-only-cleanup-20261023/`.
+
+The subsequent local UI update on 2026-10-23 makes the format table the default Studio result and moves discovered sources into a secondary tab. The current `dist/win-unpacked/` copy includes this update: exactly five `public/` files were replaced inside `resources/app.asar`, with all other archive contents and native runtime files retained. Published v1.2.0 downloads were not rebuilt. UI and full desktop checks are recorded in `output/reports/workspace-tabs-20261023/`.
+
+The next local update on the same date enables automatic audio merging for selected video-only formats and queued downloads. Discovered sources select matching audio from the same extracted content, with manual audio selection and raw-source download available. This replaces eight `public/`/`lib/` files in ASAR and `resources/scripts/download-resolved-media.py`; runtimes remain unchanged. Open the current `dist/win-unpacked/EveryVideo.exe` to use it. Real fixture output passed FFprobe and the full desktop smoke; evidence is in `output/reports/auto-audio-merge-20261023/`. Published installers and archives still contain the earlier release.
+
+## Check for updates
+
+Open **Cài Đặt → Cập nhật EveryVideo → Kiểm tra cập nhật** (English: **Settings → EveryVideo updates → Check for updates**). The app compares its package version with the latest stable GitHub release. When a newer version is available, **Mở trang tải bản mới / Open download page** opens that release in your browser.
+
+Checks run when you press the button and have a 10-second GitHub timeout. Results are cached for five minutes; failures are cached for 30 seconds. Network failures and GitHub rate limits show a retry message. This checks the EveryVideo application release; installation is performed from the GitHub download page.
+
+The local `dist/win-unpacked/` app includes this feature as of 2026-10-23. Source and seven ASAR entries were updated; native runtimes and published v1.2.0 installers/archives are unchanged. Verification is recorded in `output/reports/github-update-check-20261023/`.
+
 ## Prepare a build
 
 Use Windows x64 with Node.js 22+ for development. Run `npm ci`; if npm's install-script policy blocks the Electron download, run `node node_modules/electron/install.js` explicitly.

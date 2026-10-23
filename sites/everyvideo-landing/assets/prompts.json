@@ -1,0 +1,14 @@
+{
+  "tool": "built-in image_gen",
+  "reference": "03-cinema-library.png, user-selected visual concept",
+  "assets": [
+    {
+      "file": "cinema-hero.png",
+      "prompt": "Use the website mockup ONLY as a reference for the cinematic landscape photograph at its top. Create a standalone original photographic landscape background for the actual website implementation. No website, NO UI, NO letters, no text, no logos, no mockup, no frames. Wide landscape 3:2 photograph. A vast mountain lake in the European Alps at sunset, dramatic jagged snowcapped mountains along the upper left and middle distance, amber orange sun setting above the ridge in the far upper right, dark blue teal lake below, forested shoreline, natural stone foreground. One very small lone hiker with a burnt-orange backpack standing on a rock in the lower right, facing the lake and sun. The left 55% should be naturally dark mountain and trees and relatively low detail so white text can be overlaid in code. Right half luminous golden sunset reflected on lake. Photorealistic cinematic travel-film still, excellent detail, atmospheric perspective, genuine natural color, deep graphite shadows without crushed blacks. Hero will be cropped wide. Match the reference's quiet amber sunset / slate-blue mountain mood. No words or interface marks anywhere."
+    },
+    {
+      "file": "cinema-audio.png",
+      "prompt": "Photorealistic premium editorial close-up for an audio feature on a dark cinematic media-download website. A pair of black over-ear studio headphones resting on dark natural wood at the lower left and center, tactile leather earpads, rich warm amber afternoon bokeh behind at upper right. Black and charcoal base with restrained copper highlights. Landscape 3:2 image composed for a card. Very elegant and realistic, cinematic shallow depth of field. No logos, no text, no brand, no waveform graphics, no interface. Leave the lower-right half with empty warm dark wood and soft light for a waveform to be overlaid in website code."
+    }
+  ]
+}

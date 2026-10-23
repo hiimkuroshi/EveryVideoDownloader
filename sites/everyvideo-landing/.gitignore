@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars*
+.openai/.local/
+.sites.local/
+*.local
+!public/images/*.jpg
+!public/images/*.webp
+*.tsbuildinfo

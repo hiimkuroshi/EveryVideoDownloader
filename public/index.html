@@ -6,6 +6,9 @@
     <title>EveryVideo — Download Studio</title>
     <meta name="description" content="EveryVideo is a focused download studio for inspecting formats, managing a queue, and controlling advanced media options.">
     <meta name="theme-color" content="#0A0E15">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Chivo+Mono:wght@400;500;600&family=Fraunces:ital,opsz,SOFT,wght@0,9..144,50..100,600;1,9..144,50..100,500&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+JP:wght@500;600;700&family=Noto+Serif+SC:wght@500;600;700&family=Spline+Sans+Mono:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="graphite-signal.css">
 </head>
@@ -15,6 +18,8 @@
 <h1 class="sr-only">EveryVideo Download Studio</h1>
 
 <div class="studio-app">
+    <div class="silk-aura"></div>
+    <div class="silk-grain"></div>
     <!-- ═══════════════ TOP NAVIGATION BAR ═══════════════ -->
     <!-- ═══════════════ TOP NAVIGATION BAR (MAX HORIZONTAL SPACE FOR URL INPUT) ═══════════════ -->
     <header class="studio-topbar">
@@ -24,7 +29,7 @@
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
                 <div class="brand-text">
-                    <span class="brand-title">Every<span class="brand-highlight">Video</span></span>
+                    <span class="brand-title display-text">Every<span class="brand-highlight editorial-italic">Video</span></span>
                 </div>
             </div>
             <!-- Dynamic Platform Badge in Topbar -->
@@ -126,7 +131,7 @@
                 <li class="workflow-connector" aria-hidden="true"></li>
                 <li class="workflow-step"><span class="workflow-step-number">3</span><span data-i18n="workflowDownload">Tải xuống</span></li>
             </ol>
-            <span class="workflow-note" data-i18n="workflowNote">Preset được đề xuất sau khi phân tích</span>
+            <span class="workflow-note" data-i18n="workflowNote">Chọn định dạng sau khi phân tích</span>
         </div>
 
         <div class="workstation-grid">
@@ -424,7 +429,16 @@
 
             <!-- ════════════ RIGHT WORKSTATION COLUMN (Format Table Explorer & Actions) ════════════ -->
             <div class="workstation-main-wrapper">
-                <section class="media-discovery-panel card hidden" data-media-discovery aria-label="Media trong trang" data-i18n-aria-label="mediaTitle">
+                <div class="explorer-tabs" role="tablist" aria-label="Kết quả phân tích" data-i18n-aria-label="explorerTabsAria">
+                    <button type="button" id="formatExplorerTab" class="explorer-tab" role="tab" data-explorer-tab="formats" aria-controls="formatExplorerPanel" aria-selected="true" tabindex="0">
+                        <span data-i18n="explorerFormatsTab">Bảng định dạng</span>
+                    </button>
+                    <button type="button" id="mediaSourcesTab" class="explorer-tab" role="tab" data-explorer-tab="media" aria-controls="mediaSourcesPanel" aria-selected="false" tabindex="-1" disabled>
+                        <span data-i18n="explorerMediaTab">Nguồn media</span>
+                        <span class="explorer-tab-count" data-media-source-count></span>
+                    </button>
+                </div>
+                <section id="mediaSourcesPanel" class="media-discovery-panel card hidden" data-media-discovery data-explorer-panel="media" role="tabpanel" aria-labelledby="mediaSourcesTab" tabindex="0" hidden>
                     <div class="media-discovery-heading">
                         <div>
                             <span class="section-eyebrow" data-i18n="mediaEyebrow">NGUỒN TẢI</span>
@@ -443,7 +457,7 @@
                     <p class="media-discovery-notice" data-media-notice></p>
                     <div class="media-assets-list" data-media-assets></div>
                 </section>
-                <section class="workstation-main card format-explorer-card">
+                <section id="formatExplorerPanel" class="workstation-main card format-explorer-card" data-explorer-panel="formats" role="tabpanel" aria-labelledby="formatExplorerTab" tabindex="0">
                     <!-- Playlist Banner (Hidden by default, shown if playlist detected) -->
                     <div id="playlistBanner" class="playlist-banner-box hidden">
                         <div class="playlist-banner-header">
@@ -611,7 +625,7 @@
                         <div class="merge-bar-right" id="audioMergeSelectRow">
                             <label for="selectedAudioTrack" class="merge-track-label" data-i18n="audioMergeTrackLabel">Track âm thanh:</label>
                             <select id="selectedAudioTrack" class="merge-track-select">
-                                <option value="bestaudio/best" data-i18n="audioMergeBest">🌟 Best Audio (Tự động chọn âm thanh tốt nhất)</option>
+                                <option value="bestaudio" data-i18n="audioMergeBest">🌟 Best Audio (Tự động chọn âm thanh tốt nhất)</option>
                             </select>
                         </div>
                     </div>
@@ -957,6 +971,16 @@
     <!-- ═══════════════ TAB 4: SETTINGS ═══════════════ -->
     <section id="tab-settings" class="tab-panel" role="tabpanel" aria-labelledby="tabBtnSettings">
         <div class="card settings-card-wrap">
+            <h3 class="section-title" data-i18n="updateTitle">Cập nhật EveryVideo</h3>
+            <div class="app-update-panel">
+                <p class="app-update-version"><span data-i18n="updateCurrent">Phiên bản hiện tại:</span> <strong id="appCurrentVersion">—</strong></p>
+                <p id="appUpdateStatus" class="app-update-status" role="status" aria-live="polite" aria-atomic="true" data-i18n="updateIdle">Kiểm tra bản phát hành mới nhất trên GitHub.</p>
+                <div class="app-update-actions">
+                    <button type="button" id="checkUpdateBtn" class="btn-secondary" data-i18n="updateCheck">Kiểm tra cập nhật</button>
+                    <a id="appUpdateLink" class="btn-secondary" href="https://github.com/hiimkuroshi/EveryVideoDownloader/releases" target="_blank" rel="noopener noreferrer" hidden data-i18n="updateDownload">Mở trang tải bản mới</a>
+                </div>
+            </div>
+            <hr class="divider">
             <!-- Language Setting Block -->
             <h3 class="section-title" data-i18n="settingsLangTitle">Ngôn Ngữ Giao Diện (Interface Language)</h3>
             <div class="form-group">
@@ -966,6 +990,31 @@
                     <option value="en">🇺🇸 English (Tiếng Anh)</option>
                     <option value="zh">🇨🇳 简体中文 (Chinese)</option>
                     <option value="ja">🇯🇵 日本語 (Japanese)</option>
+                </select>
+            </div>
+            <hr class="divider">
+            <!-- Color Palette & Silk Theme Selection -->
+            <h3 class="section-title" data-i18n="settingsThemeTitle">Chủ Đề & Bảng Màu (Color Palette)</h3>
+            <div class="form-group">
+                <label for="settingsPaletteSelect" data-i18n="settingsThemeLabel">Chọn phong cách màu sắc:</label>
+                <select id="settingsPaletteSelect" class="compact-select full-width">
+                    <option value="celadon">🌿 Celadon Matcha (Xanh Ngọc Dịu & Cam Đất — Mặc định)</option>
+                    <option value="dusk">🍑 Dusk Peach (Hồng Đào Hoàng Hôn & Tím Nhung)</option>
+                    <option value="fjord">🧊 Nordic Fjord (Xanh Sương Băng & Cát Hổ Phách)</option>
+                    <option value="ceramic">🏺 Ceramic Light (Gốm Sứ Trắng Ấm & Xanh Xô Thơm)</option>
+                </select>
+            </div>
+
+            <hr class="divider">
+            <!-- Non-Generic Typography Selection -->
+            <h3 class="section-title" data-i18n="settingsFontTitle">Bộ Font Điểm Nhấn (Typography)</h3>
+            <div class="form-group">
+                <label for="settingsFontSelect" data-i18n="settingsFontLabel">Chọn bộ font chữ:</label>
+                <select id="settingsFontSelect" class="compact-select full-width">
+                    <option value="cineserif">🎬 Cine Songti & Mincho (Fraunces + Noto Serif CJK — Tiếng Việt, Trung, Nhật)</option>
+                    <option value="zenkaku">⛩️ Zen Neo-Grotesque (Zen Kaku + Bricolage + Noto Sans CJK)</option>
+                    <option value="zenmaru">🌸 Rounded Silk (Zen Maru Gothic + Noto Sans CJK — Tròn mềm dịu mắt)</option>
+                    <option value="bepro">🌏 International Pro (Be Vietnam Pro + Noto Sans CJK — Chuẩn mực đa ngữ)</option>
                 </select>
             </div>
 
@@ -1040,5 +1089,6 @@
 <script src="i18n.js"></script>
 <script src="media-discovery.js"></script>
 <script src="script.js"></script>
+<script src="update-check.js"></script>
 </body>
 </html>

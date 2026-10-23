@@ -2,29 +2,66 @@
 
 // ── Theme Management ──────────────────────────────────
 const themeToggle = document.getElementById('themeToggle');
+const settingsPaletteSelect = document.getElementById('settingsPaletteSelect');
+const settingsFontSelect = document.getElementById('settingsFontSelect');
 const htmlEl = document.documentElement;
 const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 
 function syncThemeColor() {
     const isLight = htmlEl.getAttribute('data-theme') === 'light';
-    themeColorMeta?.setAttribute('content', isLight ? '#F7F8FA' : '#0A0E15');
+    const silkTheme = htmlEl.getAttribute('data-silk-theme') || 'celadon';
+    let metaBg = '#0B0F0E';
+    if (isLight || silkTheme === 'ceramic') metaBg = '#F3F0EA';
+    else if (silkTheme === 'dusk') metaBg = '#0F0C12';
+    else if (silkTheme === 'fjord') metaBg = '#090D12';
+    themeColorMeta?.setAttribute('content', metaBg);
 }
 
-(function initTheme() {
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-        htmlEl.setAttribute('data-theme', saved);
-    } else if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
+function applySilkPalette(palette) {
+    if (!palette) palette = 'celadon';
+    htmlEl.setAttribute('data-silk-theme', palette);
+    if (palette === 'ceramic') {
         htmlEl.setAttribute('data-theme', 'light');
+    } else {
+        htmlEl.setAttribute('data-theme', 'dark');
+    }
+    localStorage.setItem('silk-theme', palette);
+    localStorage.setItem('theme', palette === 'ceramic' ? 'light' : 'dark');
+    if (settingsPaletteSelect && settingsPaletteSelect.value !== palette) {
+        settingsPaletteSelect.value = palette;
     }
     syncThemeColor();
+}
+
+function applyFontPair(fontPair) {
+    if (!fontPair) fontPair = 'editorial';
+    htmlEl.setAttribute('data-font-pair', fontPair);
+    localStorage.setItem('font-pair', fontPair);
+    if (settingsFontSelect && settingsFontSelect.value !== fontPair) {
+        settingsFontSelect.value = fontPair;
+    }
+}
+
+(function initThemeAndTypography() {
+    const savedPalette = localStorage.getItem('silk-theme') || (localStorage.getItem('theme') === 'light' ? 'ceramic' : 'celadon');
+    let savedFont = localStorage.getItem('font-pair') || 'cineserif';
+    if (savedFont === 'editorial') savedFont = 'cineserif';
+    applySilkPalette(savedPalette);
+    applyFontPair(savedFont);
 })();
 
+settingsPaletteSelect?.addEventListener('change', (e) => applySilkPalette(e.target.value));
+settingsFontSelect?.addEventListener('change', (e) => applyFontPair(e.target.value));
+
 themeToggle?.addEventListener('click', () => {
-    const nextTheme = htmlEl.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    htmlEl.setAttribute('data-theme', nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    syncThemeColor();
+    const currentPalette = htmlEl.getAttribute('data-silk-theme') || 'celadon';
+    if (currentPalette === 'ceramic') {
+        const lastDark = localStorage.getItem('last-dark-palette') || 'celadon';
+        applySilkPalette(lastDark);
+    } else {
+        localStorage.setItem('last-dark-palette', currentPalette);
+        applySilkPalette('ceramic');
+    }
 });
 
 // ── Language (i18n) Management ────────────────────────
@@ -95,6 +132,8 @@ if (cachedSavedFolder) {
 fetch('/api/config')
   .then(r => r.json())
   .then(cfg => {
+    const versionLabel = document.getElementById('appCurrentVersion');
+    if (versionLabel && cfg.appVersion) versionLabel.textContent = `v${cfg.appVersion}`;
     if (cfg.downloadFolder) {
       localStorage.setItem('userDownloadFolder', cfg.downloadFolder);
       if (document.getElementById('quickDownloadFolder')) document.getElementById('quickDownloadFolder').value = cfg.downloadFolder;
@@ -615,7 +654,6 @@ $('checkBtn').addEventListener('click', async () => {
     processAndRenderFormats([]);
     processAndRenderSubtitles({});
     $('videoHeroCard').classList.add('hidden');
-    document.querySelector('.format-explorer-card')?.classList.add('hidden');
 
     const platform = detectPlatform(url);
     updatePlatformBadges(platform);
@@ -665,7 +703,6 @@ $('checkBtn').addEventListener('click', async () => {
         }
 
         currentVideoData = data;
-        document.querySelector('.format-explorer-card')?.classList.remove('hidden');
         const actualPlatform = detectPlatform(url, data.extractor || data.extractor_key);
         updatePlatformBadges(actualPlatform);
 
@@ -941,14 +978,14 @@ function processAndRenderFormats(formats) {
     audioOnlyFormats = [];
     currentTypeFilter = 'all';
     currentSearchQuery = '';
-    currentViewMode = 'cards';
+    currentViewMode = 'table';
     selectedFormatSet.clear();
     selectedRawFormat = null;
     selectedFormatValue = 'bv*+ba/b';
     currentSortField = null;
     currentSortState = 'none';
 
-    document.querySelectorAll('.filter-pill').forEach(pill => {
+    document.querySelectorAll('#typeFilterPills .filter-pill').forEach(pill => {
         pill.classList.toggle('active', pill.dataset.filter === 'all');
     });
     if ($('formatSearchInput')) $('formatSearchInput').value = '';
@@ -1034,7 +1071,10 @@ function processAndRenderFormats(formats) {
 // ── Populate Audio Select for Smart Merge ────────────
 function populateAudioMergeDropdown() {
     const select = $('selectedAudioTrack');
-    select.innerHTML = '<option value="bestaudio/best">🌟 Best Audio (Tự động chọn âm thanh tốt nhất)</option>';
+    select.replaceChildren(new Option(t('audioMergeBest'), 'bestaudio'));
+    $('enableAudioMerge').checked = true;
+    select.disabled = false;
+    $('audioMergeHelperBox').classList.add('hidden');
 
     audioOnlyFormats.forEach(a => {
         const opt = document.createElement('option');
@@ -1044,6 +1084,19 @@ function populateAudioMergeDropdown() {
         select.appendChild(opt);
     });
 }
+
+function formatForTableItem(item) {
+    if (item.type !== 'video' || !audioOnlyFormats.length || !$('enableAudioMerge').checked) return item.id;
+    return `${item.id}+${$('selectedAudioTrack').value || 'bestaudio'}`;
+}
+
+function updateAudioMergeSelection() {
+    $('selectedAudioTrack').disabled = !$('enableAudioMerge').checked;
+    if (selectedRawFormat) setFinalFormat(formatForTableItem(selectedRawFormat), `${selectedRawFormat.resolution} (ID ${selectedRawFormat.id})`);
+}
+
+$('enableAudioMerge').addEventListener('change', updateAudioMergeSelection);
+$('selectedAudioTrack').addEventListener('change', updateAudioMergeSelection);
 
 // ── 3-State Sorting Logic: Desc -> Asc -> Default ────
 document.querySelectorAll('th.th-sortable').forEach(th => {
@@ -1257,6 +1310,9 @@ function updateMultiSelectBar() {
     const addBtn = $('addSelectedToQueueBtn');
     if (countText) countText.textContent = selectedFormatSet.size;
     if (addBtn) addBtn.disabled = selectedFormatSet.size === 0;
+    const hasVideo = parsedFormats.some(item => selectedFormatSet.has(item.id) && item.type === 'video');
+    $('audioMergeHelperBox').classList.toggle('hidden', !hasVideo || !audioOnlyFormats.length);
+    $('selectedAudioTrack').disabled = !$('enableAudioMerge').checked;
 }
 
 // ── Select Format from Table ─────────────────────────
@@ -1275,8 +1331,9 @@ function selectFormatFromTable(item) {
 
     document.querySelectorAll('.format-card').forEach(c => c.classList.remove('selected'));
 
-    // Directly set format to exact ID selected by user (e.g. "30080")
-    setFinalFormat(item.id, `${item.resolution} (ID ${item.id})`);
+    $('audioMergeHelperBox').classList.toggle('hidden', item.type !== 'video' || !audioOnlyFormats.length);
+    $('selectedAudioTrack').disabled = !$('enableAudioMerge').checked;
+    setFinalFormat(formatForTableItem(item), `${item.resolution} (ID ${item.id})`);
 
     updateMultiSelectBar();
     updateDownloadButtonState();
@@ -1364,7 +1421,7 @@ function setFinalFormat(formatString, summaryLabel) {
 $('typeFilterPills').addEventListener('click', (e) => {
     const btn = e.target.closest('.filter-pill');
     if (!btn) return;
-    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('#typeFilterPills .filter-pill').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     currentTypeFilter = btn.dataset.filter;
     if (currentTypeFilter !== 'all') currentViewMode = 'table';
@@ -1766,6 +1823,8 @@ $('editFormatManualBtn').addEventListener('click', () => {
 });
 
 $('customFormatInput').addEventListener('input', (e) => {
+    selectedRawFormat = null;
+    $('audioMergeHelperBox').classList.add('hidden');
     selectedFormatValue = e.target.value.trim();
     $('formatPreviewCode').textContent = `-f "${selectedFormatValue}"`;
     updateDownloadButtonState();
@@ -1879,7 +1938,7 @@ function startDirectDownload(customParams = null) {
                 addSingleItemToQueue({
                     url: currentUrl,
                     title: currentVideoData?.title || 'Video',
-                    format: item.id,
+                    format: formatForTableItem(item),
                     formatLabel: `${item.resolution} (ID ${item.id})`,
                     ext: item.ext,
                     size: item.size,
@@ -2238,7 +2297,7 @@ $('addSelectedToQueueBtn')?.addEventListener('click', () => {
             addSingleItemToQueue({
                 url: currentUrl,
                 title: customTitle,
-                format: item.id,
+                format: formatForTableItem(item),
                 formatLabel: `${item.resolution} (ID ${item.id})`,
                 ext: item.ext,
                 size: item.size,
@@ -2448,6 +2507,8 @@ function showToast(message, type = 'info') {
 // ── Hook into i18n Language Switcher ─────────────────
 window.onLanguageChanged = function(lang) {
     window.MediaDiscovery?.render();
+    const automaticAudio = $('selectedAudioTrack')?.options[0];
+    if (automaticAudio) automaticAudio.textContent = t('audioMergeBest');
     updateTimeRangeStatusBadge();
     if (currentVideoData?.title) {
         translateTitle(currentVideoData.title, lang);

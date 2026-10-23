@@ -8,13 +8,44 @@ tags:
 type: project
 status: active
 created: 2026-09-09
-updated: 2026-10-21
+updated: 2026-10-23
 related:
   - "[[01 - Project Overview]]"
   - "[[03 - Bilibili Download Flow]]"
 ---
 
 # Architecture
+
+## Đồng bộ source GitHub — 2026-10-23
+
+- Landing page tại `sites/everyvideo-landing/` được lưu đầy đủ source/config/lockfile/ảnh trong repository EveryVideoDownloader, dưới dạng file thường để clone repo chính có đủ nội dung. Git riêng do Sites tạo vẫn giữ ở local, không đưa metadata `.git` hoặc gitlink vào repo chính.
+- Ignore cho phép các PNG nguồn/UI của landing page; tiếp tục bỏ qua dependency, build, runtime, media tải về, config và cookie cá nhân. Phiên đồng bộ source không thay bộ cài/release Windows công khai hoặc deployment Cloudflare.
+
+## Kiểm tra cập nhật GitHub — 2026-10-23
+
+- Mục **Cài Đặt → Cập nhật EveryVideo** hiển thị phiên bản package đang chạy và nút kiểm tra thủ công. `GET /api/config` bổ sung `appVersion`; `GET /api/check-update` dùng `lib/update-checker.js` gọi latest stable release của `hiimkuroshi/EveryVideoDownloader` bằng GitHub REST API công khai, không cần token.
+- So sánh SemVer theo số (có prerelease/build metadata cho phiên bản hiện tại), trả `available`/`latest`/`ahead`/`no-release`; loại draft/prerelease/tag sai. Timeout 10 giây bao gồm response body; dùng chung request đang chạy, cache thành công 5 phút và lỗi 30 giây. Lỗi mạng/timeout/rate-limit/upstream không báo nhầm là mới nhất.
+- `public/update-check.js` quản lý busy/status/link, giữ kết quả khi đổi bốn ngôn ngữ, dùng plain text cho nhãn từ API và chỉ chấp nhận URL release GitHub đúng repository. Link mở trình duyệt qua handler Electron hiện có. Kiểm tra theo nút bấm; tải/cài thủ công từ trang release.
+- Đã cập nhật source và bảy entry trong ASAR của app Windows local, thêm hai file module mới; toàn bộ entry khác giữ nguyên nội dung. Không đổi phiên bản `1.2.0`, runtime hoặc bộ cài/release public. Real GitHub check/UI/full desktop smoke pass; xem [[07 - Testing]] và `docs/WINDOWS_DESKTOP.md`.
+- Tài liệu API: https://docs.github.com/en/rest/releases/releases#get-the-latest-release .
+
+## Ghép audio tự động — 2026-10-23
+
+- Chọn exact video-only format trong Studio nay thêm audio mặc định qua helper có opt-out; queue cùng cách dựng expression. Giữ exact video ID và workflow API download cũ.
+- Discovered source có đề xuất audio cùng entry extractor hoặc lựa chọn thủ công từ descriptor cùng resolution. `/api/media-download` dùng `audio_asset_id`/`none`; verify cả hai nguồn rồi gửi hai descriptor/header riêng qua stdin cho helper Python, stream-copy bằng FFmpeg trong staging. Ưu tiên MP4/WebM tương thích, fallback MKV; không đoán quan hệ từ vị trí chung trên một trang.
+- App local `dist/win-unpacked/` đã thay tám file trong ASAR và helper Python ngoài ASAR, toàn bộ entry khác giữ nguyên nội dung. Full desktop smoke/FFprobe và UI/media tests pass; bộ cài/release công khai chưa được build lại. Chi tiết tại [[12 - Universal Media Extraction Implementation]], [[07 - Testing]].
+
+## Landing page trên Cloudflare — 2026-10-21
+
+- Cập nhật 2026-10-22: Cinema Library mở rộng nội dung/motion, tái deploy theo yêu cầu với version hiện hành `8f105fb0-1848-4949-a679-772f0da9644f`. Giữ nguyên topology static assets/custom domain và asset đã QA chín viewport/sáu audit axe; HTML/JS/CSS production HTTP 200 và khớp chính xác build local. Chi tiết tại [[10 - UI UX Upgrade Research]].
+
+- Production công khai: https://evd.tyr.io.vn/ . Người dùng yêu cầu tên miền này trên Cloudflare và xác nhận không cần đăng nhập.
+- Marketing app tại `sites/everyvideo-landing/` được triển khai trực tiếp bằng **Cloudflare Workers Static Assets**, Worker `everyvideo-landing`, với `wrangler.jsonc` và Wrangler `4.151.3` khóa trong devDependencies. Chỉ upload `dist/`; không cần Worker script, VM hoặc máy cá nhân chạy nền. Backend extraction/Windows app không được đưa lên Cloudflare.
+- `routes[].custom_domain: true` để Cloudflare tự tạo DNS/HTTPS trong zone `tyr.io.vn`. Worker mới chưa tồn tại trước lần triển khai này; phiên OAuth hiện có đủ quyền Workers/routes. Không đọc, giải mã thủ công hoặc đưa thông tin đăng nhập vào source/vault.
+- Lệnh vận hành: `npm run deploy:check`, `npm run deploy`; lệnh deploy build trước khi xuất bản. Canonical, Open Graph, robots và sitemap trỏ tên miền production.
+- Production version đầu tiên: `63492f7b-0eaa-49ba-9959-17e69823a7b4`, nhận 100% traffic. HTTPS chứng chỉ hợp lệ, HTTP 200, DNS A hoạt động; trình duyệt sạch không cần đăng nhập. Build/TypeScript/lint/dry-run pass; remote smoke desktop 1440×1000 và mobile 390×844 không overflow, ảnh lỗi, JS error hoặc response lỗi. Download dialog/link installer, robots/sitemap và 404 của asset thiếu pass. Evidence: `output/playwright/everyvideo-cloudflare/`.
+- Site cũ https://everyvideo-studio.tartmite13.chatgpt.site vẫn tồn tại và đã được mở công khai theo xác nhận người dùng. Một custom-hostname mapping trên Sites được tạo trước khi chọn triển khai trực tiếp, vẫn pending/chưa xác minh và không dùng cho production. Auto-review từ chối xóa mapping đó do lo ngại gián đoạn hostname; đã giữ nguyên và hoàn tất bằng Cloudflare Custom Domain. Không thêm các CNAME/TXT xác minh của mapping Sites vào DNS hiện tại.
+- Tài liệu đối chiếu: [Static Assets](https://developers.cloudflare.com/workers/static-assets/), [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/).
 
 ## Windows desktop — triển khai 2026-10-21
 
@@ -33,6 +64,24 @@ Người dùng đã duyệt phương án và yêu cầu triển khai cả bộ c
 - Đã phát hành [GitHub Release v1.2.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.2.0), đánh dấu Latest, tag trỏ commit `3885109`. Vì repository đã có tag `v1.1.0`, nâng package/lockfile từ số nội bộ `0.3.0` lên `1.2.0` và build lại NSIS/portable EXE/ZIP. App bundle và Windows version resource đã xác nhận `1.2.0`; hai desktop smoke pass. Có bốn asset công khai gồm ba gói và SHA256SUMS, digest GitHub khớp local. Release notes ở `docs/releases/v1.2.0.md`; các gói vẫn chưa ký số.
 
 Nguồn đối chiếu: [Electron introduction](https://www.electronjs.org/docs/latest/), [electron-builder Windows targets](https://www.electron.build/win/), [NSIS và portable](https://www.electron.build/nsis/).
+
+### Phạm vi dọn dung lượng khi chỉ dùng Windows — 2026-10-23
+
+- Người dùng muốn chỉ giữ app Windows và sau đó đã yêu cầu dọn những phần không ảnh hưởng app. Đã hoàn tất cleanup tài nguyên phát triển/artifact bên ngoài gói; không thay đổi cách đóng gói hoặc xóa frontend dùng chung.
+- Đối chiếu `desktop/main.js`, `server.js` và `electron-builder.cjs`: Windows Electron mở backend Express và dùng chung frontend `public/`. Không thể loại bỏ frontend khỏi gói Windows mà vẫn giữ giao diện hiện tại. Riêng bản đã đóng gói dùng tài nguyên bên trong app, không phụ thuộc source bên ngoài.
+- Nếu chỉ chạy bản hiện có, cần giữ nguyên toàn bộ `dist/win-unpacked/` và các tài nguyên bên cạnh `EveryVideo.exe`. Xóa source/dependencies bên ngoài gói không ảnh hưởng bản đã build, nhưng muốn phát triển/build lại phải khôi phục source và runtime cần thiết.
+- Dung lượng file đo tại workspace: `public/` khoảng 0,35 MiB; `sites/` khoảng 369,65 MiB; `node_modules/` 474,59 MiB; `.runtime/` 504,07 MiB; `output/` 82,99 MiB; bản Windows unpacked 898,31 MiB. Đây là tổng độ dài file, không phải dung lượng block thực trên đĩa.
+- Landing page `sites/` độc lập với app Windows. Xóa bản local không tự gỡ deployment đã công khai; đây chưa phải yêu cầu gỡ website. Cần phân biệt dọn artifact/dependency có thể tạo lại với xóa mã nguồn hoặc dữ liệu tải về.
+- Cleanup thực tế: xóa root `node_modules/`, root `.runtime/`, `sites/everyvideo-landing/node_modules/`, landing `dist/`, `.wrangler/`, `tsconfig.tsbuildinfo`, hai archive site trong `output/`, 58 ảnh QA trong `output/playwright/` và ba file metadata builder/updater không dùng ở `dist/`. Tổng 69 target/27.848 file/1.475.872.464 byte (1.407,50 MiB), chưa trừ report mới. Giữ screenshot thiết kế nguồn, script/JSON QA, báo cáo, toàn bộ source/Git/config/media và gói Windows.
+- Đã tách target khỏi đường dẫn gốc trước kiểm chứng, rồi chỉ xóa hẳn sau full desktop smoke pass. So SHA-256: 1.469 file payload không đổi; duy nhất `debug.log` Chromium được append khi test. Dữ liệu test riêng đã dọn. Evidence: `output/reports/windows-only-cleanup-20261023/`.
+- Source mode/build tiếp theo cần `npm ci` (riêng cho root và landing nếu dùng) và khôi phục native runtime theo `docs/WINDOWS_DESKTOP.md`. Có thể lấy Python/FFmpeg/Playwright từ runtime bên trong gói; aria2 phục vụ builder cần đặt lại vào thư mục lồng theo phiên bản. Không cần khôi phục các thư mục này để mở app đã build.
+
+## Windows local UI — bảng định dạng là màn chính, 2026-10-23
+
+- Studio có hai tab con ở cột kết quả: **Bảng định dạng** mặc định và **Nguồn media (N)**. Nguồn generic vẫn được giữ đầy đủ nhưng không đẩy bảng xuống dưới. Nếu resolver chỉ có nguồn generic/không có `info`, mở thẳng tab nguồn; trước phân tích/error trả về bảng trống.
+- `public/media-discovery.js` quản lý trạng thái tab bằng `hidden`, `aria-selected`, roving tabindex và phím mũi tên/Home/End. Đổi tab không gọi lại resolver hoặc mất bộ lọc/lựa chọn. Mỗi lượt phân tích native mới dùng table mode; preset vẫn mở thủ công. Các selector filter format được giới hạn trong toolbar riêng để không đổi trạng thái filter nguồn.
+- Cập nhật trực tiếp năm file `public/` trong `dist/win-unpacked/resources/app.asar`, so hash tất cả nội dung archive xác nhận chỉ đúng năm file UI đổi. Không build lại/công bố installer, không đổi executable/runtime. Công cụ ASAR tạm và dữ liệu smoke được dọn sau kiểm chứng, root dependency/runtime vẫn không khôi phục.
+- UI source và UI đọc từ ASAR đều pass; bản Windows thật pass full desktop smoke. Evidence: `output/reports/workspace-tabs-20261023/`; xem [[07 - Testing]], [[10 - UI UX Upgrade Research]].
 
 ## Khám phá media từ URL bất kỳ
 

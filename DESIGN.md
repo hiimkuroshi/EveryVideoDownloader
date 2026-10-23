@@ -85,6 +85,8 @@ Graphite Signal is a desktop-first media workstation: quiet surfaces, compact co
 
 The product name shown in the interface is **EveryVideo**. Do not display “Powered by yt-dlp” or other engine attribution in the application chrome. The underlying engine and all behavior remain unchanged.
 
+Selecting a video-only format offers automatic audio merging by default, with an explicit opt-out and audio track selector. Discovered-source cards use a labeled audio selector and a “download with audio” action when audio is selected; only streams identified as belonging to the same content are automatically paired. Reuse the existing merge controls and signal accent, preserve keyboard access, and keep selectors within mobile card widths.
+
 ## Colors
 
 - Graphite surfaces form one cool-neutral family. Do not mix warm gray or pure black into the application canvas.
@@ -105,6 +107,7 @@ The product name shown in the interface is **EveryVideo**. Do not display “Pow
 
 - Desktop: compact global command bar, four-tab navigation, then a two-column Studio workspace with a 360–410px inspector and flexible explorer.
 - The format explorer is the dominant surface. The download action remains visible at the bottom of the active workspace.
+- Studio results use two local tabs: the format table opens by default, and discovered media sources appear in a secondary tab with their count. Pages without native format metadata open the source tab directly. Preset cards remain an explicit view choice.
 - At widths below 1150px, the inspector stacks above the explorer. At 768px and below, controls flow vertically and the tab bar becomes four equal compact destinations.
 - Mobile only needs complete usability, not desktop-equivalent density. Tables may scroll inside their own bounded container; the page itself must never overflow horizontally.
 - Desktop gutters are 20–24px; mobile gutters are 12–16px. Main content max width is 1720px.
@@ -131,6 +134,7 @@ The product name shown in the interface is **EveryVideo**. Do not display “Pow
 - **Format explorer:** dense but readable table, mono numeric fields, sticky header, strong selected row, bounded horizontal scrolling where necessary.
 - **Download dock:** one primary Download action, current format summary, estimated size, and status. It must never obscure focused content.
 - **Feedback:** skeleton for analysis loading, composed empty state, contextual error, polite toast announcements, and visible pressed/focus states.
+- **App updates:** settings shows the running version and a manual GitHub release check; inline live status, a disabled busy button, and a download-page link when a newer stable release exists. Actions wrap on narrow screens and use 44px targets.
 
 ## Do's and Don'ts
 

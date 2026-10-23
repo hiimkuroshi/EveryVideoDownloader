@@ -3,7 +3,7 @@
 const assert = require('node:assert/strict');
 const { discoverHtml, decodeHydration, jsonCandidates, mediaType, mediaExtension } = require('../lib/media-discovery');
 const { normalizeUrl, isPublicAddress, safeHeaders, createMediaNetwork } = require('../lib/media-network');
-const { mergeAssets, verificationQueue } = require('../lib/media-resolver');
+const { mergeAssets, verificationQueue, associateAudio } = require('../lib/media-resolver');
 const { filenameFor } = require('../lib/media-routes');
 
 async function main() {
@@ -54,6 +54,17 @@ async function main() {
   assert.equal(merged.length, 2);
   assert.deepEqual(merged[0].sources, ['html', 'network']);
   const crowded = [...Array.from({ length: 45 }, () => ({ type: 'audio', status: 'unverified' })), ...Array.from({ length: 45 }, () => ({ type: 'image', status: 'unverified' }))];
+  const grouped = [
+    { id: 'v', video_only: true, ext: 'mp4', media_group: 'one' },
+    { id: 'wrong', audio_only: true, media_group: 'other', status: 'available', ext: 'm4a', format: { abr: 320 } },
+    { id: 'a', audio_only: true, media_group: 'one', status: 'available', ext: 'm4a', format: { abr: 128 } },
+    { id: 'high', audio_only: true, media_group: 'one', status: 'available', ext: 'm4a', format: { abr: 256 } },
+    { id: 'denied', audio_only: true, media_group: 'one', status: 'access_required', ext: 'm4a', format: { abr: 999 } },
+    { id: 'combo', ext: 'mp4', media_group: 'one' },
+  ];
+  associateAudio(grouped);
+  assert.equal(grouped[0].audio_asset_id, 'high');
+  assert.equal(grouped.at(-1).audio_asset_id, undefined, 'Combined streams do not receive duplicate audio');
   assert.equal(verificationQueue(crowded).filter(asset => asset.type === 'image').length, 20, 'Audio lists must not consume all image verification slots');
   const manyAudio = Array.from({ length: 130 }, (_value, index) => ({ url: `https://example.com/${index}.mp3`, type: 'audio', source: 'json' }));
   const capped = mergeAssets([...manyAudio, { url: 'https://example.com/cover.jpg', type: 'image', source: 'html' }]);

@@ -12,6 +12,8 @@
     "test:unit": "node tests/download_acceleration_test.js",
     "test:python": "node scripts/run-python-tests.js",
     "test:progress": "node tests/download_progress_test.js",
+    "test:updates": "node --test tests/update_checker_test.js",
+    "test:updates-ui": "node tests/update_ui_test.js",
     "test:media": "node tests/media_discovery_test.js && node tests/media_resolver_test.js",
     "test:media-ui": "node tests/media_ui_test.js",
     "setup:browser": "node scripts/install-media-browser.js",

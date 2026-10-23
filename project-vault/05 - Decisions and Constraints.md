@@ -9,7 +9,7 @@ tags:
 type: project
 status: active
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-10-23
 related:
   - "[[01 - Project Overview]]"
   - "[[Templates/Decision]]"
@@ -42,6 +42,7 @@ related:
 - **Trạng thái:** accepted trong lịch sử dự án
 - **Lý do:** Người dùng cần tải đúng stream đã chọn.
 - **Hệ quả:** Với DASH video-only, sản phẩm phải làm rõ hoặc hỗ trợ ghép audio có chủ đích; xem [[06 - Known Issues and Risks#BILI-002 — Exact format ID có thể tạo video không audio]].
+- **Cập nhật 2026-10-23:** Mặc định thêm audio khi chọn exact video-only ID, giữ đúng video đã chọn; helper có opt-out tải video riêng và chọn audio ID. Nguồn generic chỉ tự ghép khi có quan hệ cùng entry extractor, trường hợp khác cần người dùng chọn audio.
 
 ### D-005 — Giữ frontend không framework
 

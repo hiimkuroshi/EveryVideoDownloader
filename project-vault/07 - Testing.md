@@ -9,13 +9,49 @@ tags:
 type: reference
 status: active
 created: 2026-09-09
-updated: 2026-10-21
+updated: 2026-10-23
 related:
   - "[[03 - Bilibili Download Flow]]"
   - "[[06 - Known Issues and Risks]]"
 ---
 
 # Testing
+
+## Verification ngày 2026-10-23 — Đồng bộ GitHub
+
+- Fetch và đối chiếu baseline với `origin/nhanh-2`: không có commit lệch trước khi gom thay đổi. UI/server contracts pass: **161 IDs, 123 hooks, 15 GET routes**; acceleration/progress pass; update checker **6/6** pass. Syntax của 16 JavaScript source/test thay đổi hoặc mới pass; `git diff --check` pass.
+- Rà 89 file ứng viên gồm landing page: không phát hiện private key, GitHub token, AWS key hoặc credential assignment theo mẫu kiểm tra. Landing page được đưa vào repo chính bằng file thường, giữ ảnh cần thiết và không đưa metadata Git/dependency/build/runtime/config/cookie/media tải về.
+- Không chạy lại build/desktop/browser integration trong phiên chỉ đồng bộ; dependency phát triển đã được dọn theo yêu cầu trước đó. Bằng chứng smoke/UI/FFprobe trước đó được giữ ở các mục kiểm chứng tương ứng.
+
+## Verification ngày 2026-10-23 — Kiểm tra cập nhật GitHub
+
+- `tests/update_checker_test.js`: **6/6** pass, gồm SemVer nhiều chữ số/prerelease/build metadata, available/latest/ahead, loại draft/prerelease/tag sai, lỗi HTTP/network/JSON, timeout response body, gộp request đồng thời/cache hết hạn/retry lỗi. Syntax và contracts pass **159 HTML IDs, 121 JS hooks, 15 GET routes**; acceleration/progress regression pass.
+- `tests/update_ui_test.js` pass trên source và UI khớp ASAR: không tự gọi khi mở settings, busy/disable, bốn ngôn ngữ giữ kết quả, link đúng release, latest/ahead/no-release và lỗi, chặn link không an toàn, label plain text, dark/light 390px không overflow và target 44px.
+- App Windows thật với dữ liệu riêng gọi GitHub REST API HTTP 200: latest `v1.2.0`, UI báo đang mới nhất, lần gọi tiếp dùng cache; API không cookie trả 403 và renderer không lỗi. Chỉ kiểm tra release metadata, không tải/cài bản mới.
+- Full desktop smoke pass sau cập nhật: isolation/runtime Node 24.22.0/Python/aria2/Chromium, extraction fixture, exact-ID/DASH audio merge có FFprobe, cancel, persistence và shutdown cây tiến trình. Không dùng config/download người dùng.
+- Đối chiếu nội dung ASAR: **1.745 entry**, đúng bảy file thay đổi/thêm, không xóa entry và source khớp gói. Media UI regression tiếp tục pass sau tích hợp. Evidence/ảnh/manifest tại `output/reports/github-update-check-20261023/`; công cụ đóng gói/cache/profile/fixture tạm đã dọn, dependency/runtime phát triển gốc không được khôi phục.
+
+## Verification ngày 2026-10-23 — Tự ghép video/audio
+
+- Syntax JavaScript/Python pass; UI/server contracts **155 IDs, 117 hooks, 14 GET routes**; acceleration/progress và Python **11/11** pass. Dùng runtime/dependency đóng gói qua công cụ tạm, không khôi phục root `node_modules/` hay `.runtime/`.
+- Media parser/resolver integration pass: chỉ đề xuất audio cùng entry, bitrate/container preference, raw video byte equality, ghép tự động MP4 H.264+AAC, ghép thủ công MKV H.264+Opus, HLS + audio riêng; FFprobe xác nhận codec/90p và đủ hai stream. Header riêng từng nguồn được kiểm chứng (Origin video bắt buộc, audio từ chối nếu nhận Origin đó), cả source và helper đóng gói pass. Audio ID sai bị từ chối; audio 403 không tạo kết quả thành công im lặng. Regression direct/preview/refresh/session/collision/cancel/HLS/DASH tiếp tục pass.
+- UI source và UI staging khớp ASAR pass: tự ghép/chọn ID/tắt ghép, combo/audio giữ nguyên, queue giữ lựa chọn audio, source selector gửi đúng descriptor, đổi ngôn ngữ giữ lựa chọn, bốn ngôn ngữ/keyboard/dark-light/mobile không overflow.
+- Full Windows smoke pass trên gói đã cập nhật: tạo expression từ thao tác chọn exact video ID của metadata DASH, tải MP4 và FFprobe đủ video/audio; tiếp tục pass runtime, API isolation, DASH preset merge, cancel, persistence, shutdown cây tiến trình. Chỉ dùng fixture và dữ liệu test riêng, không thay config/download người dùng; không thử lại URL public trong lượt này.
+- Hash toàn bộ **1.743 entry** ASAR xác nhận chỉ tám file public/lib thay đổi; helper `scripts/download-resolved-media.py` ngoài ASAR khớp source. Runtime và dependency trong app không đổi. Evidence gọn tại `output/reports/auto-audio-merge-20261023/`; công cụ và profile/fixture tạm đã dọn sau pass.
+
+## Verification ngày 2026-10-23 — Tab nguồn phụ, bảng định dạng chính
+
+- JavaScript syntax/UI/server contracts pass: **155 HTML IDs**, 116 JS hooks, 14 GET route; thêm bốn ID cho hai tab/panel, không xóa hook cũ. Không có lint/typecheck framework riêng ở frontend thuần này.
+- `tests/media_ui_test.js` mở rộng để kiểm tra table-first/native, fallback sources-only, tab ARIA/keyboard, đổi ngôn ngữ vẫn giữ tab, giữ selection/search/filter và không fetch lại khi chuyển tab. Source UI và UI phục vụ trực tiếp từ ASAR đều pass; copy/download/cancel, safe labels, empty/error và dark/light responsive tại 1440/390/375/844 px pass.
+- Full `tests/desktop_smoke_test.js` chạy bằng runtime đóng gói với dữ liệu riêng pass UI/API isolation, Node 24.22.0/Python/aria2/Chromium, phân tích fixture, DASH mux/FFprobe video+audio, cancel, persistence và shutdown cây tiến trình. Không đổi cấu hình/download của người dùng hoặc chạy lại URL public.
+- `packaging.json` đối chiếu 1.743 entry của ASAR trước/sau, xác nhận chỉ `public/index.html`, `media-discovery.js`, `script.js`, `i18n.js`, `graphite-signal.css` đổi; không thêm package vào app. Evidence/ảnh tại `output/reports/workspace-tabs-20261023/`. Công cụ đóng gói và dữ liệu thử riêng được dọn sau pass.
+
+## Verification ngày 2026-10-23 — Dọn workspace chỉ dùng Windows
+
+- Tạm chuyển root `node_modules/`, `.runtime/` và các artifact/dependency dư ra khỏi vị trí cũ; chạy test driver với dependency tại staging, trong khi app/backend được loại `NODE_PATH`, dùng dữ liệu riêng và PATH hệ thống. Không dùng cấu hình hoặc thư mục tải của người dùng.
+- Full `tests/desktop_smoke_test.js` trên `dist/win-unpacked/EveryVideo.exe` pass: UI/API isolation, Node 24.22.0/Python/aria2/Chromium đi kèm, phân tích fixture localhost, DASH tải/ghép với FFprobe xác nhận video+audio, cancel, persistence và dừng cây tiến trình khi thoát. Lượt đầu bị sandbox chặn khởi chạy Electron; lượt chạy ngoài sandbox đã pass, không đổi code app.
+- So SHA-256 trước/sau: toàn bộ 1.469 file payload giữ nguyên; một `debug.log` Chromium được append trong lúc kiểm thử. Sau pass mới xóa hẳn 69 target/27.848 file/1.407,50 MiB. Giữ manifest/checklist/screenshot tại `output/reports/windows-only-cleanup-20261023/`; dọn staging và hai thư mục dữ liệu test vừa tạo.
+- Giữ JSON/script QA và báo cáo cũ, nhưng xóa 58 PNG QA cũ trong `output/playwright/` để tiết kiệm dung lượng; các tham chiếu ảnh lịch sử trong vault có thể không còn file. Giữ ảnh thiết kế nguồn và screenshot Windows mới. Không chạy lại website public hoặc benchmark Bilibili qua Internet.
 
 ## Verification ngày 2026-10-21 — Gói phát hành v1.2.0
 

@@ -117,7 +117,7 @@ const I18N = {
     workflowAnalyze: "Phân tích",
     workflowChoose: "Chọn chất lượng",
     workflowDownload: "Tải xuống",
-    workflowNote: "Preset được đề xuất sau khi phân tích",
+    workflowNote: "Chọn định dạng sau khi phân tích",
     presetStepLabel: "BƯỚC 2 · CHỌN CHẤT LƯỢNG",
     presetAria: "Preset chất lượng",
     viewTableAria: "Bảng format chi tiết",
@@ -243,6 +243,10 @@ const I18N = {
     settingsUserAgentLabel: "Tùy chỉnh User-Agent",
     settingsLangTitle: "Ngôn Ngữ Giao Diện (Interface Language)",
     settingsLangLabel: "Chọn ngôn ngữ hiển thị:",
+    settingsThemeTitle: "Chủ Đề & Bảng Màu (Color Palette)",
+    settingsThemeLabel: "Chọn phong cách màu sắc:",
+    settingsFontTitle: "Bộ Font Điểm Nhấn (Typography)",
+    settingsFontLabel: "Chọn bộ font chữ:",
 
     // ── Toast Messages ──
     toastInputUrl: "Vui lòng nhập đường link video hợp lệ",
@@ -373,7 +377,7 @@ const I18N = {
     workflowAnalyze: "Analyze",
     workflowChoose: "Choose quality",
     workflowDownload: "Download",
-    workflowNote: "A recommended preset appears after analysis",
+    workflowNote: "Choose a format after analysis",
     presetStepLabel: "STEP 2 · CHOOSE QUALITY",
     presetAria: "Quality presets",
     viewTableAria: "Detailed format table",
@@ -499,6 +503,10 @@ const I18N = {
     settingsUserAgentLabel: "Custom User-Agent",
     settingsLangTitle: "Interface Language",
     settingsLangLabel: "Select UI Display Language:",
+    settingsThemeTitle: "Theme & Color Palette",
+    settingsThemeLabel: "Select color palette:",
+    settingsFontTitle: "Distinctive Typography",
+    settingsFontLabel: "Select font pairing:",
 
     // ── Toast Messages ──
     toastInputUrl: "Please enter a valid video URL",
@@ -629,7 +637,7 @@ const I18N = {
     workflowAnalyze: "分析",
     workflowChoose: "选择质量",
     workflowDownload: "下载",
-    workflowNote: "分析后会显示推荐预设",
+    workflowNote: "分析后选择下载格式",
     presetStepLabel: "步骤 2 · 选择质量",
     presetAria: "质量预设",
     viewTableAria: "详细格式表格",
@@ -885,7 +893,7 @@ const I18N = {
     workflowAnalyze: "解析",
     workflowChoose: "品質を選択",
     workflowDownload: "ダウンロード",
-    workflowNote: "解析後におすすめプリセットが表示されます",
+    workflowNote: "解析後に形式を選択してください",
     presetStepLabel: "ステップ2 · 品質を選択",
     presetAria: "品質プリセット",
     viewTableAria: "詳細フォーマット表",
@@ -1031,6 +1039,7 @@ const I18N = {
 
 const MEDIA_I18N = {
   vi: {
+    explorerTabsAria: 'Kết quả phân tích', explorerFormatsTab: 'Bảng định dạng', explorerMediaTab: 'Nguồn media',
     urlPlaceholder: 'Dán link trang web hoặc media', mediaEyebrow: 'NGUỒN TẢI', mediaTitle: 'Media trong trang', mediaFilterAria: 'Lọc media', mediaDeepScan: 'Quét thêm nội dung tương tác',
     mediaType_audio: 'Audio', mediaType_video: 'Video', mediaType_image: 'Ảnh', mediaType_thumbnail: 'Ảnh bìa', mediaType_manifest: 'Luồng phát', mediaType_subtitle: 'Phụ đề', mediaType_unknown: 'Nguồn media',
     mediaStatus_verified: 'Đã kiểm tra', mediaStatus_available: 'Được nhận diện', mediaStatus_unverified: 'Chưa kiểm tra', mediaStatus_access_required: 'Cần quyền truy cập', mediaStatus_unavailable: 'Không khả dụng',
@@ -1042,6 +1051,7 @@ const MEDIA_I18N = {
     mediaError_RESOLUTION_EXPIRED: 'Danh sách nguồn đã hết hạn. Hãy phân tích lại trang.', mediaError_ASSET_NOT_FOUND: 'Nguồn này không còn trong danh sách. Hãy phân tích lại.', mediaError_ACCESS_REQUIRED: 'Nguồn này yêu cầu quyền truy cập.', mediaError_MEDIA_UNAVAILABLE: 'Nguồn media không còn khả dụng.',
   },
   en: {
+    explorerTabsAria: 'Analysis results', explorerFormatsTab: 'Format table', explorerMediaTab: 'Media sources',
     urlPlaceholder: 'Paste a webpage or media URL', mediaEyebrow: 'DOWNLOAD SOURCES', mediaTitle: 'Media on this page', mediaFilterAria: 'Filter media', mediaDeepScan: 'Scan interactive content too',
     mediaType_audio: 'Audio', mediaType_video: 'Video', mediaType_image: 'Images', mediaType_thumbnail: 'Cover', mediaType_manifest: 'Streams', mediaType_subtitle: 'Subtitles', mediaType_unknown: 'Media source',
     mediaStatus_verified: 'Checked', mediaStatus_available: 'Detected', mediaStatus_unverified: 'Unchecked', mediaStatus_access_required: 'Access required', mediaStatus_unavailable: 'Unavailable',
@@ -1053,6 +1063,7 @@ const MEDIA_I18N = {
     mediaError_RESOLUTION_EXPIRED: 'The source list expired. Analyze the page again.', mediaError_ASSET_NOT_FOUND: 'This source is no longer listed. Analyze again.', mediaError_ACCESS_REQUIRED: 'This source requires access.', mediaError_MEDIA_UNAVAILABLE: 'This media source is unavailable.',
   },
   zh: {
+    explorerTabsAria: '分析结果', explorerFormatsTab: '格式列表', explorerMediaTab: '媒体来源',
     urlPlaceholder: '粘贴网页或媒体链接', mediaEyebrow: '下载来源', mediaTitle: '网页中的媒体', mediaFilterAria: '筛选媒体', mediaDeepScan: '同时扫描交互内容',
     mediaType_audio: '音频', mediaType_video: '视频', mediaType_image: '图片', mediaType_thumbnail: '封面', mediaType_manifest: '媒体流', mediaType_subtitle: '字幕', mediaType_unknown: '媒体来源',
     mediaStatus_verified: '已检查', mediaStatus_available: '已识别', mediaStatus_unverified: '未检查', mediaStatus_access_required: '需要访问权限', mediaStatus_unavailable: '不可用',
@@ -1064,6 +1075,7 @@ const MEDIA_I18N = {
     mediaError_RESOLUTION_EXPIRED: '来源列表已过期，请重新分析。', mediaError_ASSET_NOT_FOUND: '此来源已不在列表中，请重新分析。', mediaError_ACCESS_REQUIRED: '此来源需要访问权限。', mediaError_MEDIA_UNAVAILABLE: '此媒体来源不可用。',
   },
   ja: {
+    explorerTabsAria: '解析結果', explorerFormatsTab: '形式一覧', explorerMediaTab: 'メディアソース',
     urlPlaceholder: 'ウェブページやメディアの URL を貼り付け', mediaEyebrow: 'ダウンロード元', mediaTitle: 'ページ内のメディア', mediaFilterAria: 'メディアを絞り込む', mediaDeepScan: '動的なコンテンツも調べる',
     mediaType_audio: '音声', mediaType_video: '動画', mediaType_image: '画像', mediaType_thumbnail: 'カバー', mediaType_manifest: 'ストリーム', mediaType_subtitle: '字幕', mediaType_unknown: 'メディア元',
     mediaStatus_verified: '確認済み', mediaStatus_available: '検出済み', mediaStatus_unverified: '未確認', mediaStatus_access_required: 'アクセス権が必要', mediaStatus_unavailable: '利用不可',
@@ -1076,6 +1088,70 @@ const MEDIA_I18N = {
   }
 };
 for (const [lang, labels] of Object.entries(MEDIA_I18N)) Object.assign(I18N[lang], labels);
+
+const MERGE_I18N = {
+  vi: {
+    mediaAudioTrack: 'Ghép âm thanh:', mediaVideoOnly: 'Chỉ tải nguồn video', mediaAutoAudio: 'Tự động chọn', mediaSaveMerged: 'Tải video có tiếng',
+    mediaAutoMergeHint: 'Audio cùng nội dung đã được chọn. Ứng dụng tải và ghép thành một file, giữ nguyên chất lượng.',
+    mediaChooseAudioHint: 'Chưa xác định được cặp audio. Chọn đúng track của video để ghép; các nguồn trên trang có thể thuộc nội dung khác nhau.',
+    mediaNoAudioHint: 'Nguồn này chỉ có hình. Chưa tìm thấy audio cùng nội dung để ghép.', mediaError_INVALID_AUDIO_TRACK: 'Track được chọn không phải nguồn audio hợp lệ.',
+  },
+  en: {
+    mediaAudioTrack: 'Merge audio:', mediaVideoOnly: 'Download video source only', mediaAutoAudio: 'Automatic selection', mediaSaveMerged: 'Download with audio',
+    mediaAutoMergeHint: 'An audio track from the same content is selected. The app downloads and merges both without re-encoding.',
+    mediaChooseAudioHint: 'No matching audio was identified. Select the correct track to merge; page sources may belong to different content.',
+    mediaNoAudioHint: 'This stream has no audio. No matching audio track was found.', mediaError_INVALID_AUDIO_TRACK: 'The selected track is not a valid audio source.',
+  },
+  zh: {
+    mediaAudioTrack: '合并音轨：', mediaVideoOnly: '仅下载视频来源', mediaAutoAudio: '自动选择', mediaSaveMerged: '下载有声视频',
+    mediaAutoMergeHint: '已选择同一内容的音轨。应用会下载并合并为一个文件，无需重新编码。',
+    mediaChooseAudioHint: '尚未找到匹配的音轨。请选择此视频对应的音轨；页面上的来源可能属于不同内容。',
+    mediaNoAudioHint: '此视频流没有声音，尚未找到对应的音轨。', mediaError_INVALID_AUDIO_TRACK: '所选音轨不是有效的音频来源。',
+  },
+  ja: {
+    mediaAudioTrack: '音声を結合：', mediaVideoOnly: '映像ソースのみ保存', mediaAutoAudio: '自動選択', mediaSaveMerged: '音声付きで保存',
+    mediaAutoMergeHint: '同じコンテンツの音声を選択しました。再エンコードせずに、映像と音声を1つのファイルにまとめます。',
+    mediaChooseAudioHint: '対応する音声を特定できませんでした。結合する音声を選んでください。ページ内には別のコンテンツの音声も含まれる場合があります。',
+    mediaNoAudioHint: 'この映像には音声がありません。対応する音声も見つかりませんでした。', mediaError_INVALID_AUDIO_TRACK: '選択したトラックは有効な音声ソースではありません。',
+  },
+};
+for (const [lang, labels] of Object.entries(MERGE_I18N)) Object.assign(I18N[lang], labels);
+
+const UPDATE_I18N = {
+  vi: {
+    updateTitle: 'Cập nhật EveryVideo', updateCurrent: 'Phiên bản hiện tại:', updateIdle: 'Kiểm tra bản phát hành mới nhất trên GitHub.',
+    updateCheck: 'Kiểm tra cập nhật', updateChecking: 'Đang kiểm tra…', updateDownload: 'Mở trang tải bản mới',
+    updateAvailable: 'Đã có phiên bản v{version} trên GitHub.', updateLatest: 'Bạn đang dùng phiên bản mới nhất (v{version}).',
+    updateAhead: 'Phiên bản đang dùng mới hơn bản phát hành trên GitHub (v{version}).', updateNoRelease: 'GitHub chưa có bản phát hành ổn định.',
+    updateRateLimited: 'GitHub đang giới hạn lượt kiểm tra. Vui lòng thử lại sau.', updateTimeout: 'Kiểm tra quá thời gian chờ. Vui lòng thử lại.',
+    updateNetworkError: 'Không thể kết nối. Kiểm tra mạng rồi thử lại.', updateFailed: 'Chưa kiểm tra được bản cập nhật từ GitHub. Vui lòng thử lại sau.',
+  },
+  en: {
+    updateTitle: 'EveryVideo updates', updateCurrent: 'Current version:', updateIdle: 'Check the latest release on GitHub.',
+    updateCheck: 'Check for updates', updateChecking: 'Checking…', updateDownload: 'Open download page',
+    updateAvailable: 'Version v{version} is available on GitHub.', updateLatest: 'You are using the latest version (v{version}).',
+    updateAhead: 'Your version is newer than the GitHub release (v{version}).', updateNoRelease: 'No stable release is available on GitHub yet.',
+    updateRateLimited: 'GitHub is limiting update checks. Please try again later.', updateTimeout: 'The update check timed out. Please try again.',
+    updateNetworkError: 'Could not connect. Check your connection and try again.', updateFailed: 'Could not check GitHub for updates. Please try again later.',
+  },
+  zh: {
+    updateTitle: 'EveryVideo 更新', updateCurrent: '当前版本：', updateIdle: '检查 GitHub 上的最新版本。',
+    updateCheck: '检查更新', updateChecking: '正在检查…', updateDownload: '打开新版下载页面',
+    updateAvailable: 'GitHub 上已有新版本 v{version}。', updateLatest: '您使用的是最新版本（v{version}）。',
+    updateAhead: '当前版本高于 GitHub 上的发行版（v{version}）。', updateNoRelease: 'GitHub 上尚无稳定版本。',
+    updateRateLimited: 'GitHub 已限制检查次数，请稍后重试。', updateTimeout: '检查更新超时，请重试。',
+    updateNetworkError: '无法连接，请检查网络后重试。', updateFailed: '暂时无法检查 GitHub 更新，请稍后重试。',
+  },
+  ja: {
+    updateTitle: 'EveryVideo の更新', updateCurrent: '現在のバージョン：', updateIdle: 'GitHub で最新のリリースを確認します。',
+    updateCheck: '更新を確認', updateChecking: '確認中…', updateDownload: '新版のダウンロードページを開く',
+    updateAvailable: 'GitHub で v{version} が公開されています。', updateLatest: '最新バージョン（v{version}）を使用しています。',
+    updateAhead: '使用中のバージョンは GitHub のリリース（v{version}）より新しいものです。', updateNoRelease: 'GitHub ではまだ安定版が公開されていません。',
+    updateRateLimited: 'GitHub の利用制限に達しました。しばらくしてから再試行してください。', updateTimeout: '確認がタイムアウトしました。もう一度お試しください。',
+    updateNetworkError: '接続できません。ネットワークを確認して再試行してください。', updateFailed: 'GitHub の更新を確認できません。しばらくしてから再試行してください。',
+  },
+};
+for (const [lang, labels] of Object.entries(UPDATE_I18N)) Object.assign(I18N[lang], labels);
 
 // Current active language code
 let currentAppLanguage = localStorage.getItem('appLanguage') || 'vi';
@@ -1155,6 +1231,7 @@ function applyLanguage(lang) {
   }
 
   // 7. Notify active view re-rendering if needed
+  document.dispatchEvent(new Event('app:languagechange'));
   if (typeof window.onLanguageChanged === 'function') {
     window.onLanguageChanged(lang);
   }

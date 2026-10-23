@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
-const script = fs.readFileSync(path.join(root, 'public', 'script.js'), 'utf8');
+const script = ['script.js', 'update-check.js'].map(file => fs.readFileSync(path.join(root, 'public', file), 'utf8')).join('\n');
 const i18n = fs.readFileSync(path.join(root, 'public', 'i18n.js'), 'utf8');
 
 const htmlIds = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(match => match[1]);
@@ -31,6 +31,6 @@ assert.doesNotMatch(i18n, /powered\s+by\s+yt-dlp/i, 'Legacy engine attribution r
 for (const id of ['bilibiliDownloadEngine', 'bilibiliAria2Connections', 'bilibiliAria2Status']) {
     assert.ok(uniqueIds.has(id), `Missing Bilibili acceleration control: ${id}`);
 }
-assert.equal(uniqueIds.size, 151, 'Unexpected DOM hook count; check accidental ID removal/addition');
+assert.equal(uniqueIds.size, 161, 'Unexpected DOM hook count; check accidental ID removal/addition');
 
 console.log(`UI contract passed: ${uniqueIds.size} unique IDs, ${staticScriptIds.size} script hooks.`);

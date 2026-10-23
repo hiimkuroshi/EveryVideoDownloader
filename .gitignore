@@ -22,6 +22,8 @@ Download/*
 *.png
 *.webp
 !desktop/icon.png
+!sites/everyvideo-landing/assets/*.png
+!sites/everyvideo-landing/public/images/*.png
 
 # Temporary files & logs
 config.json

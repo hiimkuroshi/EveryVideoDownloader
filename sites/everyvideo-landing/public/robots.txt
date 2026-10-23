@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://evd.tyr.io.vn/sitemap.xml

@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "everyvideo-landing",
+  "account_id": "8b3cfc6cdfe0c7c6b7bbbc801e0f2598",
+  "compatibility_date": "2026-10-21",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist"
+  },
+  "routes": [
+    { "pattern": "evd.tyr.io.vn", "custom_domain": true }
+  ]
+}
