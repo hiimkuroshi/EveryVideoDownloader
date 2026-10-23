@@ -13,6 +13,12 @@ updated: 2026-10-23
 
 # Work Log
 
+## 2026-10-23 — Công khai release v1.3.0
+
+- Push nguồn `00bd250` lên `main`, tạo draft target đúng SHA, upload Setup/portable EXE/portable ZIP + SHA256SUMS. Đối chiếu cả bốn asset GitHub theo tên/kích thước/SHA-256/trạng thái uploaded, tất cả khớp.
+- Công khai [v1.3.0](https://github.com/hiimkuroshi/EveryVideoDownloader/releases/tag/v1.3.0) và đặt Latest; xác minh stable/tag commit đúng nguồn và real app update checker nhận `latest`/`1.3.0`. Bộ cài/EXE vẫn chưa ký số; không ghi đè release/tag cũ hoặc deploy lại landing page.
+- Cập nhật index/runbook/architecture/testing; giữ evidence tại `output/reports/release-v1.3.0/`. Dependency/runtime gốc đã khôi phục để build và hiện tiếp tục bị Git ignore.
+
 ## 2026-10-23 — Chuẩn bị release Windows v1.3.0
 
 - Theo yêu cầu phát hành file mới nhất, chọn minor `v1.3.0` sau Latest `v1.2.0`; tăng package/lockfile, cập nhật README/hướng dẫn và release notes. Khôi phục dependency/runtime build từ lockfile và bản Windows đã giữ, build lại cả ba dạng Setup/portable EXE/ZIP.

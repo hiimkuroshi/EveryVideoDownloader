@@ -19,6 +19,7 @@ related:
 
 ## Verification ngày 2026-10-23 — Release Windows v1.3.0
 
+- GitHub đã công khai stable Latest `v1.3.0`; tag đúng commit nguồn `00bd250a497cd0cf6c292d06aa58bd25150f1ece`. Cả bốn asset khớp tên/kích thước/trạng thái uploaded/SHA-256 local; lưu API evidence tại `output/reports/release-v1.3.0/verified-github-assets.json` và `published-release.json`. Gọi thực app update checker sau publish trả `latest`, version `1.3.0`.
 - `npm ci`, Electron/runtime prerequisite và `desktop:build` pass. Contracts **161 IDs/123 hooks/15 routes**, acceleration/progress, update checker **6/6**, Python **11/11** và production audit **0 vulnerability** pass.
 - Phát hiện test cache phụ thuộc package version: đặt rõ fixture `currentVersion: 1.2.0`; syntax/unit pass. Media UI tái hiện tràn ngang 375px do intrinsic minimum của grid với font mới; sửa cột mobile thành `minmax(0, 1fr)`, source và UI trích từ ASAR cuối pass toàn bộ media/update UI, bốn ngôn ngữ, keyboard, lựa chọn audio, dark/light và responsive.
 - Media parser/resolver fixture pass: audio cùng nội dung, tải riêng, ghép MP4/MKV, HLS/audio riêng, FFprobe đủ stream/codec, audio sai/403, preview/session/collision/cancel và HLS/DASH.
